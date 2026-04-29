@@ -2,19 +2,23 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, ChevronDown, ChevronUp, Copy } from "lucide-react";
+import { AlertCircle, Plus, Save, Trash2, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { CabinetUnitForm } from "./CabinetUnitForm";
 import { MaterialSummaryPanel } from "./MaterialSummaryPanel";
 import { formatCurrency, generateId } from "@/lib/utils";
 import { calculateCabinetUnit } from "@/lib/calculations/cabinet";
-import { saveCabinetEstimate } from "@/lib/actions/estimates";
+import { saveCabinetEstimate, updateCabinetEstimate } from "@/lib/actions/estimates";
 import { DEFAULT_DOOR_ADDONS, DEFAULT_MIDDLE_DIVIDER_ADDONS, DEFAULT_UNIT_ADDONS, type CabinetUnitInput } from "@/types";
 
 interface Props {
   projectId: string;
+  itemId?: string;
+  initialLabel?: string | null;
   initialUnits?: CabinetUnitInput[];
 }
 
@@ -92,7 +96,9 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
   };
 }
 
-export function CabinetUnitList({ projectId, initialUnits }: Props) {
+export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits }: Props) {
+  const [currentItemId, setCurrentItemId] = useState<string | undefined>(itemId);
+  const [estimateLabel, setEstimateLabel] = useState(initialLabel ?? "");
   const [units, setUnits] = useState<CabinetUnitInput[]>(
     initialUnits?.map(normalizeUnit) ?? [emptyUnit()]
   );
@@ -100,16 +106,24 @@ export function CabinetUnitList({ projectId, initialUnits }: Props) {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
-  const updateUnit = (id: string, updated: CabinetUnitInput) =>
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const markChanged = () => setHasUnsavedChanges(true);
+
+  const updateUnit = (id: string, updated: CabinetUnitInput) => {
+    markChanged();
     setUnits((prev) => prev.map((u) => (u.id === id ? updated : u)));
+  };
 
   const duplicateUnit = (unit: CabinetUnitInput) => {
     const clone: CabinetUnitInput = { ...unit, id: generateId(), name: `${unit.name} (複製)` };
+    markChanged();
     setUnits((prev) => [...prev, clone]);
     setExpandedId(clone.id);
   };
 
   const removeUnit = (id: string) => {
+    markChanged();
     setUnits((prev) => prev.filter((u) => u.id !== id));
   };
 
@@ -122,11 +136,24 @@ export function CabinetUnitList({ projectId, initialUnits }: Props) {
     setSaving(true);
     setSaveMsg(null);
     try {
-      const result = await saveCabinetEstimate({ projectId, units });
-      setSaveMsg(result.success ? "已儲存！" : "儲存失敗，請稍後再試");
-      if (result.success) setTimeout(() => setSaveMsg(null), 3000);
+      const payload = { projectId, label: estimateLabel, units };
+      const result = currentItemId
+        ? await updateCabinetEstimate(currentItemId, payload)
+        : await saveCabinetEstimate(payload);
+
+      if (result.success) {
+        if (!currentItemId && "itemId" in result && typeof result.itemId === "string") {
+          setCurrentItemId(result.itemId);
+        }
+        setHasUnsavedChanges(false);
+        setSaveMsg(currentItemId ? "已更新估價" : "已儲存估價");
+        setTimeout(() => setSaveMsg(null), 3000);
+        return;
+      }
+
+      setSaveMsg("儲存失敗，請稍後再試");
     } catch (err) {
-      console.error("[handleSave] 例外：", err);
+      console.error("[handleSave] save cabinet estimate failed", err);
       setSaveMsg("儲存失敗，請稍後再試");
     } finally {
       setSaving(false);
@@ -135,6 +162,51 @@ export function CabinetUnitList({ projectId, initialUnits }: Props) {
 
   return (
     <div className="space-y-4">
+      <div className="fixed right-4 top-16 z-30 flex flex-col items-end gap-2 lg:right-6">
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="relative h-11 rounded-full px-4 shadow-lg shadow-black/10"
+          aria-label={currentItemId ? "更新估價" : "儲存估價"}
+        >
+          <Save className="h-4 w-4" />
+          <span className="hidden sm:inline">
+            {saving ? "儲存中..." : currentItemId ? "更新估價" : "儲存估價"}
+          </span>
+          {hasUnsavedChanges && (
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[11px] font-bold leading-none text-destructive-foreground ring-2 ring-background">
+              !
+            </span>
+          )}
+        </Button>
+        {hasUnsavedChanges && (
+          <div className="flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs text-muted-foreground shadow-sm">
+            <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+            <span>尚未儲存</span>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-md border bg-muted/20 p-4">
+        <Label htmlFor="cabinet-estimate-label" className="text-sm font-semibold">
+          估價名稱
+        </Label>
+        <Input
+          id="cabinet-estimate-label"
+          value={estimateLabel}
+          onChange={(event) => {
+            setEstimateLabel(event.target.value);
+            markChanged();
+          }}
+          placeholder="例如：主臥室、客廳電視牆"
+          className="mt-2"
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          此名稱會顯示在專案列表的系統櫃標籤後方。
+        </p>
+      </div>
+
       {/* 桶身列表 */}
       {units.map((unit) => {
         const result = calculateCabinetUnit(unit);
@@ -190,6 +262,7 @@ export function CabinetUnitList({ projectId, initialUnits }: Props) {
         type="button" variant="outline" className="w-full border-dashed"
         onClick={() => {
           const u = emptyUnit();
+          markChanged();
           setUnits((prev) => [...prev, u]);
           setExpandedId(u.id);
         }}
@@ -209,16 +282,11 @@ export function CabinetUnitList({ projectId, initialUnits }: Props) {
             總計：{formatCurrency(projectTotal)}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {saveMsg && (
-            <span className={`text-sm ${saveMsg.includes("失敗") ? "text-destructive" : "text-green-600"}`}>
-              {saveMsg}
-            </span>
-          )}
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "儲存中…" : "儲存估價"}
-          </Button>
-        </div>
+        {saveMsg && (
+          <span className={`text-sm ${saveMsg.includes("失敗") ? "text-destructive" : "text-green-600"}`}>
+            {saveMsg}
+          </span>
+        )}
       </div>
     </div>
   );

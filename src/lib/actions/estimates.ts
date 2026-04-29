@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireCurrentUserId } from "@/lib/current-user";
+import { estimateLabelOrDefault } from "@/lib/estimate-label";
 import { cabinetProjectInputSchema } from "@/lib/validations/cabinet";
 import { ceilingProjectInputSchema } from "@/lib/validations/ceiling";
 import { calculateCabinetProject } from "@/lib/calculations/cabinet";
@@ -58,7 +59,7 @@ export async function saveCabinetEstimate(rawData: unknown) {
     data: {
       projectId,
       moduleType: "CABINET",
-      label: label ?? "系統櫃",
+      label: estimateLabelOrDefault(label, "系統櫃"),
       sortOrder,
       inputData: units as object[],
       resultData: result as unknown as object,
@@ -83,13 +84,18 @@ export async function updateCabinetEstimate(itemId: string, rawData: unknown) {
   const { projectId, label, units } = parsed.data;
   const owned = await verifyProjectOwnership(projectId, userId);
   if (!owned) return { success: false, errors: { _: ["無此專案"] } };
+  const item = await prisma.estimateItem.findFirst({
+    where: { id: itemId, projectId, moduleType: "CABINET" },
+    select: { id: true },
+  });
+  if (!item) return { success: false, errors: { _: ["無此估價項目"] } };
 
   const result = calculateCabinetProject(units as CabinetUnitInput[]);
 
   await prisma.estimateItem.update({
     where: { id: itemId },
     data: {
-      label: label ?? "系統櫃",
+      label: estimateLabelOrDefault(label, "系統櫃"),
       inputData: units as object[],
       resultData: result as unknown as object,
       totalCost: result.projectTotal,
@@ -127,7 +133,7 @@ export async function saveCeilingEstimate(rawData: unknown) {
     data: {
       projectId,
       moduleType: "CEILING",
-      label: label ?? "天花板",
+      label: estimateLabelOrDefault(label, "天花板"),
       sortOrder,
       inputData: input as unknown as object,
       resultData: result as unknown as object,

@@ -259,6 +259,30 @@ assert.equal(slidingDoorResult.hardware[0].quantity, 2);
 assert.equal(slidingDoorResult.hardware[0].unitCost, 500);
 assert.equal(slidingDoorResult.hardware[0].subtotal, 1000);
 
+const slidingDoorWithoutHardwareResult = calculateCabinetUnit({
+  ...baseUnit,
+  doors: [
+    {
+      id: "sliding-door-no-hardware",
+      type: "SLIDING",
+      name: "滑門",
+      widthCm: 45,
+      heightCm: 90,
+      quantity: 2,
+      materialRef: doorMaterial,
+      addons: {
+        ...DEFAULT_DOOR_ADDONS,
+        patternMatch: "none",
+        temperedGlass: false,
+        hingeHoleDrilling: false,
+      },
+      hingeMaterialRef: null,
+      railMaterialRef: null,
+    },
+  ],
+});
+assert.equal(slidingDoorWithoutHardwareResult.hardware.some((item) => item.name === "推拉門五金"), false);
+
 const wireMeshMaterial: MaterialRef = {
   materialId: "mesh-1",
   materialName: "擴張網-菱形 (1.6*10*21mm，不含烤漆)",
@@ -381,7 +405,7 @@ assert.equal(
   tinyDrawerParts
     .filter((part) => part.materialRef?.materialId === drawerMinMaterial.materialId)
     .reduce((sum, part) => sum + part.subtotal, 0),
-  300,
+  780,
 );
 
 const drawerResult = calculateCabinetUnit({
@@ -407,7 +431,10 @@ assert.equal(drawerResult.hardware.at(-1)?.quantity, 3);
 assert.equal(drawerResult.summary.hardwareCost, 540);
 
 const drawerParts = drawerResult.internalParts.filter((part) => part.id.startsWith("drawer-1-"));
+const drawerGrooveProcesses = drawerParts.flatMap((part) => part.processes ?? []);
 assert.equal(drawerParts.length, 4);
+assert.equal(drawerGrooveProcesses.length, 2);
+assert.equal(drawerGrooveProcesses.reduce((sum, process) => sum + process.cost, 0), 1440);
 assert.deepEqual(
   drawerParts.map((part) => ({
     name: part.name,

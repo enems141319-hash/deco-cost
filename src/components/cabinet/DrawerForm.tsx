@@ -86,7 +86,7 @@ export function DrawerForm({ drawers, onChange }: Props) {
               />
             </div>
             <div>
-              <Label className="text-[10px] text-muted-foreground">滑軌尺寸(cm)</Label>
+              <Label className="text-[10px] text-muted-foreground">抽身總長(外徑)(cm)</Label>
               <Input
                 type="number"
                 min={1}

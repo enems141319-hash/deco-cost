@@ -27,6 +27,7 @@ interface Props {
   value: MaterialRef | null;
   onChange: (ref: MaterialRef | null) => void;
   categoryFilter?: string;
+  fixedBrandFilter?: string;
   nameIncludes?: string[];
   nameExcludes?: string[];
   placeholder?: string;
@@ -87,6 +88,7 @@ export function MaterialDropdown({
   value,
   onChange,
   categoryFilter,
+  fixedBrandFilter,
   nameIncludes,
   nameExcludes,
   placeholder = "選擇材料",
@@ -145,40 +147,45 @@ export function MaterialDropdown({
     setTypeFilter("__all__");
     setPrefixFilter("__all__");
     setQuery("");
-  }, [categoryFilter]);
+  }, [categoryFilter, fixedBrandFilter]);
 
-  const selected = materials.find((material) => material.id === value?.materialId) ?? null;
+  const scopedMaterials = useMemo(
+    () => materials.filter((material) => !fixedBrandFilter || (material.brand ?? "未分類") === fixedBrandFilter),
+    [fixedBrandFilter, materials]
+  );
+
+  const selected = scopedMaterials.find((material) => material.id === value?.materialId) ?? null;
 
   const brands = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const material of materials) {
+    for (const material of scopedMaterials) {
       const brand = material.brand ?? "未分類";
       counts.set(brand, (counts.get(brand) ?? 0) + 1);
     }
     return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [materials]);
+  }, [scopedMaterials]);
 
   const boardTypes = useMemo(() => {
     const types = new Set<string>();
-    for (const material of materials) {
+    for (const material of scopedMaterials) {
       if (material.boardType) types.add(material.boardType);
     }
     return Array.from(types).sort((a, b) => a.localeCompare(b));
-  }, [materials]);
+  }, [scopedMaterials]);
 
   const prefixes = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const material of materials) {
+    for (const material of scopedMaterials) {
       const prefix = (material.colorCode ?? material.name).charAt(0).toUpperCase();
       if (!prefix) continue;
       counts.set(prefix, (counts.get(prefix) ?? 0) + 1);
     }
     return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [materials]);
+  }, [scopedMaterials]);
 
   const filteredMaterials = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return materials.filter((material) => {
+    return scopedMaterials.filter((material) => {
       const brand = material.brand ?? "未分類";
       const prefix = (material.colorCode ?? material.name).charAt(0).toUpperCase();
       const includeByName = !nameIncludes?.length || nameIncludes.some((keyword) => material.name.includes(keyword));
@@ -192,7 +199,7 @@ export function MaterialDropdown({
         (!normalizedQuery || searchText(material).includes(normalizedQuery))
       );
     });
-  }, [brandFilter, materials, prefixFilter, query, typeFilter]);
+  }, [brandFilter, nameExcludes, nameIncludes, prefixFilter, query, scopedMaterials, typeFilter]);
 
   const choose = (material: MaterialOption | null) => {
     onChange(material ? toMaterialRef(material) : null);
@@ -226,7 +233,7 @@ export function MaterialDropdown({
             <aside className="flex min-h-0 flex-col border-r bg-muted/20">
               <div className="border-b px-4 py-3">
                 <p className="text-sm font-semibold">{categoryFilter ? CATEGORY_LABELS[categoryFilter] ?? categoryFilter : "材料索引"}</p>
-                <p className="text-xs text-muted-foreground">{materials.length} 筆品項</p>
+                <p className="text-xs text-muted-foreground">{scopedMaterials.length} 筆品項</p>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
                 <button

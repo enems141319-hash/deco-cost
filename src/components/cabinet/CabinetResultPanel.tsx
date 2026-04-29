@@ -16,9 +16,12 @@ type BoardRow = PanelResult | DoorResult;
 
 interface DisplayProcessRow {
   id: string;
+  kind: "process" | "hardware";
   label: string;
+  description?: string;
   quantity: number;
   unitCost: number;
+  unit?: string;
   cost: number;
 }
 
@@ -68,7 +71,7 @@ function isProfileHandleProcess(row: HardwareResult): boolean {
 function isDoorHardware(row: HardwareResult): boolean {
   return (
     row.id.includes("-hinge") ||
-    row.id.includes("-push-pull") ||
+    row.id.includes("-push-door-hardware") ||
     row.id.includes("-wire-mesh") ||
     row.id.includes("-aluminum-handle") ||
     isProfileHandleProcess(row)
@@ -84,21 +87,36 @@ function profileHandleProcessLabel(row: HardwareResult): string {
   return style ? `造型把手加工 ${style}` : "造型把手加工";
 }
 
-function buildDoorProcessRows(hardwareRows: HardwareResult[]): Record<string, DisplayProcessRow[]> {
-  return hardwareRows.filter(isProfileHandleProcess).reduce<Record<string, DisplayProcessRow[]>>((acc, row) => {
-    const doorId = row.id.replace(/-profile-handle(?:-modification)?$/, "");
-    acc[doorId] = [
-      ...(acc[doorId] ?? []),
+function attachedDoorRowLabel(row: HardwareResult): string {
+  return isProfileHandleProcess(row) ? profileHandleProcessLabel(row) : row.name;
+}
+
+function buildDoorAttachedRows(
+  hardwareRows: HardwareResult[],
+  doors: DoorResult[]
+): Record<string, DisplayProcessRow[]> {
+  const rowsByDoorId: Record<string, DisplayProcessRow[]> = {};
+
+  for (const row of hardwareRows.filter(isDoorHardware)) {
+    const door = doors.find((candidate) => row.id.startsWith(`${candidate.id}-`));
+    if (!door) continue;
+
+    rowsByDoorId[door.id] = [
+      ...(rowsByDoorId[door.id] ?? []),
       {
         id: row.id,
-        label: profileHandleProcessLabel(row),
+        kind: isProfileHandleProcess(row) ? "process" : "hardware",
+        label: attachedDoorRowLabel(row),
+        description: row.description || row.materialRef?.materialName,
         quantity: row.quantity,
         unitCost: row.unitCost,
+        unit: row.materialRef?.unit,
         cost: row.subtotal,
       },
     ];
-    return acc;
-  }, {});
+  }
+
+  return rowsByDoorId;
 }
 
 function BoardNameCell({ row }: { row: BoardRow }) {
@@ -160,9 +178,10 @@ function BoardTable({
           </thead>
           <tbody>
             {rows.map((row) => {
-              const panelProcesses = "processes" in row
+              const panelProcesses: DisplayProcessRow[] = "processes" in row
                 ? row.processes.map((process) => ({
                     id: process.id,
+                    kind: "process" as const,
                     label: process.label,
                     quantity: process.quantity,
                     unitCost: process.unitCost,
@@ -202,13 +221,20 @@ function BoardTable({
                   {displayProcesses.map((process) => (
                     <tr key={process.id} className="border-b border-muted/50 bg-muted/10">
                       <td className={`${bodyCellClass} pl-7`}>
-                        <div className="font-medium text-slate-700">{processLabel(process.label)}</div>
-                        <div className="text-xs text-muted-foreground">後加工</div>
+                        <div className="font-medium text-slate-700">
+                          {process.kind === "process" ? processLabel(process.label) : `五金-${process.label}`}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {process.kind === "process" ? "後加工" : process.description ?? "門片五金"}
+                        </div>
                       </td>
                       <td className={numericCellClass}>-</td>
                       <td className={numericCellClass}>{formatQuantity(process.quantity)}</td>
                       <td className={numericCellClass}>-</td>
-                      <td className={numericCellClass}>{formatCurrency(process.unitCost)}</td>
+                      <td className={numericCellClass}>
+                        {formatCurrency(process.unitCost)}
+                        {process.unit && <span className="text-muted-foreground">/{process.unit}</span>}
+                      </td>
                       <td className={`${numericCellClass} font-semibold`}>{formatCurrency(process.cost)}</td>
                     </tr>
                   ))}
@@ -279,8 +305,7 @@ export function CabinetResultPanel({ result }: Props) {
   const drawerPanels = result.internalParts.filter(isDrawerPanel);
   const internalParts = result.internalParts.filter((row) => !isDrawerPanel(row));
   const drawerHardware = result.hardware.filter(isDrawerHardware);
-  const doorProcessRowsByDoorId = buildDoorProcessRows(result.hardware);
-  const doorHardware = result.hardware.filter((row) => isDoorHardware(row) && !isDrawerHardware(row) && !isProfileHandleProcess(row));
+  const doorAttachedRowsByDoorId = buildDoorAttachedRows(result.hardware, result.doors);
   const otherHardware = result.hardware.filter((row) => !isDrawerHardware(row) && !isDoorHardware(row));
 
   return (
@@ -312,10 +337,9 @@ export function CabinetResultPanel({ result }: Props) {
           </div>
         )}
 
-        {(result.doors.length > 0 || doorHardware.length > 0) && (
+        {result.doors.length > 0 && (
           <div className="space-y-3">
-            <BoardTable title="門片" rows={result.doors} processRowsByRowId={doorProcessRowsByDoorId} />
-            <HardwareTable title="門片鉸鏈 / 加工" rows={doorHardware} />
+            <BoardTable title="門片" rows={result.doors} processRowsByRowId={doorAttachedRowsByDoorId} />
           </div>
         )}
 

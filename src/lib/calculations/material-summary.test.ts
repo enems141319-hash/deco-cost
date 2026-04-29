@@ -81,9 +81,10 @@ const doorRowIndex = unitSummary.rows.findIndex((row) => row.id === "door-1");
 assert.notEqual(doorRowIndex, -1);
 assert.equal(unitSummary.rows[doorRowIndex]?.material, "門片板 18mm");
 assert.deepEqual(
-  unitSummary.rows.slice(doorRowIndex + 1, doorRowIndex + 5).map((row) => row.itemName),
-  ["門片對花", "門板鉸鏈孔", "造型把手加工 SFJA", "造型把手長度修改"],
+  unitSummary.rows.slice(doorRowIndex + 1, doorRowIndex + 6).map((row) => row.itemName),
+  ["門片對花", "門板鉸鏈孔", "鉸鏈", "造型把手加工 SFJA", "造型把手長度修改"],
 );
+assert.equal(unitSummary.rows[doorRowIndex + 3]?.category, "門片五金");
 
 assert.equal(unitSummary.hardwareRows.length, 1);
 assert.equal(unitSummary.hardwareRows[0]?.itemName, "鉸鏈");
@@ -140,5 +141,55 @@ assert.equal(
 const leftBackGroove = multiPanelSummary.rows.find((row) => row.id === "unit-1-left:unit-1-left-back-groove");
 assert.equal(leftBackGroove?.quantity, 2);
 assert.equal(leftBackGroove?.subtotal, (leftBackGroove?.unitPrice ?? 0) * 2);
+assert.equal(leftBackGroove?.sourceItemName, "左側板");
+assert.equal(leftBackGroove?.sourceMaterial, "櫃體板 18mm");
+
+const drawerRailMaterial: MaterialRef = {
+  materialId: "drawer-rail",
+  materialName: "抽屜滑軌",
+  unit: "組",
+  pricePerUnit: 180,
+  minCai: null,
+};
+const drawerSummary = buildCabinetUnitMaterialSummary(calculateCabinetUnit({
+  ...baseUnit,
+  doors: [],
+  drawers: [
+    {
+      id: "random-drawer-id",
+      name: "測試抽屜",
+      widthCm: 60,
+      heightCm: 16,
+      depthCm: 45,
+      railLengthCm: 45,
+      grooveSpec: "8.5",
+      quantity: 1,
+      railMaterialRef: drawerRailMaterial,
+      wallMaterialRef: bodyMaterial,
+      bottomMaterialRef: bodyMaterial,
+    },
+  ],
+}), {
+  ...baseUnit,
+  doors: [],
+  drawers: [
+    {
+      id: "random-drawer-id",
+      name: "測試抽屜",
+      widthCm: 60,
+      heightCm: 16,
+      depthCm: 45,
+      railLengthCm: 45,
+      grooveSpec: "8.5",
+      quantity: 1,
+      railMaterialRef: drawerRailMaterial,
+      wallMaterialRef: bodyMaterial,
+      bottomMaterialRef: bodyMaterial,
+    },
+  ],
+});
+assert.equal(drawerSummary.rows.some((row) => row.category === "抽屜板材"), true);
+assert.equal(drawerSummary.rows.some((row) => row.category === "抽屜五金" && row.itemName === "抽屜滑軌"), true);
+assert.equal(drawerSummary.rows.some((row) => row.category === "抽屜加工" && row.note.includes("內側下方打溝")), true);
 
 console.log("material summary tests passed");

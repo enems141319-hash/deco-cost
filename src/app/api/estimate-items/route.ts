@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { estimateLabelOrDefault } from "@/lib/estimate-label";
 import { cabinetProjectInputSchema } from "@/lib/validations/cabinet";
 import { ceilingProjectInputSchema } from "@/lib/validations/ceiling";
 import { calculateCabinetProject } from "@/lib/calculations/cabinet";
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       data: {
         projectId,
         moduleType: "CABINET",
-        label: parsed.data.label ?? "系統櫃",
+        label: estimateLabelOrDefault(parsed.data.label, "系統櫃"),
         sortOrder,
         inputData: parsed.data.units as object[],
         resultData: result as unknown as object,
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
       data: {
         projectId,
         moduleType: "CEILING",
-        label: parsed.data.label ?? "天花板",
+        label: estimateLabelOrDefault(parsed.data.label, "天花板"),
         sortOrder,
         inputData: parsed.data.input as unknown as object,
         resultData: result as unknown as object,

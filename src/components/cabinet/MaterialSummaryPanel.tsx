@@ -7,10 +7,19 @@ import {
   MaterialDetailTable,
   SummaryTotalsBlock,
 } from "@/components/shared/MaterialSummaryTables";
+import type { MaterialSummaryRow } from "@/lib/calculations/material-summary";
 import type { CabinetUnitInput } from "@/types";
 
 interface Props {
   units: CabinetUnitInput[];
+}
+
+function isDoorSummaryRow(row: MaterialSummaryRow): boolean {
+  return row.category === "門片" || row.category === "門片加工" || row.category === "門片五金";
+}
+
+function isDrawerSummaryRow(row: MaterialSummaryRow): boolean {
+  return row.category === "抽屜板材" || row.category === "抽屜加工" || row.category === "抽屜五金";
 }
 
 export function MaterialSummaryPanel({ units }: Props) {
@@ -43,6 +52,9 @@ export function MaterialSummaryPanel({ units }: Props) {
       <div className="min-w-0 space-y-6 p-4">
         {summary.unitSummaries.map((unit) => {
           const input = units.find((item) => item.id === unit.unitId);
+          const bodyRows = unit.rows.filter((row) => !isDoorSummaryRow(row) && !isDrawerSummaryRow(row));
+          const drawerRows = unit.rows.filter(isDrawerSummaryRow);
+          const doorRows = unit.rows.filter(isDoorSummaryRow);
           return (
             <section key={unit.unitId} className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -56,11 +68,28 @@ export function MaterialSummaryPanel({ units }: Props) {
                 </div>
                 <div className="text-sm font-semibold">{formatCurrency(unit.total)}</div>
               </div>
-              <MaterialDetailTable rows={unit.rows} />
+              {bodyRows.length > 0 && (
+                <div className="min-w-0 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">桶身 / 背板 / 內部構件</p>
+                  <MaterialDetailTable rows={bodyRows} />
+                </div>
+              )}
+              {drawerRows.length > 0 && (
+                <div className="min-w-0 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">抽屜 / 抽屜加工 / 抽屜五金</p>
+                  <MaterialDetailTable rows={drawerRows} />
+                </div>
+              )}
+              {doorRows.length > 0 && (
+                <div className="min-w-0 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">門片 / 門片加工 / 門片五金</p>
+                  <MaterialDetailTable rows={doorRows} />
+                </div>
+              )}
               <SummaryTotalsBlock
                 materialCaiTotals={unit.materialCaiTotals}
                 hardwareRows={unit.hardwareRows}
-                processingTotal={unit.processingTotal}
+                processRows={unit.processRows}
               />
             </section>
           );
@@ -74,7 +103,7 @@ export function MaterialSummaryPanel({ units }: Props) {
           <SummaryTotalsBlock
             materialCaiTotals={summary.materialCaiTotals}
             hardwareRows={summary.hardwareRows}
-            processingTotal={summary.processingTotal}
+            processRows={summary.processRows}
           />
         </section>
       </div>

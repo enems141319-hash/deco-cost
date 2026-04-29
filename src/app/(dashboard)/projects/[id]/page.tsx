@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireCurrentUserId } from "@/lib/current-user";
+import { displayEstimateLabel } from "@/lib/estimate-label";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,7 +130,9 @@ export default async function ProjectDetailPage({
                       <Badge variant={moduleInfo.color} className="text-xs">
                         {moduleInfo.label}
                       </Badge>
-                      <span className="font-medium text-sm">{item.label}</span>
+                      <span className="font-medium text-sm">
+                        {displayEstimateLabel(item.label, moduleInfo.label)}
+                      </span>
                     </div>
                     {summaryLine && (
                       <p className="text-xs text-muted-foreground">{summaryLine}</p>

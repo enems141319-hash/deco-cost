@@ -23,9 +23,12 @@ interface Props {
   onResult?: (result: CabinetUnitResult) => void;
 }
 
+const MIN_INPUT_WIDTH_PCT = 30;
+const MAX_INPUT_WIDTH_PCT = 70;
+
 export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [inputWidthPct, setInputWidthPct] = useState(55);
+  const [inputWidthPct, setInputWidthPct] = useState(MIN_INPUT_WIDTH_PCT);
   const update = (patch: Partial<CabinetUnitInput>) => onChange({ ...unit, ...patch });
 
   const result = calculateCabinetUnit(unit);
@@ -43,7 +46,7 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
     const resize = (moveEvent: PointerEvent) => {
       const rect = container.getBoundingClientRect();
       const next = ((moveEvent.clientX - rect.left) / rect.width) * 100;
-      setInputWidthPct(Math.min(70, Math.max(30, next)));
+      setInputWidthPct(Math.min(MAX_INPUT_WIDTH_PCT, Math.max(MIN_INPUT_WIDTH_PCT, next)));
     };
 
     const stopResize = () => {

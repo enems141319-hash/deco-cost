@@ -33,12 +33,17 @@ export default async function CabinetEstimatePage({
 
   // 若帶了 itemId，載入既有估價
   let initialUnits: CabinetUnitInput[] | undefined;
+  let initialLabel: string | null = null;
+  let estimateItemId: string | undefined;
   if (itemId) {
     const item = await prisma.estimateItem.findFirst({
       where: { id: itemId, projectId, moduleType: "CABINET" },
     });
+    if (!item) notFound();
     if (item) {
       initialUnits = item.inputData as unknown as CabinetUnitInput[];
+      initialLabel = item.label;
+      estimateItemId = item.id;
     }
   }
 
@@ -58,7 +63,12 @@ export default async function CabinetEstimatePage({
         </p>
       </div>
 
-      <CabinetUnitList projectId={projectId} initialUnits={initialUnits} />
+      <CabinetUnitList
+        projectId={projectId}
+        itemId={estimateItemId}
+        initialLabel={initialLabel}
+        initialUnits={initialUnits}
+      />
     </div>
   );
 }

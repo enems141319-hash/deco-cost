@@ -282,11 +282,26 @@ export function DoorForm({ doors, onChange }: Props) {
                 <Label className="text-[10px] text-muted-foreground">
                   推拉門五金
                 </Label>
-                <MaterialDropdown
-                  value={door.railMaterialRef ?? null}
-                  onChange={(ref) => update(i, { railMaterialRef: ref })}
-                  categoryFilter="HARDWARE_OTHER"
-                />
+                <div className="mt-1 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                  <MaterialDropdown
+                    value={door.railMaterialRef ?? null}
+                    onChange={(ref) => update(i, { railMaterialRef: ref })}
+                    categoryFilter="HARDWARE_OTHER"
+                    fixedBrandFilter="推拉門五金"
+                    placeholder="選擇推拉門五金"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    disabled={!door.railMaterialRef}
+                    onClick={() => update(i, { railMaterialRef: null })}
+                    aria-label="刪除推拉門五金"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             )}
           </div>

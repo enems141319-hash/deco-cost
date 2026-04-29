@@ -63,11 +63,26 @@ function mergeHardwareRows(rows: MaterialSummaryRow[]): MaterialSummaryRow[] {
   return Array.from(map.values());
 }
 
+function mergeProcessRows(rows: MaterialSummaryRow[]): MaterialSummaryRow[] {
+  const map = new Map<string, MaterialSummaryRow>();
+  for (const row of rows) {
+    const key = [row.itemName, row.note, row.unitPrice].join("|");
+    const existing = map.get(key);
+    if (existing) {
+      existing.quantity = (existing.quantity ?? 0) + (row.quantity ?? 0);
+      existing.subtotal = (existing.subtotal ?? 0) + (row.subtotal ?? 0);
+      continue;
+    }
+    map.set(key, { ...row, id: `project-process:${key}` });
+  }
+  return Array.from(map.values());
+}
+
 function combinedProjectSummary(summaries: CabinetProjectMaterialSummary[]) {
   const materialCaiTotals = mergeMaterialCaiTotals(summaries.flatMap((summary) => summary.materialCaiTotals));
   const hardwareRows = mergeHardwareRows(summaries.flatMap((summary) => summary.hardwareRows));
-  const processingTotal = summaries.reduce((sum, summary) => sum + summary.processingTotal, 0);
-  return { materialCaiTotals, hardwareRows, processingTotal };
+  const processRows = mergeProcessRows(summaries.flatMap((summary) => summary.processRows));
+  return { materialCaiTotals, hardwareRows, processRows };
 }
 
 export function ProjectCostBreakdown({ items, grandTotal }: Props) {
@@ -109,7 +124,7 @@ export function ProjectCostBreakdown({ items, grandTotal }: Props) {
       <SummaryTotalsBlock
         materialCaiTotals={projectSummary.materialCaiTotals}
         hardwareRows={projectSummary.hardwareRows}
-        processingTotal={projectSummary.processingTotal}
+        processRows={projectSummary.processRows}
         layout="stacked"
       />
     </div>
