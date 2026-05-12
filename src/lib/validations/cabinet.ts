@@ -36,6 +36,19 @@ export const middleDividerAddonsSchema = z.object({
   }).default({ side: "none", offsetFromFrontMm: 50 }),
 });
 
+export const specialProcessSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(["roundCorner", "cutCorner", "outerShape", "innerCutout"]),
+  label: z.string().default(""),
+  edgeBanding: z.enum(["none", "withEdge"]).default("withEdge"),
+  quantity: z.number().int().positive().default(1),
+  dimensionSumMm: z.number().positive().optional(),
+  radiusMm: z.number().positive().optional(),
+  radiusMode: z.enum(["factory", "custom"]).default("factory").optional(),
+  sharpCornerGte90Count: z.number().int().nonnegative().default(0).optional(),
+  sharpCornerLt90Count: z.number().int().nonnegative().default(0).optional(),
+});
+
 export const doorAddonsSchema = z.object({
   patternMatch: z.enum(["none", "grain"]),
   temperedGlass: z.boolean(),
@@ -85,6 +98,7 @@ export const middleDividerSchema = z.object({
     doubleDrillHoles: false,
     nonStandardHoles: false,
   }),
+  specialProcesses: z.array(specialProcessSchema).default([]),
 });
 
 export const shelfSchema = z.object({
@@ -100,6 +114,7 @@ export const shelfSchemaWithLightGroove = shelfSchema.extend({
     side: z.enum(["none", "top", "bottom"]).default("none"),
     offsetFromFrontMm: z.number().nonnegative().default(50),
   }).default({ side: "none", offsetFromFrontMm: 50 }),
+  specialProcesses: z.array(specialProcessSchema).default([]),
 });
 
 export const kickPlateSchema = z.object({

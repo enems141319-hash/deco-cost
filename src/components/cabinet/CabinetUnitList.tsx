@@ -64,10 +64,12 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
           offsetFromFrontMm: divider.addons?.lightGroove?.offsetFromFrontMm ?? DEFAULT_MIDDLE_DIVIDER_ADDONS.lightGroove!.offsetFromFrontMm,
         },
       },
+      specialProcesses: divider.specialProcesses ?? [],
     })),
     shelves: (unit.shelves ?? []).map((shelf) => ({
       ...shelf,
       lightGroove: shelf.lightGroove ?? { side: "none", offsetFromFrontMm: 50 },
+      specialProcesses: shelf.specialProcesses ?? [],
     })),
     drawers: (unit.drawers ?? []).map((drawer) => ({
       ...drawer,

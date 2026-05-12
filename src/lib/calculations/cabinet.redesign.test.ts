@@ -451,4 +451,121 @@ assert.deepEqual(
   ],
 );
 
+const specialProcessingResult = calculateCabinetUnit({
+  ...baseUnit,
+  shelves: [
+    {
+      id: "shape-shelf",
+      widthCm: 80,
+      depthCm: 40,
+      quantity: 2,
+      materialRef: bodyMaterial,
+      lightGroove: { side: "none", offsetFromFrontMm: 50 },
+      specialProcesses: [
+        {
+          id: "outer-1",
+          kind: "outerShape",
+          label: "L型",
+          edgeBanding: "withEdge",
+          dimensionSumMm: 1200,
+          quantity: 1,
+        },
+        {
+          id: "inner-1",
+          kind: "innerCutout",
+          label: "開圓孔",
+          edgeBanding: "none",
+          dimensionSumMm: 800,
+          quantity: 2,
+        },
+        {
+          id: "cut-1",
+          kind: "cutCorner",
+          label: "切角",
+          edgeBanding: "withEdge",
+          dimensionSumMm: 500,
+          quantity: 1,
+        },
+        {
+          id: "round-1",
+          kind: "roundCorner",
+          label: "導圓 R80",
+          edgeBanding: "withEdge",
+          radiusMm: 80,
+          radiusMode: "factory",
+          quantity: 1,
+        },
+      ],
+    },
+  ],
+});
+const specialShelf = specialProcessingResult.internalParts.find((part) => part.id === "shape-shelf");
+assert.deepEqual(
+  specialShelf?.processes
+    .filter((process) => process.id.includes("special"))
+    .map((process) => ({
+      label: process.label,
+      quantity: process.quantity,
+      unitCost: process.unitCost,
+      cost: process.cost,
+    })),
+  [
+    { label: "板外造型加工-L型 A+B 1200mm 有封邊", quantity: 2, unitCost: 750, cost: 1500 },
+    { label: "板內開孔加工-開圓孔 A+B 800mm 不封邊", quantity: 4, unitCost: 400, cost: 1600 },
+    { label: "切角加工-切角 A+B 500mm 有封邊", quantity: 2, unitCost: 400, cost: 800 },
+    { label: "導圓加工-導圓 R80 廠模", quantity: 2, unitCost: 400, cost: 800 },
+  ],
+);
+assert.equal(specialShelf?.addonsCost, 4700);
+assert.equal(specialProcessingResult.summary.addonsBreakdown.specialProcessing, 4700);
+
+const roundCornerDiscountResult = calculateCabinetUnit({
+  ...baseUnit,
+  shelves: [
+    {
+      id: "round-discount-shelf",
+      widthCm: 80,
+      depthCm: 40,
+      quantity: 1,
+      materialRef: bodyMaterial,
+      lightGroove: { side: "none", offsetFromFrontMm: 50 },
+      specialProcesses: [
+        {
+          id: "round-a",
+          kind: "roundCorner",
+          label: "R80",
+          edgeBanding: "withEdge",
+          radiusMm: 80,
+          radiusMode: "factory",
+          quantity: 1,
+        },
+        {
+          id: "round-b",
+          kind: "roundCorner",
+          label: "R80",
+          edgeBanding: "withEdge",
+          radiusMm: 80,
+          radiusMode: "factory",
+          quantity: 1,
+        },
+      ],
+    },
+  ],
+});
+const roundDiscountProcesses = roundCornerDiscountResult.internalParts
+  .find((part) => part.id === "round-discount-shelf")
+  ?.processes.filter((process) => process.id.includes("special"));
+assert.deepEqual(
+  roundDiscountProcesses?.map((process) => ({
+    quantity: process.quantity,
+    unitCost: process.unitCost,
+    cost: process.cost,
+  })),
+  [
+    { quantity: 1, unitCost: 400, cost: 400 },
+    { quantity: 1, unitCost: 300, cost: 300 },
+  ],
+);
+assert.equal(roundCornerDiscountResult.summary.addonsBreakdown.specialProcessing, 700);
+
 console.log("cabinet redesign calculation tests passed");

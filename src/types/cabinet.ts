@@ -54,6 +54,23 @@ export interface MiddleDividerAddons {
   lightGroove?: MiddleDividerLightGroove;
 }
 
+export type SpecialProcessKind = "roundCorner" | "cutCorner" | "outerShape" | "innerCutout";
+export type SpecialProcessEdgeBanding = "none" | "withEdge";
+export type SpecialProcessRadiusMode = "factory" | "custom";
+
+export interface SpecialProcessInput {
+  id: string;
+  kind: SpecialProcessKind;
+  label: string;
+  edgeBanding: SpecialProcessEdgeBanding;
+  quantity: number;
+  dimensionSumMm?: number;
+  radiusMm?: number;
+  radiusMode?: SpecialProcessRadiusMode;
+  sharpCornerGte90Count?: number;
+  sharpCornerLt90Count?: number;
+}
+
 export interface DoorAddons {
   patternMatch: "none" | "grain";
   temperedGlass: boolean;
@@ -122,6 +139,7 @@ export interface MiddleDividerInput {
   quantity: number;
   materialRef: MaterialRef | null;
   addons: MiddleDividerAddons;
+  specialProcesses?: SpecialProcessInput[];
 }
 
 export interface ShelfInput {
@@ -131,6 +149,7 @@ export interface ShelfInput {
   quantity: number;
   materialRef: MaterialRef | null;
   lightGroove?: ShelfLightGroove;
+  specialProcesses?: SpecialProcessInput[];
 }
 
 export interface KickPlateInput {
@@ -265,6 +284,7 @@ export interface AddonsBreakdown {
   hingeHoleDrilling: number;
   backPanelGroove: number;
   lightGroove: number;
+  specialProcessing: number;
 }
 
 export interface CabinetUnitResult {

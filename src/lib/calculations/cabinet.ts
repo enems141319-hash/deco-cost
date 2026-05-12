@@ -1,7 +1,7 @@
 // src/lib/calculations/cabinet.ts
 // 純函式：零 UI 依賴、零副作用。
 
-import { ADDON_PRICES, UNIT_CONFIG } from "../config/units";
+import { ADDON_PRICES, SPECIAL_PROCESSING_PRICES, UNIT_CONFIG } from "../config/units";
 import { DEFAULT_DOOR_ADDONS } from "../../types";
 import type {
   AccessoryResult,
@@ -17,6 +17,7 @@ import type {
   MaterialRef,
   PanelProcessResult,
   PanelResult,
+  SpecialProcessInput,
   UnitAddons,
 } from "../../types";
 
@@ -63,6 +64,7 @@ function emptyBreakdown(): AddonsBreakdown {
     hingeHoleDrilling: 0,
     backPanelGroove: 0,
     lightGroove: 0,
+    specialProcessing: 0,
   };
 }
 
@@ -131,6 +133,181 @@ function materialThicknessCm(materialRef: MaterialRef | null): number {
   return Number(match[1]) / 10;
 }
 
+type ThicknessPriceGroup = "EIGHT_MM" | "THIN" | "THICK";
+type SizeTier = "UNDER_900" | "UNDER_1500" | "UNDER_2400";
+
+function materialThicknessMm(materialRef: MaterialRef | null): number {
+  return materialThicknessCm(materialRef) * 10;
+}
+
+function thicknessPriceGroup(materialRef: MaterialRef | null): ThicknessPriceGroup {
+  const thicknessMm = materialThicknessMm(materialRef);
+  if (thicknessMm === 8) return "EIGHT_MM";
+  if (thicknessMm >= 40) return "THICK";
+  return "THIN";
+}
+
+function sizeTier(dimensionSumMm: number): SizeTier | null {
+  if (dimensionSumMm <= 900) return "UNDER_900";
+  if (dimensionSumMm <= 1500) return "UNDER_1500";
+  if (dimensionSumMm <= 2400) return "UNDER_2400";
+  return null;
+}
+
+function priceForGroup(prices: Partial<Record<ThicknessPriceGroup, number>>, group: ThicknessPriceGroup): number {
+  return prices[group] ?? prices.THIN ?? 0;
+}
+
+function calcSpecialProcessUnitCost(process: SpecialProcessInput, materialRef: MaterialRef | null): number | null {
+  const group = thicknessPriceGroup(materialRef);
+
+  if (process.kind === "roundCorner") {
+    const radiusMm = process.radiusMm ?? 0;
+    const mode = process.radiusMode ?? "factory";
+    if (mode === "factory") {
+      const prices = radiusMm <= 50
+        ? SPECIAL_PROCESSING_PRICES.ROUND_CORNER.FACTORY_SMALL
+        : SPECIAL_PROCESSING_PRICES.ROUND_CORNER.FACTORY_LARGE;
+      return priceForGroup(prices, group);
+    }
+    if (radiusMm <= 450) return priceForGroup(SPECIAL_PROCESSING_PRICES.ROUND_CORNER.CUSTOM_450, group);
+    if (radiusMm <= 750) return priceForGroup(SPECIAL_PROCESSING_PRICES.ROUND_CORNER.CUSTOM_750, group);
+    if (radiusMm <= 1200) return priceForGroup(SPECIAL_PROCESSING_PRICES.ROUND_CORNER.CUSTOM_1200, group);
+    return null;
+  }
+
+  const dimensionSumMm = process.dimensionSumMm ?? 0;
+  if (process.kind === "cutCorner") {
+    if (dimensionSumMm <= 600) return priceForGroup(SPECIAL_PROCESSING_PRICES.CUT_CORNER_UNDER_600, group);
+    const tier = sizeTier(dimensionSumMm);
+    return tier ? priceForGroup(SPECIAL_PROCESSING_PRICES.OUTER_SHAPE.WITH_EDGE[tier], group) : null;
+  }
+
+  const tier = sizeTier(dimensionSumMm);
+  if (!tier) return null;
+
+  if (process.kind === "outerShape") {
+    const table = process.edgeBanding === "withEdge"
+      ? SPECIAL_PROCESSING_PRICES.OUTER_SHAPE.WITH_EDGE
+      : SPECIAL_PROCESSING_PRICES.OUTER_SHAPE.NO_EDGE;
+    return priceForGroup(table[tier], group);
+  }
+
+  const table = process.edgeBanding === "withEdge"
+    ? SPECIAL_PROCESSING_PRICES.INNER_CUTOUT.WITH_EDGE
+    : SPECIAL_PROCESSING_PRICES.INNER_CUTOUT.NO_EDGE;
+  return priceForGroup(table[tier], group);
+}
+
+function specialProcessKindLabel(kind: SpecialProcessInput["kind"]): string {
+  if (kind === "roundCorner") return "導圓加工";
+  if (kind === "cutCorner") return "切角加工";
+  if (kind === "outerShape") return "板外造型加工";
+  return "板內開孔加工";
+}
+
+function specialProcessLabel(process: SpecialProcessInput, unitCost: number | null): string {
+  const label = process.label || specialProcessKindLabel(process.kind);
+  if (unitCost === null) return `${specialProcessKindLabel(process.kind)}-${label} 需另詢價`;
+  if (process.kind === "roundCorner") {
+    const mode = (process.radiusMode ?? "factory") === "factory" ? "廠模" : "客製";
+    const radius = process.radiusMm && !label.includes(`R${process.radiusMm}`) ? ` R${process.radiusMm}` : "";
+    return `${specialProcessKindLabel(process.kind)}-${label}${radius} ${mode}`;
+  }
+  const edge = process.edgeBanding === "withEdge" ? "有封邊" : "不封邊";
+  return `${specialProcessKindLabel(process.kind)}-${label} A+B ${process.dimensionSumMm ?? 0}mm ${edge}`;
+}
+
+function calcSharpCornerCost(process: SpecialProcessInput, materialRef: MaterialRef | null): number {
+  const gte90Count = process.sharpCornerGte90Count ?? 0;
+  const lt90Count = process.sharpCornerLt90Count ?? 0;
+  if (gte90Count <= 0 && lt90Count <= 0) return 0;
+
+  const isThick = materialThicknessMm(materialRef) > 26;
+  const gte90Price = isThick
+    ? SPECIAL_PROCESSING_PRICES.SHARP_CORNER.GT_26MM_GTE_90
+    : SPECIAL_PROCESSING_PRICES.SHARP_CORNER.LE_26MM_GTE_90;
+  const lt90Price = isThick
+    ? SPECIAL_PROCESSING_PRICES.SHARP_CORNER.GT_26MM_LT_90
+    : SPECIAL_PROCESSING_PRICES.SHARP_CORNER.LE_26MM_LT_90;
+  return gte90Count * gte90Price + lt90Count * lt90Price;
+}
+
+function roundCornerDiscountKey(process: SpecialProcessInput, materialRef: MaterialRef | null): string {
+  return [
+    process.kind,
+    process.radiusMode ?? "factory",
+    process.radiusMm ?? 0,
+    thicknessPriceGroup(materialRef),
+  ].join("|");
+}
+
+function specialProcesses(
+  parentId: string,
+  materialRef: MaterialRef | null,
+  parentQuantity: number,
+  processes: SpecialProcessInput[] | undefined,
+): PanelProcessResult[] {
+  const roundCornerCounts = new Map<string, number>();
+
+  return (processes ?? []).flatMap((process) => {
+    const unitCost = calcSpecialProcessUnitCost(process, materialRef);
+    const sharpCornerCost = calcSharpCornerCost(process, materialRef);
+    const processQuantityPerBoard = Math.max(1, process.quantity);
+    const label = specialProcessLabel(process, unitCost);
+
+    if (process.kind === "roundCorner" && unitCost !== null) {
+      const discountKey = roundCornerDiscountKey(process, materialRef);
+      const previousCountPerBoard = roundCornerCounts.get(discountKey) ?? 0;
+      roundCornerCounts.set(discountKey, previousCountPerBoard + processQuantityPerBoard);
+
+      const fullPriceQuantityPerBoard = previousCountPerBoard === 0 ? 1 : 0;
+      const discountedQuantityPerBoard = processQuantityPerBoard - fullPriceQuantityPerBoard;
+      const rows: PanelProcessResult[] = [];
+
+      if (fullPriceQuantityPerBoard > 0) {
+        const quantity = fullPriceQuantityPerBoard * parentQuantity;
+        const totalUnitCost = unitCost + sharpCornerCost;
+        rows.push({
+          id: `${parentId}-special-${process.id}`,
+          label,
+          quantity,
+          unitCost: totalUnitCost,
+          cost: totalUnitCost * quantity,
+          includedInSubtotal: true,
+        });
+      }
+
+      if (discountedQuantityPerBoard > 0) {
+        const quantity = discountedQuantityPerBoard * parentQuantity;
+        const discountedUnitCost = Math.max(0, unitCost - 100);
+        const totalUnitCost = discountedUnitCost + sharpCornerCost;
+        rows.push({
+          id: `${parentId}-special-${process.id}-discount`,
+          label,
+          quantity,
+          unitCost: totalUnitCost,
+          cost: totalUnitCost * quantity,
+          includedInSubtotal: true,
+        });
+      }
+
+      return rows;
+    }
+
+    const quantity = processQuantityPerBoard * parentQuantity;
+    const totalUnitCost = (unitCost ?? 0) + sharpCornerCost;
+    return {
+      id: `${parentId}-special-${process.id}`,
+      label,
+      quantity,
+      unitCost: totalUnitCost,
+      cost: totalUnitCost * quantity,
+      includedInSubtotal: true,
+    };
+  });
+}
+
 function calcPanelSubtotal(area: AreaMeasure, materialRef: MaterialRef | null): number {
   if (!materialRef) return 0;
   if (materialRef.unit === "才") {
@@ -180,6 +357,7 @@ function buildPanelResult(params: {
   isAutoGenerated: boolean;
   addonPricePerCai?: number;
   extraAddonCost?: number;
+  lightGrooveCost?: number;
   billableMinCai?: number | null;
   processes?: PanelProcessResult[];
   note?: string;
@@ -194,6 +372,7 @@ function buildPanelResult(params: {
     isAutoGenerated,
     addonPricePerCai = 0,
     extraAddonCost = 0,
+    lightGrooveCost = 0,
     billableMinCai,
     processes = [],
     note,
@@ -228,7 +407,7 @@ function buildPanelResult(params: {
     unitCost: materialRef?.pricePerUnit ?? 0,
     subtotal,
     addonsCost,
-    lightGrooveCost: extraAddonCost,
+    lightGrooveCost,
     processes,
     isAutoGenerated,
     note,
@@ -252,15 +431,15 @@ function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelRes
   const sideLightGrooveNote = sideLightGroove?.enabled ? lightGrooveNote("側板內側", sideLightGroove.offsetFromFrontMm) : undefined;
 
   const panels: PanelResult[] = [
-    buildPanelResult({ id: `${id}-left`, name: "左側板", widthCm: heightCm, heightCm: depthCm, quantity: unitQty, materialRef: panelMaterialRef, isAutoGenerated: true, addonPricePerCai: frontEdgeAddon, extraAddonCost: sideLightGrooveCost, note: joinNotes(backPanelGrooveNote, sideLightGrooveNote), processes: [
+    buildPanelResult({ id: `${id}-left`, name: "左側板", widthCm: heightCm, heightCm: depthCm, quantity: unitQty, materialRef: panelMaterialRef, isAutoGenerated: true, addonPricePerCai: frontEdgeAddon, extraAddonCost: sideLightGrooveCost, lightGrooveCost: sideLightGrooveCost, note: joinNotes(backPanelGrooveNote, sideLightGrooveNote), processes: [
       ...(backPanelGrooveNote ? [panelProcess(`${id}-left-back-groove`, backPanelGrooveNote, backPanelGrooveCostPerLine, false)] : []),
       ...(sideLightGrooveNote ? [lightGrooveProcess(`${id}-left-light-groove`, sideLightGrooveNote, heightCm, unitQty)] : []),
     ] }),
-    buildPanelResult({ id: `${id}-right`, name: "右側板", widthCm: heightCm, heightCm: depthCm, quantity: unitQty, materialRef: panelMaterialRef, isAutoGenerated: true, addonPricePerCai: frontEdgeAddon, extraAddonCost: sideLightGrooveCost, note: joinNotes(backPanelGrooveNote, sideLightGrooveNote), processes: [
+    buildPanelResult({ id: `${id}-right`, name: "右側板", widthCm: heightCm, heightCm: depthCm, quantity: unitQty, materialRef: panelMaterialRef, isAutoGenerated: true, addonPricePerCai: frontEdgeAddon, extraAddonCost: sideLightGrooveCost, lightGrooveCost: sideLightGrooveCost, note: joinNotes(backPanelGrooveNote, sideLightGrooveNote), processes: [
       ...(backPanelGrooveNote ? [panelProcess(`${id}-right-back-groove`, backPanelGrooveNote, backPanelGrooveCostPerLine, false)] : []),
       ...(sideLightGrooveNote ? [lightGrooveProcess(`${id}-right-light-groove`, sideLightGrooveNote, heightCm, unitQty)] : []),
     ] }),
-    buildPanelResult({ id: `${id}-top`, name: "頂板", widthCm: topBottomWidthCm, heightCm: depthCm, quantity: unitQty, materialRef: panelMaterialRef, isAutoGenerated: true, addonPricePerCai: frontEdgeAddon, extraAddonCost: topLightGrooveCost, note: joinNotes(backPanelGrooveNote, topLightGrooveNote), processes: [
+    buildPanelResult({ id: `${id}-top`, name: "頂板", widthCm: topBottomWidthCm, heightCm: depthCm, quantity: unitQty, materialRef: panelMaterialRef, isAutoGenerated: true, addonPricePerCai: frontEdgeAddon, extraAddonCost: topLightGrooveCost, lightGrooveCost: topLightGrooveCost, note: joinNotes(backPanelGrooveNote, topLightGrooveNote), processes: [
       ...(backPanelGrooveNote ? [panelProcess(`${id}-top-back-groove`, backPanelGrooveNote, backPanelGrooveCostPerLine, false)] : []),
       ...(topLightGrooveNote ? [lightGrooveProcess(`${id}-top-light-groove`, topLightGrooveNote, topBottomWidthCm, unitQty)] : []),
     ] }),
@@ -292,6 +471,8 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
     const dividerLightGrooveNote = dividerLightGroove && dividerLightGroove.side !== "none"
       ? lightGrooveNote(dividerLightGroove.side === "left" ? "左側" : "右側", dividerLightGroove.offsetFromFrontMm)
       : undefined;
+    const dividerSpecialProcesses = specialProcesses(d.id, d.materialRef, d.quantity * unitQty, d.specialProcesses);
+    const dividerSpecialCost = dividerSpecialProcesses.reduce((sum, process) => sum + process.cost, 0);
     parts.push(buildPanelResult({
       id: d.id,
       name: "中隔板",
@@ -301,11 +482,15 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
       materialRef: d.materialRef,
       isAutoGenerated: false,
       addonPricePerCai: frontEdgeAddon + dividerAddon,
-      extraAddonCost: dividerLightGrooveCost,
+      extraAddonCost: dividerLightGrooveCost + dividerSpecialCost,
+      lightGrooveCost: dividerLightGrooveCost,
       note: dividerLightGrooveNote,
-      processes: dividerLightGrooveNote
-        ? [lightGrooveProcess(`${d.id}-light-groove`, dividerLightGrooveNote, d.heightCm, d.quantity * unitQty)]
-        : [],
+      processes: [
+        ...(dividerLightGrooveNote
+          ? [lightGrooveProcess(`${d.id}-light-groove`, dividerLightGrooveNote, d.heightCm, d.quantity * unitQty)]
+          : []),
+        ...dividerSpecialProcesses,
+      ],
     }));
   }
 
@@ -317,20 +502,27 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
     const shelfLightGrooveNote = shelfLightGroove && shelfLightGroove.side !== "none"
       ? lightGrooveNote(shelfLightGroove.side === "top" ? "上面" : "下面", shelfLightGroove.offsetFromFrontMm)
       : undefined;
+    const shelfQuantity = s.quantity * unitQty;
+    const shelfSpecialProcesses = specialProcesses(s.id, s.materialRef, shelfQuantity, s.specialProcesses);
+    const shelfSpecialCost = shelfSpecialProcesses.reduce((sum, process) => sum + process.cost, 0);
     parts.push(buildPanelResult({
       id: s.id,
       name: "層板",
       widthCm: s.widthCm,
       heightCm: s.depthCm,
-      quantity: s.quantity * unitQty,
+      quantity: shelfQuantity,
       materialRef: s.materialRef,
       isAutoGenerated: false,
       addonPricePerCai: frontEdgeAddon,
-      extraAddonCost: shelfLightGrooveCost,
+      extraAddonCost: shelfLightGrooveCost + shelfSpecialCost,
+      lightGrooveCost: shelfLightGrooveCost,
       note: shelfLightGrooveNote,
-      processes: shelfLightGrooveNote
-        ? [lightGrooveProcess(`${s.id}-light-groove`, shelfLightGrooveNote, s.widthCm, s.quantity * unitQty)]
-        : [],
+      processes: [
+        ...(shelfLightGrooveNote
+          ? [lightGrooveProcess(`${s.id}-light-groove`, shelfLightGrooveNote, s.widthCm, shelfQuantity)]
+          : []),
+        ...shelfSpecialProcesses,
+      ],
     }));
   }
 
@@ -672,7 +864,13 @@ function buildSummary(
   const hardwareCost = hardware.reduce((acc, h) => acc + h.subtotal, 0);
   const accessoriesCost = accessories.reduce((acc, a) => acc + a.subtotal, 0);
   const lightGroove = allPanels.reduce((acc, p) => acc + p.lightGrooveCost, 0);
-  const frontEdgeABS = allPanels.reduce((acc, p) => acc + p.addonsCost - p.lightGrooveCost, 0);
+  const specialProcessing = allPanels.reduce(
+    (acc, p) => acc + (p.processes ?? [])
+      .filter((process) => process.id.includes("-special-") && process.includedInSubtotal)
+      .reduce((sum, process) => sum + process.cost, 0),
+    0,
+  );
+  const frontEdgeABS = allPanels.reduce((acc, p) => acc + p.addonsCost - p.lightGrooveCost, 0) - specialProcessing;
   const backPanelQuantity = panels.find((p) => p.id.endsWith("-back"))?.quantity ?? 0;
   const backPanelGroove = backPanelQuantity * UNIT_CONFIG.BACK_PANEL_GROOVE_LINES * UNIT_CONFIG.BACK_PANEL_GROOVE_COST_PER_LINE;
   const addonsBreakdown: AddonsBreakdown = {
@@ -683,6 +881,7 @@ function buildSummary(
     hingeHoleDrilling: doorAddonsBreakdown.hingeHoleDrilling,
     backPanelGroove,
     lightGroove,
+    specialProcessing,
   };
   const addonsCost = Object.values(addonsBreakdown).reduce((acc, n) => acc + n, 0);
   const boardBackingCost = panels.filter((p) => p.name === "背板").reduce((acc, p) => acc + p.subtotal, 0);

@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { generateId } from "@/lib/utils";
 import { DEFAULT_MIDDLE_DIVIDER_ADDONS, type MiddleDividerInput, type ShelfInput } from "@/types";
+import { SpecialProcessesForm } from "./SpecialProcessesForm";
 
 interface Props {
   middleDividers: MiddleDividerInput[];
@@ -34,6 +35,7 @@ export function InternalPartsForm({ middleDividers, shelves, onMiddleDividersCha
         quantity: 1,
         materialRef: null,
         addons: defaultDividerAddons,
+        specialProcesses: [],
       },
     ]);
 
@@ -46,7 +48,7 @@ export function InternalPartsForm({ middleDividers, shelves, onMiddleDividersCha
   const addShelf = () =>
     onShelvesChange([
       ...shelves,
-      { id: generateId(), widthCm: 60, depthCm: 35, quantity: 1, materialRef: null, lightGroove: { side: "none", offsetFromFrontMm: 50 } },
+      { id: generateId(), widthCm: 60, depthCm: 35, quantity: 1, materialRef: null, lightGroove: { side: "none", offsetFromFrontMm: 50 }, specialProcesses: [] },
     ]);
 
   const updateShelf = (i: number, patch: Partial<ShelfInput>) =>
@@ -170,6 +172,10 @@ export function InternalPartsForm({ middleDividers, shelves, onMiddleDividersCha
                 </div>
               )}
             </div>
+            <SpecialProcessesForm
+              value={d.specialProcesses ?? []}
+              onChange={(specialProcesses) => updateDivider(i, { specialProcesses })}
+            />
           </div>
         ))}
       </div>
@@ -252,6 +258,10 @@ export function InternalPartsForm({ middleDividers, shelves, onMiddleDividersCha
                 </div>
               )}
             </div>
+            <SpecialProcessesForm
+              value={s.specialProcesses ?? []}
+              onChange={(specialProcesses) => updateShelf(i, { specialProcesses })}
+            />
           </div>
         ))}
       </div>
