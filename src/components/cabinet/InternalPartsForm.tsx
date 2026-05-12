@@ -9,17 +9,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { generateId } from "@/lib/utils";
-import { DEFAULT_MIDDLE_DIVIDER_ADDONS, type MiddleDividerInput, type ShelfInput } from "@/types";
+import { DEFAULT_MIDDLE_DIVIDER_ADDONS, type MiddleDividerInput, type ShelfInput, type SideTopBottomSealPanelInput } from "@/types";
 import { SpecialProcessesForm } from "./SpecialProcessesForm";
 
 interface Props {
   middleDividers: MiddleDividerInput[];
   shelves: ShelfInput[];
+  sideTopBottomSealPanels: SideTopBottomSealPanelInput[];
   onMiddleDividersChange: (v: MiddleDividerInput[]) => void;
   onShelvesChange: (v: ShelfInput[]) => void;
+  onSideTopBottomSealPanelsChange: (v: SideTopBottomSealPanelInput[]) => void;
 }
 
-export function InternalPartsForm({ middleDividers, shelves, onMiddleDividersChange, onShelvesChange }: Props) {
+export function InternalPartsForm({
+  middleDividers,
+  shelves,
+  sideTopBottomSealPanels,
+  onMiddleDividersChange,
+  onShelvesChange,
+  onSideTopBottomSealPanelsChange,
+}: Props) {
   const defaultDividerAddons = {
     ...DEFAULT_MIDDLE_DIVIDER_ADDONS,
     lightGroove: DEFAULT_MIDDLE_DIVIDER_ADDONS.lightGroove ?? { side: "none", offsetFromFrontMm: 50 },
@@ -57,18 +66,30 @@ export function InternalPartsForm({ middleDividers, shelves, onMiddleDividersCha
   const removeShelf = (i: number) =>
     onShelvesChange(shelves.filter((_, idx) => idx !== i));
 
+  const addSideTopBottomSealPanel = () =>
+    onSideTopBottomSealPanelsChange([
+      ...sideTopBottomSealPanels,
+      { id: generateId(), name: "側/頂/底封板", widthCm: 60, heightCm: 35, quantity: 1, materialRef: null },
+    ]);
+
+  const updateSideTopBottomSealPanel = (i: number, patch: Partial<SideTopBottomSealPanelInput>) =>
+    onSideTopBottomSealPanelsChange(sideTopBottomSealPanels.map((panel, idx) => (idx === i ? { ...panel, ...patch } : panel)));
+
+  const removeSideTopBottomSealPanel = (i: number) =>
+    onSideTopBottomSealPanelsChange(sideTopBottomSealPanels.filter((_, idx) => idx !== i));
+
   return (
     <div className="space-y-4">
-      {/* 中隔板 */}
+      {/* 中立板 */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-sm font-semibold">中隔板</Label>
+          <Label className="text-sm font-semibold">中立板</Label>
           <Button type="button" variant="outline" size="sm" onClick={addDivider}>
             <Plus className="h-3 w-3 mr-1" />新增
           </Button>
         </div>
         {middleDividers.length === 0 && (
-          <p className="text-xs text-muted-foreground">尚未新增中隔板</p>
+          <p className="text-xs text-muted-foreground">尚未新增中立板</p>
         )}
         {middleDividers.map((d, i) => (
           <div key={d.id} className="border rounded p-2 space-y-2 bg-muted/20">
@@ -124,7 +145,7 @@ export function InternalPartsForm({ middleDividers, shelves, onMiddleDividersCha
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
-                <Label className="text-[10px] text-muted-foreground">中隔板燈溝面</Label>
+                <Label className="text-[10px] text-muted-foreground">中立板燈溝面</Label>
                 <Select
                   value={(d.addons ?? defaultDividerAddons).lightGroove?.side ?? "none"}
                   onValueChange={(side) =>
@@ -180,16 +201,16 @@ export function InternalPartsForm({ middleDividers, shelves, onMiddleDividersCha
         ))}
       </div>
 
-      {/* 層板 */}
+      {/* 櫃內層板 */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-sm font-semibold">層板</Label>
+          <Label className="text-sm font-semibold">櫃內層板</Label>
           <Button type="button" variant="outline" size="sm" onClick={addShelf}>
             <Plus className="h-3 w-3 mr-1" />新增
           </Button>
         </div>
         {shelves.length === 0 && (
-          <p className="text-xs text-muted-foreground">尚未新增層板</p>
+          <p className="text-xs text-muted-foreground">尚未新增櫃內層板</p>
         )}
         {shelves.map((s, i) => (
           <div key={s.id} className="border rounded p-2 space-y-2 bg-muted/20">
@@ -216,7 +237,7 @@ export function InternalPartsForm({ middleDividers, shelves, onMiddleDividersCha
             <MaterialDropdown value={s.materialRef} onChange={(ref) => updateShelf(i, { materialRef: ref })} categoryFilter="BOARD_BODY" />
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
-                <Label className="text-[10px] text-muted-foreground">層板燈溝面</Label>
+                <Label className="text-[10px] text-muted-foreground">櫃內層板燈溝面</Label>
                 <Select
                   value={s.lightGroove?.side ?? "none"}
                   onValueChange={(side) =>
@@ -261,6 +282,56 @@ export function InternalPartsForm({ middleDividers, shelves, onMiddleDividersCha
             <SpecialProcessesForm
               value={s.specialProcesses ?? []}
               onChange={(specialProcesses) => updateShelf(i, { specialProcesses })}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* 側/頂/底封板 */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-semibold">側/頂/底封板</Label>
+          <Button type="button" variant="outline" size="sm" onClick={addSideTopBottomSealPanel}>
+            <Plus className="h-3 w-3 mr-1" />新增
+          </Button>
+        </div>
+        {sideTopBottomSealPanels.length === 0 && (
+          <p className="text-xs text-muted-foreground">尚未新增側/頂/底封板</p>
+        )}
+        {sideTopBottomSealPanels.map((panel, i) => (
+          <div key={panel.id} className="border rounded p-2 space-y-2 bg-muted/20">
+            <div>
+              <Label className="text-[10px] text-muted-foreground">品項名稱</Label>
+              <Input
+                className="h-8 text-xs"
+                value={panel.name}
+                onChange={(e) => updateSideTopBottomSealPanel(i, { name: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-4 gap-2 items-end">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">寬(cm)</Label>
+                <Input type="number" min={1} className="h-8 text-xs" value={panel.widthCm}
+                  onChange={(e) => updateSideTopBottomSealPanel(i, { widthCm: Number(e.target.value) })} />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">高(cm)</Label>
+                <Input type="number" min={1} className="h-8 text-xs" value={panel.heightCm}
+                  onChange={(e) => updateSideTopBottomSealPanel(i, { heightCm: Number(e.target.value) })} />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">數量</Label>
+                <Input type="number" min={1} className="h-8 text-xs" value={panel.quantity}
+                  onChange={(e) => updateSideTopBottomSealPanel(i, { quantity: Number(e.target.value) })} />
+              </div>
+              <Button type="button" variant="ghost" size="icon" onClick={() => removeSideTopBottomSealPanel(i)} className="h-8 w-8 text-destructive">
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+            <MaterialDropdown
+              value={panel.materialRef}
+              onChange={(ref) => updateSideTopBottomSealPanel(i, { materialRef: ref })}
+              categoryFilter="BOARD_BODY"
             />
           </div>
         ))}

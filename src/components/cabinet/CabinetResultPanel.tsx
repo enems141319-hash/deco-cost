@@ -328,7 +328,7 @@ export function CabinetResultPanel({ result }: Props) {
 
       <div className="space-y-5">
         <BoardTable title="桶身板材" rows={result.panels} />
-        <BoardTable title="內部構件（中隔板 / 層板）" rows={internalParts} />
+        <BoardTable title="內部構件（中立板 / 櫃內層板）" rows={internalParts} />
 
         {(drawerPanels.length > 0 || drawerHardware.length > 0) && (
           <div className="space-y-3">

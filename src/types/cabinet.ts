@@ -33,6 +33,20 @@ export interface UnitLightGrooves {
   sideInner: LightGrooveSwitch;
 }
 
+export interface SideSealBendingOption {
+  enabled: boolean;
+  depthMm: number;
+  depthCm?: number;
+  isDrawerCabinet: boolean;
+  drawerDividerDepthCm?: number;
+  visibleEdgeBand: boolean;
+}
+
+export interface UnitSideSealBending {
+  left: SideSealBendingOption;
+  right: SideSealBendingOption;
+}
+
 export interface MiddleDividerLightGroove {
   side: LightGrooveSide;
   offsetFromFrontMm: number;
@@ -46,6 +60,7 @@ export interface ShelfLightGroove {
 export interface UnitAddons {
   frontEdgeABS: "none" | "one_long" | "two_long";
   lightGrooves?: UnitLightGrooves;
+  sideSealBending?: UnitSideSealBending;
 }
 
 export interface MiddleDividerAddons {
@@ -88,6 +103,10 @@ export const DEFAULT_UNIT_ADDONS: UnitAddons = {
   lightGrooves: {
     topInner: { enabled: false, offsetFromFrontMm: 50 },
     sideInner: { enabled: false, offsetFromFrontMm: 50 },
+  },
+  sideSealBending: {
+    left: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
+    right: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
   },
 };
 
@@ -152,10 +171,19 @@ export interface ShelfInput {
   specialProcesses?: SpecialProcessInput[];
 }
 
-export interface KickPlateInput {
+export interface SideTopBottomSealPanelInput {
+  id: string;
+  name: string;
   widthCm: number;
   heightCm: number;
+  quantity: number;
   materialRef: MaterialRef | null;
+}
+
+export interface KickPlateInput {
+  widthCm?: number;
+  heightCm: number;
+  materialRef?: MaterialRef | null;
 }
 
 export interface DrawerInput {
@@ -185,6 +213,7 @@ export interface CabinetUnitInput {
   addons: UnitAddons;
   middleDividers: MiddleDividerInput[];
   shelves: ShelfInput[];
+  sideTopBottomSealPanels?: SideTopBottomSealPanelInput[];
   drawers: DrawerInput[];
   doors: DoorInput[];
   hardwareItems: HardwareItemInput[];
@@ -285,6 +314,7 @@ export interface AddonsBreakdown {
   backPanelGroove: number;
   lightGroove: number;
   specialProcessing: number;
+  sideSealBending: number;
 }
 
 export interface CabinetUnitResult {

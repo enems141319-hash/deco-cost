@@ -69,6 +69,68 @@ const cabinetWith25mmBody = calculateCabinetUnit({
 assert.equal(cabinetWith25mmBody.panels.find((panel) => panel.id === "unit-1-top")?.widthCm, 35);
 assert.equal(cabinetWith25mmBody.panels.find((panel) => panel.id === "unit-1-bottom")?.widthCm, 35);
 
+const kickPlateBodyMaterialResult = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 40,
+  panelMaterialRef: {
+    ...bodyMaterial,
+    minCai: null,
+  },
+  kickPlate: {
+    widthCm: 999,
+    heightCm: 8,
+    materialRef: null,
+  },
+});
+const kickPlatePanel = kickPlateBodyMaterialResult.panels.find((panel) => panel.id === "unit-1-kickplate");
+assert.equal(kickPlateBodyMaterialResult.accessories.length, 0);
+assert.equal(kickPlatePanel?.name, "踢腳板");
+assert.equal(kickPlatePanel?.widthCm, 36.4);
+assert.equal(kickPlatePanel?.heightCm, 8);
+assert.equal(kickPlatePanel?.materialRef?.materialId, bodyMaterial.materialId);
+assert.equal(kickPlatePanel?.subtotal, 32);
+assert.equal(kickPlateBodyMaterialResult.summary.accessoriesCost, 0);
+
+const sideTopBottomSealPanelResult = calculateCabinetUnit({
+  ...baseUnit,
+  panelMaterialRef: {
+    ...bodyMaterial,
+    minCai: null,
+  },
+  sideTopBottomSealPanels: [
+    {
+      id: "seal-panel-1",
+      name: "左側加寬封板",
+      widthCm: 20,
+      heightCm: 30,
+      quantity: 2,
+      materialRef: {
+        ...bodyMaterial,
+        minCai: null,
+      },
+    },
+  ],
+});
+const sideTopBottomSealPanel = sideTopBottomSealPanelResult.panels.find((panel) => panel.id === "seal-panel-1");
+assert.deepEqual(
+  sideTopBottomSealPanel && {
+    name: sideTopBottomSealPanel.name,
+    widthCm: sideTopBottomSealPanel.widthCm,
+    heightCm: sideTopBottomSealPanel.heightCm,
+    quantity: sideTopBottomSealPanel.quantity,
+    materialId: sideTopBottomSealPanel.materialRef?.materialId,
+    subtotal: sideTopBottomSealPanel.subtotal,
+  },
+  {
+    name: "左側加寬封板",
+    widthCm: 20,
+    heightCm: 30,
+    quantity: 2,
+    materialId: bodyMaterial.materialId,
+    subtotal: 131,
+  },
+);
+
 const cabinetWithBackPanel = calculateCabinetUnit({
   ...baseUnit,
   widthCm: 60,
@@ -567,5 +629,69 @@ assert.deepEqual(
   ],
 );
 assert.equal(roundCornerDiscountResult.summary.addonsBreakdown.specialProcessing, 700);
+
+const sideSealBendingResult = calculateCabinetUnit({
+  ...baseUnit,
+  heightCm: 120,
+  kickPlate: { heightCm: 8 },
+  addons: {
+    ...baseUnit.addons,
+    sideSealBending: {
+      left: {
+        enabled: true,
+        depthMm: 80,
+        isDrawerCabinet: true,
+        drawerDividerDepthCm: 55,
+        visibleEdgeBand: false,
+      },
+      right: {
+        enabled: true,
+        depthMm: 500,
+        isDrawerCabinet: false,
+        visibleEdgeBand: true,
+      },
+    },
+  },
+});
+const autoDrawerDivider = sideSealBendingResult.internalParts.find((part) => part.id === "unit-1-left-drawer-divider");
+const leftBending = sideSealBendingResult.panels
+  .find((panel) => panel.id === "unit-1-left")
+  ?.processes.find((process) => process.id === "unit-1-left-side-seal-bending");
+const rightBending = sideSealBendingResult.panels
+  .find((panel) => panel.id === "unit-1-right")
+  ?.processes.find((process) => process.id === "unit-1-right-side-seal-bending");
+const rightVisibleEdge = sideSealBendingResult.panels
+  .find((panel) => panel.id === "unit-1-right")
+  ?.processes.find((process) => process.id === "unit-1-right-side-seal-visible-edge");
+assert.deepEqual(
+  {
+    left: leftBending && { quantity: leftBending.quantity, unitCost: leftBending.unitCost, cost: leftBending.cost },
+    right: rightBending && { quantity: rightBending.quantity, unitCost: rightBending.unitCost, cost: rightBending.cost },
+    rightVisibleEdge: rightVisibleEdge && { quantity: rightVisibleEdge.quantity, unitCost: rightVisibleEdge.unitCost, cost: rightVisibleEdge.cost },
+  },
+  {
+    left: { quantity: 120, unitCost: 80, cost: 9600 },
+    right: { quantity: 120, unitCost: 120, cost: 14400 },
+    rightVisibleEdge: { quantity: 1, unitCost: 500, cost: 500 },
+  },
+);
+assert.match(leftBending?.label ?? "", /抽屜櫃側需補中立板/);
+assert.deepEqual(
+  autoDrawerDivider && {
+    name: autoDrawerDivider.name,
+    widthCm: autoDrawerDivider.widthCm,
+    heightCm: autoDrawerDivider.heightCm,
+    quantity: autoDrawerDivider.quantity,
+    materialId: autoDrawerDivider.materialRef?.materialId,
+  },
+  {
+    name: "左側抽屜櫃補中立板",
+    widthCm: 108.4,
+    heightCm: 55,
+    quantity: 1,
+    materialId: bodyMaterial.materialId,
+  },
+);
+assert.equal(sideSealBendingResult.summary.addonsBreakdown.sideSealBending, 24500);
 
 console.log("cabinet redesign calculation tests passed");

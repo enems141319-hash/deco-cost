@@ -36,6 +36,7 @@ function emptyUnit(): CabinetUnitInput {
     addons: DEFAULT_UNIT_ADDONS,
     middleDividers: [],
     shelves: [],
+    sideTopBottomSealPanels: [],
     drawers: [],
     doors: [],
     hardwareItems: [],
@@ -52,6 +53,16 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
       lightGrooves: {
         topInner: unit.addons?.lightGrooves?.topInner ?? DEFAULT_UNIT_ADDONS.lightGrooves!.topInner,
         sideInner: unit.addons?.lightGrooves?.sideInner ?? DEFAULT_UNIT_ADDONS.lightGrooves!.sideInner,
+      },
+      sideSealBending: {
+        left: {
+          ...DEFAULT_UNIT_ADDONS.sideSealBending!.left,
+          ...unit.addons?.sideSealBending?.left,
+        },
+        right: {
+          ...DEFAULT_UNIT_ADDONS.sideSealBending!.right,
+          ...unit.addons?.sideSealBending?.right,
+        },
       },
     },
     middleDividers: (unit.middleDividers ?? []).map((divider) => ({
@@ -70,6 +81,10 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
       ...shelf,
       lightGroove: shelf.lightGroove ?? { side: "none", offsetFromFrontMm: 50 },
       specialProcesses: shelf.specialProcesses ?? [],
+    })),
+    sideTopBottomSealPanels: (unit.sideTopBottomSealPanels ?? []).map((panel) => ({
+      ...panel,
+      name: panel.name ?? "側/頂/底封板",
     })),
     drawers: (unit.drawers ?? []).map((drawer) => ({
       ...drawer,

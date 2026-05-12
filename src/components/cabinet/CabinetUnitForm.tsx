@@ -147,8 +147,10 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
         <InternalPartsForm
           middleDividers={unit.middleDividers}
           shelves={unit.shelves}
+          sideTopBottomSealPanels={unit.sideTopBottomSealPanels ?? []}
           onMiddleDividersChange={(v) => update({ middleDividers: v })}
           onShelvesChange={(v) => update({ shelves: v })}
+          onSideTopBottomSealPanelsChange={(v) => update({ sideTopBottomSealPanels: v })}
         />
 
         <Separator />

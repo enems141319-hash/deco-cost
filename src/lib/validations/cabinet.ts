@@ -25,6 +25,27 @@ export const unitAddonsSchema = z.object({
     topInner: { enabled: false, offsetFromFrontMm: 50 },
     sideInner: { enabled: false, offsetFromFrontMm: 50 },
   }),
+  sideSealBending: z.object({
+    left: z.object({
+      enabled: z.boolean().default(false),
+      depthMm: z.number().min(80).max(600).default(80),
+      depthCm: z.number().min(80).max(600).optional(),
+      isDrawerCabinet: z.boolean().default(false),
+      drawerDividerDepthCm: z.number().positive().default(55),
+      visibleEdgeBand: z.boolean().default(false),
+    }).default({ enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false }),
+    right: z.object({
+      enabled: z.boolean().default(false),
+      depthMm: z.number().min(80).max(600).default(80),
+      depthCm: z.number().min(80).max(600).optional(),
+      isDrawerCabinet: z.boolean().default(false),
+      drawerDividerDepthCm: z.number().positive().default(55),
+      visibleEdgeBand: z.boolean().default(false),
+    }).default({ enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false }),
+  }).default({
+    left: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
+    right: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
+  }),
 });
 
 export const middleDividerAddonsSchema = z.object({
@@ -117,10 +138,19 @@ export const shelfSchemaWithLightGroove = shelfSchema.extend({
   specialProcesses: z.array(specialProcessSchema).default([]),
 });
 
-export const kickPlateSchema = z.object({
+export const sideTopBottomSealPanelSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1, "品項名稱不能為空").default("側/頂/底封板"),
   widthCm: z.number().positive("寬度必須大於 0"),
   heightCm: z.number().positive("高度必須大於 0"),
+  quantity: z.number().int().positive("數量必須大於 0"),
   materialRef: materialRefSchema,
+});
+
+export const kickPlateSchema = z.object({
+  widthCm: z.number().positive("寬度必須大於 0").optional(),
+  heightCm: z.number().positive("高度必須大於 0"),
+  materialRef: materialRefSchema.optional(),
 }).nullable();
 
 export const drawerSchema = z.object({
@@ -150,6 +180,7 @@ export const cabinetUnitInputSchema = z.object({
   addons: unitAddonsSchema,
   middleDividers: z.array(middleDividerSchema),
   shelves: z.array(shelfSchemaWithLightGroove),
+  sideTopBottomSealPanels: z.array(sideTopBottomSealPanelSchema).default([]),
   drawers: z.array(drawerSchema).default([]),
   doors: z.array(doorInputSchema),
   hardwareItems: z.array(hardwareItemSchema).default([]),
