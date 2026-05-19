@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { DEFAULT_UNIT_ADDONS, type SideSealBendingOption, type UnitAddons } from "@/types";
+import { DEFAULT_UNIT_ADDONS, type SideSealBendingOption, type SlidingDoorTrackShape, type UnitAddons } from "@/types";
 
 interface Props {
   value: UnitAddons;
@@ -18,6 +18,7 @@ export function UnitAddonsForm({ value, onChange }: Props) {
     topInner: { enabled: false, offsetFromFrontMm: 50 },
     sideInner: { enabled: false, offsetFromFrontMm: 50 },
   };
+  const slidingDoorTrackGrooves = value.slidingDoorTrackGrooves ?? DEFAULT_UNIT_ADDONS.slidingDoorTrackGrooves!;
   const sideSealBending = value.sideSealBending ?? DEFAULT_UNIT_ADDONS.sideSealBending!;
   const updateLightGroove = (
     key: keyof NonNullable<UnitAddons["lightGrooves"]>,
@@ -35,6 +36,15 @@ export function UnitAddonsForm({ value, onChange }: Props) {
     sideSealBending: {
       ...sideSealBending,
       [side]: { ...sideSealBending[side], ...patch },
+    },
+  });
+  const updateSlidingDoorTrackGroove = (
+    panel: keyof NonNullable<UnitAddons["slidingDoorTrackGrooves"]>,
+    patch: Partial<NonNullable<UnitAddons["slidingDoorTrackGrooves"]>[keyof NonNullable<UnitAddons["slidingDoorTrackGrooves"]>]>,
+  ) => update({
+    slidingDoorTrackGrooves: {
+      ...slidingDoorTrackGrooves,
+      [panel]: { ...slidingDoorTrackGrooves[panel], ...patch },
     },
   });
 
@@ -106,6 +116,42 @@ export function UnitAddonsForm({ value, onChange }: Props) {
     );
   };
 
+  const renderSlidingDoorTrackGroove = (
+    panel: keyof NonNullable<UnitAddons["slidingDoorTrackGrooves"]>,
+    label: string,
+  ) => {
+    const option = slidingDoorTrackGrooves[panel];
+
+    return (
+      <div className="space-y-2 rounded border bg-background px-3 py-2">
+        <div className="flex items-center justify-between gap-3">
+          <Label className="text-xs">{label}</Label>
+          <Switch
+            checked={option.enabled}
+            onCheckedChange={(enabled) => updateSlidingDoorTrackGroove(panel, { enabled })}
+          />
+        </div>
+        {option.enabled && (
+          <Select
+            value={option.trackShape}
+            onValueChange={(trackShape) =>
+              updateSlidingDoorTrackGroove(panel, { trackShape: trackShape as SlidingDoorTrackShape })
+            }
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ㄇ">ㄇ型軌道</SelectItem>
+              <SelectItem value="V">V型軌道</SelectItem>
+              <SelectItem value="T">T型軌道</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+    );
+  };
+
   return (
     <section className="space-y-3">
       <h3 className="font-semibold text-sm border-b pb-1">加工選項</h3>
@@ -172,6 +218,19 @@ export function UnitAddonsForm({ value, onChange }: Props) {
               <SelectItem value="two_long">2 長（+10 元/才）</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-2 rounded border bg-muted/20 p-3">
+          <div>
+            <Label className="text-xs">推門軌道溝</Label>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
+              ㄇ、V、T型軌道；限溝寬10mm，$120/條
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {renderSlidingDoorTrackGroove("top", "頂板加工")}
+            {renderSlidingDoorTrackGroove("bottom", "底板加工")}
+          </div>
         </div>
 
         <div className="space-y-3">

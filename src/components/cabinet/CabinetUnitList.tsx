@@ -50,9 +50,23 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
     addons: {
       ...DEFAULT_UNIT_ADDONS,
       ...unit.addons,
+      lTurnCabinet: {
+        ...DEFAULT_UNIT_ADDONS.lTurnCabinet!,
+        ...unit.addons?.lTurnCabinet,
+      },
       lightGrooves: {
         topInner: unit.addons?.lightGrooves?.topInner ?? DEFAULT_UNIT_ADDONS.lightGrooves!.topInner,
         sideInner: unit.addons?.lightGrooves?.sideInner ?? DEFAULT_UNIT_ADDONS.lightGrooves!.sideInner,
+      },
+      slidingDoorTrackGrooves: {
+        top: {
+          ...DEFAULT_UNIT_ADDONS.slidingDoorTrackGrooves!.top,
+          ...unit.addons?.slidingDoorTrackGrooves?.top,
+        },
+        bottom: {
+          ...DEFAULT_UNIT_ADDONS.slidingDoorTrackGrooves!.bottom,
+          ...unit.addons?.slidingDoorTrackGrooves?.bottom,
+        },
       },
       sideSealBending: {
         left: {

@@ -91,6 +91,85 @@ assert.equal(kickPlatePanel?.materialRef?.materialId, bodyMaterial.materialId);
 assert.equal(kickPlatePanel?.subtotal, 32);
 assert.equal(kickPlateBodyMaterialResult.summary.accessoriesCost, 0);
 
+const lTurnOpenKickPlateResult = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 90,
+  depthCm: 90,
+  heightCm: 240,
+  hasBackPanel: true,
+  backPanelMaterialRef: bodyMaterial,
+  panelMaterialRef: {
+    ...bodyMaterial,
+    minCai: null,
+  },
+  addons: {
+    ...baseUnit.addons,
+    lTurnCabinet: {
+      enabled: true,
+      position: "rightBottom",
+      widthMm: 300,
+      heightMm: 300,
+      isOpening: true,
+    },
+  },
+  kickPlate: {
+    heightCm: 8,
+    materialRef: null,
+  },
+});
+assert.deepEqual(
+  lTurnOpenKickPlateResult.panels
+    .filter((panel) => panel.id.includes("l-turn-back"))
+    .map((panel) => ({ id: panel.id, widthCm: panel.widthCm, heightCm: panel.heightCm })),
+  [
+    { id: "unit-1-l-turn-back-width", widthCm: 87.1, heightCm: 229.8 },
+    { id: "unit-1-l-turn-back-depth", widthCm: 86.3, heightCm: 229.8 },
+  ],
+);
+assert.deepEqual(
+  lTurnOpenKickPlateResult.panels
+    .filter((panel) => panel.id.includes("kickplate"))
+    .map((panel) => ({ id: panel.id, widthCm: panel.widthCm, heightCm: panel.heightCm, quantity: panel.quantity })),
+  [
+    { id: "unit-1-kickplate-cutout-width", widthCm: 30, heightCm: 8, quantity: 1 },
+    { id: "unit-1-kickplate-cutout-depth", widthCm: 30, heightCm: 8, quantity: 1 },
+  ],
+);
+
+const lTurnClosedKickPlateResult = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 90,
+  depthCm: 90,
+  heightCm: 240,
+  panelMaterialRef: {
+    ...bodyMaterial,
+    minCai: null,
+  },
+  addons: {
+    ...baseUnit.addons,
+    lTurnCabinet: {
+      enabled: true,
+      position: "rightBottom",
+      widthMm: 300,
+      heightMm: 300,
+      isOpening: false,
+    },
+  },
+  kickPlate: {
+    heightCm: 8,
+    materialRef: null,
+  },
+});
+assert.deepEqual(
+  lTurnClosedKickPlateResult.panels
+    .filter((panel) => panel.id.includes("kickplate"))
+    .map((panel) => ({ id: panel.id, widthCm: panel.widthCm, heightCm: panel.heightCm, quantity: panel.quantity })),
+  [
+    { id: "unit-1-kickplate-outer-width", widthCm: 60, heightCm: 8, quantity: 1 },
+    { id: "unit-1-kickplate-outer-depth", widthCm: 60, heightCm: 8, quantity: 1 },
+  ],
+);
+
 const sideTopBottomSealPanelResult = calculateCabinetUnit({
   ...baseUnit,
   panelMaterialRef: {
@@ -143,17 +222,244 @@ assert.equal(backPanel?.widthCm, 57.8);
 assert.equal(backPanel?.heightCm, 77.8);
 assert.equal(
   cabinetWithBackPanel.panels.find((panel) => panel.id === "unit-1-left")?.note,
-  "背板溝槽: 離後緣18mm, 寬8.5mm, 深9mm",
+  "背板溝槽: 離後緣18mm, 寬10mm, 深9mm",
 );
 assert.equal(
   cabinetWithBackPanel.panels.find((panel) => panel.id === "unit-1-top")?.note,
-  "背板溝槽: 離後緣18mm, 寬8.5mm, 深9mm",
+  "背板溝槽: 離後緣18mm, 寬10mm, 深9mm",
 );
 assert.equal(cabinetWithBackPanel.summary.addonsBreakdown.backPanelGroove, 480);
 assert.equal(cabinetWithBackPanel.summary.addonsCost, 480);
 assert.equal(
   cabinetWithBackPanel.summary.totalCost,
   cabinetWithBackPanel.summary.panelsCost + 480,
+);
+
+const thickCabinetWithBackPanel = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 60,
+  heightCm: 80,
+  hasBackPanel: true,
+  panelMaterialRef: thickBodyMaterial,
+  backPanelMaterialRef: bodyMaterial,
+});
+const thickBackPanel = thickCabinetWithBackPanel.panels.find((panel) => panel.id === "unit-1-back");
+assert.equal(thickBackPanel?.widthCm, 56.4);
+assert.equal(thickBackPanel?.heightCm, 76.4);
+
+const cabinetWithBackPanelAndKickPlate = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 60,
+  heightCm: 80,
+  hasBackPanel: true,
+  backPanelMaterialRef: bodyMaterial,
+  kickPlate: {
+    heightCm: 8,
+    materialRef: null,
+  },
+});
+const backPanelWithKickPlate = cabinetWithBackPanelAndKickPlate.panels.find((panel) => panel.id === "unit-1-back");
+assert.equal(backPanelWithKickPlate?.widthCm, 57.8);
+assert.equal(backPanelWithKickPlate?.heightCm, 69.8);
+
+const slidingDoorTrackGrooveResult = calculateCabinetUnit({
+  ...baseUnit,
+  quantity: 2,
+  addons: {
+    ...baseUnit.addons,
+    slidingDoorTrackGrooves: {
+      top: { enabled: true, trackShape: "V" },
+      bottom: { enabled: true, trackShape: "T" },
+    },
+  },
+});
+const topSlidingDoorTrackGroove = slidingDoorTrackGrooveResult.panels
+  .find((panel) => panel.id === "unit-1-top")
+  ?.processes.find((process) => process.id === "unit-1-top-sliding-door-track-groove");
+const bottomSlidingDoorTrackGroove = slidingDoorTrackGrooveResult.panels
+  .find((panel) => panel.id === "unit-1-bottom")
+  ?.processes.find((process) => process.id === "unit-1-bottom-sliding-door-track-groove");
+assert.equal(topSlidingDoorTrackGroove?.label, "推門軌道溝: V型軌道, 限溝寬10mm");
+assert.equal(topSlidingDoorTrackGroove?.quantity, 2);
+assert.equal(topSlidingDoorTrackGroove?.unitCost, 120);
+assert.equal(topSlidingDoorTrackGroove?.cost, 240);
+assert.equal(bottomSlidingDoorTrackGroove?.quantity, 2);
+assert.equal(bottomSlidingDoorTrackGroove?.unitCost, 120);
+assert.equal(bottomSlidingDoorTrackGroove?.cost, 240);
+assert.equal(bottomSlidingDoorTrackGroove?.label, "推門軌道溝: T型軌道, 限溝寬10mm");
+assert.equal(slidingDoorTrackGrooveResult.summary.addonsBreakdown.slidingDoorTrackGroove, 480);
+assert.equal(slidingDoorTrackGrooveResult.summary.addonsCost, 480);
+
+const lTurnCabinetResult = calculateCabinetUnit({
+  ...baseUnit,
+  quantity: 2,
+  addons: {
+    ...baseUnit.addons,
+    lTurnCabinet: {
+      enabled: true,
+      position: "rightTop",
+      widthMm: 700,
+      heightMm: 800,
+      isOpening: true,
+    },
+  },
+});
+const lTurnCabinetTopProcess = lTurnCabinetResult.panels
+  .find((panel) => panel.id === "unit-1-top")
+  ?.processes.find((process) => process.id === "unit-1-l-turn-cabinet");
+const lTurnCabinetBottomProcess = lTurnCabinetResult.panels
+  .find((panel) => panel.id === "unit-1-bottom")
+  ?.processes.find((process) => process.id === "unit-1-l-turn-cabinet-bottom");
+assert.equal(lTurnCabinetTopProcess?.label, "L轉櫃加工: 右上, W=700mm, H=800mm");
+assert.equal(lTurnCabinetTopProcess?.includedInSubtotal, false);
+assert.equal(lTurnCabinetTopProcess?.cost, 0);
+assert.equal(lTurnCabinetBottomProcess?.label, "L轉櫃加工: 右上, W=700mm, H=800mm");
+assert.equal(lTurnCabinetBottomProcess?.includedInSubtotal, false);
+assert.equal(lTurnCabinetBottomProcess?.cost, 0);
+const lTurnCabinetFee = lTurnCabinetResult.hardware.find((row) => row.id === "unit-1-l-turn-cabinet-fee");
+assert.equal(lTurnCabinetFee?.name, "L轉櫃加工費");
+assert.equal(lTurnCabinetFee?.quantity, 2);
+assert.equal(lTurnCabinetFee?.unitCost, 600);
+assert.equal(lTurnCabinetFee?.subtotal, 1200);
+assert.equal(lTurnCabinetResult.summary.addonsBreakdown.lTurnCabinet, 1200);
+assert.equal(lTurnCabinetResult.summary.addonsCost, 1200);
+
+const lTurnOpenCabinetResult = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 90,
+  depthCm: 90,
+  heightCm: 240,
+  hasBackPanel: true,
+  backPanelMaterialRef: bodyMaterial,
+  addons: {
+    ...baseUnit.addons,
+    lTurnCabinet: {
+      enabled: true,
+      position: "rightBottom",
+      widthMm: 300,
+      heightMm: 300,
+      isOpening: true,
+    },
+  },
+});
+assert.deepEqual(
+  lTurnOpenCabinetResult.panels
+    .filter((panel) => panel.id.includes("l-turn-side"))
+    .map((panel) => ({
+      id: panel.id,
+      note: panel.note,
+      processIds: panel.processes.map((process) => process.id),
+    })),
+  [
+    {
+      id: "unit-1-l-turn-side-width",
+      note: "背板溝槽: 離後緣18mm, 寬10mm, 深9mm",
+      processIds: ["unit-1-l-turn-side-width-back-groove"],
+    },
+    {
+      id: "unit-1-l-turn-side-depth",
+      note: "背板溝槽: 離後緣18mm, 寬10mm, 深9mm",
+      processIds: ["unit-1-l-turn-side-depth-back-groove"],
+    },
+  ],
+);
+assert.equal(lTurnOpenCabinetResult.summary.addonsBreakdown.backPanelGroove, 480);
+assert.deepEqual(
+  lTurnOpenCabinetResult.panels
+    .filter((panel) => panel.id.includes("l-turn"))
+    .map((panel) => ({ id: panel.id, name: panel.name, widthCm: panel.widthCm, heightCm: panel.heightCm })),
+  [
+    { id: "unit-1-l-turn-side-width", name: "L轉側板-寬向", widthCm: 240, heightCm: 60 },
+    { id: "unit-1-l-turn-side-depth", name: "L轉側板-深向", widthCm: 240, heightCm: 60 },
+    { id: "unit-1-l-turn-back-width", name: "L轉背板-寬向", widthCm: 87.1, heightCm: 237.8 },
+    { id: "unit-1-l-turn-back-depth", name: "L轉背板-深向", widthCm: 86.3, heightCm: 237.8 },
+  ],
+);
+
+const lTurnOpenAsymmetricBackPanelResult = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 120,
+  depthCm: 90,
+  heightCm: 240,
+  hasBackPanel: true,
+  backPanelMaterialRef: bodyMaterial,
+  addons: {
+    ...baseUnit.addons,
+    lTurnCabinet: {
+      enabled: true,
+      position: "rightBottom",
+      widthMm: 300,
+      heightMm: 300,
+      isOpening: true,
+    },
+  },
+});
+assert.deepEqual(
+  lTurnOpenAsymmetricBackPanelResult.panels
+    .filter((panel) => panel.id.includes("l-turn-back"))
+    .map((panel) => ({ id: panel.id, widthCm: panel.widthCm, heightCm: panel.heightCm })),
+  [
+    { id: "unit-1-l-turn-back-width", widthCm: 117.1, heightCm: 237.8 },
+    { id: "unit-1-l-turn-back-depth", widthCm: 86.3, heightCm: 237.8 },
+  ],
+);
+
+const lTurnClosedCabinetResult = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 90,
+  depthCm: 90,
+  heightCm: 240,
+  hasBackPanel: true,
+  backPanelMaterialRef: bodyMaterial,
+  addons: {
+    ...baseUnit.addons,
+    lTurnCabinet: {
+      enabled: true,
+      position: "rightBottom",
+      widthMm: 300,
+      heightMm: 300,
+      isOpening: false,
+    },
+  },
+});
+assert.deepEqual(
+  lTurnClosedCabinetResult.panels
+    .filter((panel) => panel.id.includes("l-turn"))
+    .map((panel) => ({ id: panel.id, name: panel.name, widthCm: panel.widthCm, heightCm: panel.heightCm })),
+  [
+    { id: "unit-1-l-turn-side-width", name: "L轉側板-寬向", widthCm: 240, heightCm: 60 },
+    { id: "unit-1-l-turn-side-depth", name: "L轉側板-深向", widthCm: 240, heightCm: 60 },
+    { id: "unit-1-l-turn-back-width", name: "L轉背板-寬向", widthCm: 27.1, heightCm: 237.8 },
+    { id: "unit-1-l-turn-back-depth", name: "L轉背板-深向", widthCm: 26.3, heightCm: 237.8 },
+  ],
+);
+
+const lTurnClosedAsymmetricBackPanelResult = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 120,
+  depthCm: 90,
+  heightCm: 240,
+  hasBackPanel: true,
+  backPanelMaterialRef: bodyMaterial,
+  addons: {
+    ...baseUnit.addons,
+    lTurnCabinet: {
+      enabled: true,
+      position: "rightBottom",
+      widthMm: 300,
+      heightMm: 500,
+      isOpening: false,
+    },
+  },
+});
+assert.deepEqual(
+  lTurnClosedAsymmetricBackPanelResult.panels
+    .filter((panel) => panel.id.includes("l-turn-back"))
+    .map((panel) => ({ id: panel.id, widthCm: panel.widthCm, heightCm: panel.heightCm })),
+  [
+    { id: "unit-1-l-turn-back-width", widthCm: 27.1, heightCm: 237.8 },
+    { id: "unit-1-l-turn-back-depth", widthCm: 46.3, heightCm: 237.8 },
+  ],
 );
 
 const lightGrooveResult = calculateCabinetUnit({
@@ -507,9 +813,9 @@ assert.deepEqual(
   })),
   [
     { name: "抽屜面板/抽頭", widthCm: 60, heightCm: 16, quantity: 3, note: undefined },
-    { name: "抽屜左右側板", widthCm: 45, heightCm: 9, quantity: 6, note: "內側下方打溝 (8.5)" },
-    { name: "抽屜前後牆板", widthCm: 49.8, heightCm: 9, quantity: 6, note: "內側下方打溝 (8.5)" },
-    { name: "抽屜8mm底板", widthCm: 51.2, heightCm: 42.8, quantity: 3, note: undefined },
+    { name: "抽屜左右側板", widthCm: 45, heightCm: 9, quantity: 6, note: "內側下方打溝 (10mm, 深9mm)" },
+    { name: "抽屜前後牆板", widthCm: 49.8, heightCm: 9, quantity: 6, note: "內側下方打溝 (10mm, 深9mm)" },
+    { name: "抽屜8mm底板", widthCm: 57.8, heightCm: 42.8, quantity: 3, note: undefined },
   ],
 );
 

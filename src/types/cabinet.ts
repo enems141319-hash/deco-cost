@@ -22,15 +22,38 @@ export type DoorType = "HINGED" | "SLIDING";
 export type ProfileHandleStyle = "none" | "SFJA" | "SFJB" | "SFJC" | "SFJD" | "SFCA";
 export type LightGrooveSide = "none" | "left" | "right";
 export type LightGrooveFace = "none" | "top" | "bottom";
+export type SlidingDoorTrackShape = "ㄇ" | "V" | "T";
+export type LTurnCabinetPosition = "rightTop" | "rightBottom" | "leftTop" | "leftBottom";
 
 export interface LightGrooveSwitch {
   enabled: boolean;
   offsetFromFrontMm: number;
 }
 
+export interface ProcessingSwitch {
+  enabled: boolean;
+}
+
+export interface SlidingDoorTrackGrooveOption extends ProcessingSwitch {
+  trackShape: SlidingDoorTrackShape;
+}
+
 export interface UnitLightGrooves {
   topInner: LightGrooveSwitch;
   sideInner: LightGrooveSwitch;
+}
+
+export interface UnitSlidingDoorTrackGrooves {
+  top: SlidingDoorTrackGrooveOption;
+  bottom: SlidingDoorTrackGrooveOption;
+}
+
+export interface LTurnCabinetOption {
+  enabled: boolean;
+  position: LTurnCabinetPosition;
+  widthMm: number;
+  heightMm: number;
+  isOpening: boolean;
 }
 
 export interface SideSealBendingOption {
@@ -59,7 +82,9 @@ export interface ShelfLightGroove {
 
 export interface UnitAddons {
   frontEdgeABS: "none" | "one_long" | "two_long";
+  lTurnCabinet?: LTurnCabinetOption;
   lightGrooves?: UnitLightGrooves;
+  slidingDoorTrackGrooves?: UnitSlidingDoorTrackGrooves;
   sideSealBending?: UnitSideSealBending;
 }
 
@@ -100,9 +125,20 @@ export interface DoorAddons {
 
 export const DEFAULT_UNIT_ADDONS: UnitAddons = {
   frontEdgeABS: "none",
+  lTurnCabinet: {
+    enabled: false,
+    position: "rightTop",
+    widthMm: 0,
+    heightMm: 0,
+    isOpening: true,
+  },
   lightGrooves: {
     topInner: { enabled: false, offsetFromFrontMm: 50 },
     sideInner: { enabled: false, offsetFromFrontMm: 50 },
+  },
+  slidingDoorTrackGrooves: {
+    top: { enabled: false, trackShape: "ㄇ" },
+    bottom: { enabled: false, trackShape: "ㄇ" },
   },
   sideSealBending: {
     left: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
@@ -313,6 +349,8 @@ export interface AddonsBreakdown {
   hingeHoleDrilling: number;
   backPanelGroove: number;
   lightGroove: number;
+  slidingDoorTrackGroove: number;
+  lTurnCabinet: number;
   specialProcessing: number;
   sideSealBending: number;
 }

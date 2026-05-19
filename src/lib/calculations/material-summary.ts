@@ -102,6 +102,7 @@ function doorMaterialSubtotal(row: DoorResult): number {
 }
 
 function isProcessingHardware(row: HardwareResult): boolean {
+  if (row.id.endsWith("-l-turn-cabinet-fee") || row.name.includes("加工費")) return true;
   return row.id.includes("-profile-handle") || row.name.includes("加工");
 }
 

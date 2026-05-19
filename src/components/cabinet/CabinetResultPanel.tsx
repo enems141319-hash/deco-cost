@@ -2,7 +2,7 @@
 
 import { Fragment } from "react";
 import type { CabinetUnitResult, DoorResult, HardwareResult, PanelResult } from "@/types";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import { AreaDisplay } from "@/components/shared/AreaDisplay";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 
 interface Props {
   result: CabinetUnitResult;
+  highlightedBoardId?: string | null;
 }
 
 type BoardRow = PanelResult | DoorResult;
@@ -23,6 +24,7 @@ interface DisplayProcessRow {
   unitCost: number;
   unit?: string;
   cost: number;
+  includedInSubtotal?: boolean;
 }
 
 const tableShellClass = "overflow-x-auto rounded-md border";
@@ -76,6 +78,10 @@ function isDoorHardware(row: HardwareResult): boolean {
     row.id.includes("-aluminum-handle") ||
     isProfileHandleProcess(row)
   );
+}
+
+function isStandaloneProcessHardware(row: HardwareResult): boolean {
+  return row.id.endsWith("-l-turn-cabinet-fee");
 }
 
 function profileHandleProcessLabel(row: HardwareResult): string {
@@ -146,10 +152,12 @@ function BoardTable({
   title,
   rows,
   processRowsByRowId = {},
+  highlightedBoardId = null,
 }: {
   title: string;
   rows: BoardRow[];
   processRowsByRowId?: Record<string, DisplayProcessRow[]>;
+  highlightedBoardId?: string | null;
 }) {
   if (rows.length === 0) return null;
 
@@ -186,13 +194,20 @@ function BoardTable({
                     quantity: process.quantity,
                     unitCost: process.unitCost,
                     cost: process.cost,
+                    includedInSubtotal: process.includedInSubtotal,
                   }))
                 : [];
               const displayProcesses = [...panelProcesses, ...(processRowsByRowId[row.id] ?? [])];
 
               return (
                 <Fragment key={row.id}>
-                  <tr className="border-b border-muted/50 hover:bg-muted/20">
+                  <tr
+                    className={cn(
+                      "border-b border-muted/50 transition-colors hover:bg-muted/20",
+                      highlightedBoardId === row.id &&
+                        "border-l-4 border-l-primary bg-primary/10 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]"
+                    )}
+                  >
                     <td className={`${bodyCellClass} min-w-0`}>
                       <BoardNameCell row={row} />
                     </td>
@@ -219,7 +234,13 @@ function BoardTable({
                     <td className={`${numericCellClass} font-semibold`}>{formatCurrency(rowBaseSubtotal(row))}</td>
                   </tr>
                   {displayProcesses.map((process) => (
-                    <tr key={process.id} className="border-b border-muted/50 bg-muted/10">
+                    <tr
+                      key={process.id}
+                      className={cn(
+                        "border-b border-muted/50 bg-muted/10 transition-colors",
+                        highlightedBoardId === row.id && "bg-primary/5"
+                      )}
+                    >
                       <td className={`${bodyCellClass} pl-7`}>
                         <div className="font-medium text-slate-700">
                           {process.kind === "process" ? processLabel(process.label) : `五金-${process.label}`}
@@ -232,10 +253,12 @@ function BoardTable({
                       <td className={numericCellClass}>{formatQuantity(process.quantity)}</td>
                       <td className={numericCellClass}>-</td>
                       <td className={numericCellClass}>
-                        {formatCurrency(process.unitCost)}
+                        {process.includedInSubtotal === false && process.cost === 0 ? "-" : formatCurrency(process.unitCost)}
                         {process.unit && <span className="text-muted-foreground">/{process.unit}</span>}
                       </td>
-                      <td className={`${numericCellClass} font-semibold`}>{formatCurrency(process.cost)}</td>
+                      <td className={`${numericCellClass} font-semibold`}>
+                        {process.includedInSubtotal === false && process.cost === 0 ? "-" : formatCurrency(process.cost)}
+                      </td>
                     </tr>
                   ))}
                 </Fragment>
@@ -300,13 +323,14 @@ function HardwareTable({ title, rows }: { title: string; rows: HardwareResult[] 
   );
 }
 
-export function CabinetResultPanel({ result }: Props) {
+export function CabinetResultPanel({ result, highlightedBoardId = null }: Props) {
   const { summary } = result;
   const drawerPanels = result.internalParts.filter(isDrawerPanel);
   const internalParts = result.internalParts.filter((row) => !isDrawerPanel(row));
   const drawerHardware = result.hardware.filter(isDrawerHardware);
   const doorAttachedRowsByDoorId = buildDoorAttachedRows(result.hardware, result.doors);
-  const otherHardware = result.hardware.filter((row) => !isDrawerHardware(row) && !isDoorHardware(row));
+  const standaloneProcessRows = result.hardware.filter(isStandaloneProcessHardware);
+  const otherHardware = result.hardware.filter((row) => !isDrawerHardware(row) && !isDoorHardware(row) && !isStandaloneProcessHardware(row));
 
   return (
     <div className="space-y-4">
@@ -327,7 +351,7 @@ export function CabinetResultPanel({ result }: Props) {
       </div>
 
       <div className="space-y-5">
-        <BoardTable title="桶身板材" rows={result.panels} />
+        <BoardTable title="桶身板材" rows={result.panels} highlightedBoardId={highlightedBoardId} />
         <BoardTable title="內部構件（中立板 / 櫃內層板）" rows={internalParts} />
 
         {(drawerPanels.length > 0 || drawerHardware.length > 0) && (
@@ -344,6 +368,7 @@ export function CabinetResultPanel({ result }: Props) {
         )}
 
         <HardwareTable title="五金 / 另料" rows={otherHardware} />
+        <HardwareTable title="加工費" rows={standaloneProcessRows} />
 
         {result.accessories.length > 0 && (
           <section className="space-y-2">

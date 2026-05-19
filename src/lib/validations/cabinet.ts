@@ -12,6 +12,19 @@ export const materialRefSchema = z.object({
 
 export const unitAddonsSchema = z.object({
   frontEdgeABS: z.enum(["none", "one_long", "two_long"]),
+  lTurnCabinet: z.object({
+    enabled: z.boolean().default(false),
+    position: z.enum(["rightTop", "rightBottom", "leftTop", "leftBottom"]).default("rightTop"),
+    widthMm: z.number().nonnegative().default(0),
+    heightMm: z.number().nonnegative().default(0),
+    isOpening: z.boolean().default(true),
+  }).default({
+    enabled: false,
+    position: "rightTop",
+    widthMm: 0,
+    heightMm: 0,
+    isOpening: true,
+  }),
   lightGrooves: z.object({
     topInner: z.object({
       enabled: z.boolean().default(false),
@@ -24,6 +37,19 @@ export const unitAddonsSchema = z.object({
   }).default({
     topInner: { enabled: false, offsetFromFrontMm: 50 },
     sideInner: { enabled: false, offsetFromFrontMm: 50 },
+  }),
+  slidingDoorTrackGrooves: z.object({
+    top: z.object({
+      enabled: z.boolean().default(false),
+      trackShape: z.enum(["ㄇ", "V", "T"]).default("ㄇ"),
+    }).default({ enabled: false, trackShape: "ㄇ" }),
+    bottom: z.object({
+      enabled: z.boolean().default(false),
+      trackShape: z.enum(["ㄇ", "V", "T"]).default("ㄇ"),
+    }).default({ enabled: false, trackShape: "ㄇ" }),
+  }).default({
+    top: { enabled: false, trackShape: "ㄇ" },
+    bottom: { enabled: false, trackShape: "ㄇ" },
   }),
   sideSealBending: z.object({
     left: z.object({
