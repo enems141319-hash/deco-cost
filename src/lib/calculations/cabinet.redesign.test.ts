@@ -705,6 +705,99 @@ assert.equal(doorAddonsResult.hardware.find((item) => item.name === "鋁製把�
 assert.equal(doorAddonsResult.hardware.find((item) => item.name === "造型把手加工 SFJA")?.subtotal, 1530);
 assert.equal(doorAddonsResult.hardware.find((item) => item.name === "造型把手長度修改")?.subtotal, 200);
 
+const profileHandlePriceTableResult = calculateCabinetUnit({
+  ...baseUnit,
+  doors: [
+    {
+      id: "door-profile-table-1",
+      type: "HINGED",
+      name: "造型把手門",
+      widthCm: 50,
+      heightCm: 120,
+      quantity: 2,
+      materialRef: doorMaterial,
+      hingeMaterialRef: null,
+      railMaterialRef: null,
+      wireMeshMaterialRef: null,
+      aluminumHandleMaterialRef: null,
+      addons: {
+        ...DEFAULT_DOOR_ADDONS,
+        profileHandle: {
+          style: "N5IA",
+          lengthCm: 130,
+          lengthModification: false,
+        },
+      },
+    },
+  ],
+});
+const profileHandlePriceTableRow = profileHandlePriceTableResult.hardware.find((item) => item.id === "door-profile-table-1-profile-handle");
+assert.equal(profileHandlePriceTableRow?.name, "造型把手加工 N5IA");
+assert.equal(profileHandlePriceTableRow?.quantity, 2);
+assert.equal(profileHandlePriceTableRow?.unitCost, 2300);
+assert.equal(profileHandlePriceTableRow?.subtotal, 4600);
+
+const fixedProfileHandlePriceResult = calculateCabinetUnit({
+  ...baseUnit,
+  doors: [
+    {
+      id: "door-profile-fixed",
+      type: "HINGED",
+      name: "固定造型把手門",
+      widthCm: 50,
+      heightCm: 90,
+      quantity: 1,
+      materialRef: doorMaterial,
+      hingeMaterialRef: null,
+      railMaterialRef: null,
+      wireMeshMaterialRef: null,
+      aluminumHandleMaterialRef: null,
+      addons: {
+        ...DEFAULT_DOOR_ADDONS,
+        profileHandle: {
+          style: "SMILE_INTEGRATED",
+          lengthCm: 40,
+          lengthModification: false,
+        },
+      },
+    },
+  ],
+});
+const fixedProfileHandlePriceRow = fixedProfileHandlePriceResult.hardware.find((item) => item.id === "door-profile-fixed-profile-handle");
+assert.equal(fixedProfileHandlePriceRow?.name, "造型把手加工 微笑一體把手");
+assert.equal(fixedProfileHandlePriceRow?.unitCost, 1950);
+assert.equal(fixedProfileHandlePriceRow?.subtotal, 1950);
+
+const bakedPaintProfileHandleResult = calculateCabinetUnit({
+  ...baseUnit,
+  doors: [
+    {
+      id: "door-profile-baked-paint",
+      type: "HINGED",
+      name: "烤漆造型把手門",
+      widthCm: 50,
+      heightCm: 90,
+      quantity: 1,
+      materialRef: doorMaterial,
+      hingeMaterialRef: null,
+      railMaterialRef: null,
+      wireMeshMaterialRef: null,
+      aluminumHandleMaterialRef: null,
+      addons: {
+        ...DEFAULT_DOOR_ADDONS,
+        profileHandle: {
+          style: "Y1A",
+          lengthCm: 70,
+          lengthModification: false,
+          bakedPaint: true,
+        },
+      },
+    },
+  ],
+});
+assert.equal(bakedPaintProfileHandleResult.hardware.find((item) => item.id === "door-profile-baked-paint-profile-handle")?.unitCost, 1500);
+assert.equal(bakedPaintProfileHandleResult.hardware.find((item) => item.id === "door-profile-baked-paint-profile-handle-baked-paint")?.unitCost, 300);
+
 const extraHardwareMaterial: MaterialRef = {
   materialId: "closet-rod-1",
   materialName: "吊衣桿 800mm",
@@ -798,6 +891,28 @@ assert.equal(drawerResult.hardware.at(-1)?.name, "抽屜滑軌");
 assert.equal(drawerResult.hardware.at(-1)?.quantity, 3);
 assert.equal(drawerResult.summary.hardwareCost, 540);
 
+const drawerWithoutRailQuoteResult = calculateCabinetUnit({
+  ...baseUnit,
+  drawers: [
+    {
+      id: "drawer-without-rail-quote",
+      name: "?賢?",
+      widthCm: 60,
+      heightCm: 16,
+      depthCm: 45,
+      railLengthCm: 45,
+      includeRailInQuote: false,
+      quantity: 3,
+      railMaterialRef: drawerRail,
+      wallMaterialRef: bodyMaterial,
+      bottomMaterialRef: bodyMaterial,
+      grooveSpec: "8.5",
+    },
+  ],
+});
+assert.equal(drawerWithoutRailQuoteResult.hardware.some((item) => item.id === "drawer-without-rail-quote-rail"), false);
+assert.equal(drawerWithoutRailQuoteResult.summary.hardwareCost, 0);
+
 const drawerParts = drawerResult.internalParts.filter((part) => part.id.startsWith("drawer-1-"));
 const drawerGrooveProcesses = drawerParts.flatMap((part) => part.processes ?? []);
 assert.equal(drawerParts.length, 4);
@@ -816,6 +931,46 @@ assert.deepEqual(
     { name: "抽屜左右側板", widthCm: 45, heightCm: 9, quantity: 6, note: "內側下方打溝 (10mm, 深9mm)" },
     { name: "抽屜前後牆板", widthCm: 49.8, heightCm: 9, quantity: 6, note: "內側下方打溝 (10mm, 深9mm)" },
     { name: "抽屜8mm底板", widthCm: 57.8, heightCm: 42.8, quantity: 3, note: undefined },
+  ],
+);
+
+const drawerFrontProcessingResult = calculateCabinetUnit({
+  ...baseUnit,
+  drawers: [
+    {
+      id: "drawer-front-processing",
+      name: "抽頭加工抽屜",
+      widthCm: 60,
+      heightCm: 16,
+      depthCm: 45,
+      railLengthCm: 45,
+      quantity: 2,
+      railMaterialRef: null,
+      wallMaterialRef: bodyMaterial,
+      bottomMaterialRef: bodyMaterial,
+      grooveSpec: "8.5",
+      frontMoldProcessing: true,
+      frontMoldRadius: "R100",
+      frontMoldCornerCount: 4,
+      frontHandle: {
+        style: "N5IA",
+        lengthCm: 130,
+        bakedPaint: false,
+      },
+    },
+  ],
+});
+const drawerFrontPanel = drawerFrontProcessingResult.internalParts.find((part) => part.id === "drawer-front-processing-front-panel");
+assert.deepEqual(
+  drawerFrontPanel?.processes.map((process) => ({
+    label: process.label,
+    quantity: process.quantity,
+    unitCost: process.unitCost,
+    cost: process.cost,
+  })),
+  [
+    { label: "抽頭合廠模造型加工 R100 (單板4個R角)", quantity: 2, unitCost: 600, cost: 1200 },
+    { label: "抽頭把手加工 N5IA", quantity: 2, unitCost: 2300, cost: 4600 },
   ],
 );
 

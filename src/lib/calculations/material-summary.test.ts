@@ -192,4 +192,45 @@ assert.equal(drawerSummary.rows.some((row) => row.category === "抽屜板材"), 
 assert.equal(drawerSummary.rows.some((row) => row.category === "抽屜五金" && row.itemName === "抽屜滑軌"), true);
 assert.equal(drawerSummary.rows.some((row) => row.category === "抽屜加工" && row.note.includes("內側下方打溝")), true);
 
+const drawerSummaryWithoutRail = buildCabinetUnitMaterialSummary(calculateCabinetUnit({
+  ...baseUnit,
+  doors: [],
+  drawers: [
+    {
+      id: "drawer-no-rail-quote",
+      name: "皜祈岫?賢?",
+      widthCm: 60,
+      heightCm: 16,
+      depthCm: 45,
+      railLengthCm: 45,
+      includeRailInQuote: false,
+      grooveSpec: "8.5",
+      quantity: 1,
+      railMaterialRef: drawerRailMaterial,
+      wallMaterialRef: bodyMaterial,
+      bottomMaterialRef: bodyMaterial,
+    },
+  ],
+}), {
+  ...baseUnit,
+  doors: [],
+  drawers: [
+    {
+      id: "drawer-no-rail-quote",
+      name: "皜祈岫?賢?",
+      widthCm: 60,
+      heightCm: 16,
+      depthCm: 45,
+      railLengthCm: 45,
+      includeRailInQuote: false,
+      grooveSpec: "8.5",
+      quantity: 1,
+      railMaterialRef: drawerRailMaterial,
+      wallMaterialRef: bodyMaterial,
+      bottomMaterialRef: bodyMaterial,
+    },
+  ],
+});
+assert.equal(drawerSummaryWithoutRail.rows.some((row) => row.materialId === drawerRailMaterial.materialId), false);
+
 console.log("material summary tests passed");

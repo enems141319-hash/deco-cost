@@ -19,7 +19,29 @@ export interface MaterialRef {
 // ─── 輸入型別 ─────────────────────────────────────────────────────────────────
 
 export type DoorType = "HINGED" | "SLIDING";
-export type ProfileHandleStyle = "none" | "SFJA" | "SFJB" | "SFJC" | "SFJD" | "SFCA";
+export type ProfileHandleStyle =
+  | "none"
+  | "SFJA" | "SFJB" | "SFJC" | "SFJD" | "SFCA"
+  | "L1A" | "L5A"
+  | "Y5IA" | "Y5LA" | "Y5CA" | "V5IA" | "V5LA" | "V5CA" | "U5IA" | "U5LA" | "U5CA"
+  | "Y5JA" | "Y5KA" | "U5JA" | "U5KA" | "V5JA" | "V5KA"
+  | "Y1A" | "U1A" | "V1A"
+  | "RECESSED_BEVEL_HANDLE"
+  | "RECESSED_ALUMINUM_HANDLE_NO_HARDWARE"
+  | "N1A"
+  | "N5IA" | "N5LA" | "N5CA"
+  | "N5JA" | "N5KA"
+  | "BEVEL_OR_HALF_ARC_HANDLE"
+  | "HORIZONTAL_INTEGRATED"
+  | "TRIANGLE_INTEGRATED_R40"
+  | "QUARTER_ROUND_INTEGRATED_R40"
+  | "HALF_ROUND_INTEGRATED_R40"
+  | "HEART_INTEGRATED_80"
+  | "SQUARE_INTEGRATED_80"
+  | "HEXAGON_INTEGRATED_90"
+  | "DIAMOND_INTEGRATED_100"
+  | "HOURGLASS_INTEGRATED_150"
+  | "SMILE_INTEGRATED";
 export type LightGrooveSide = "none" | "left" | "right";
 export type LightGrooveFace = "none" | "top" | "bottom";
 export type SlidingDoorTrackShape = "ㄇ" | "V" | "T";
@@ -120,6 +142,7 @@ export interface DoorAddons {
     style: ProfileHandleStyle;
     lengthCm: number;
     lengthModification: boolean;
+    bakedPaint?: boolean;
   };
 }
 
@@ -161,6 +184,7 @@ export const DEFAULT_DOOR_ADDONS: DoorAddons = {
     style: "none",
     lengthCm: 40,
     lengthModification: false,
+    bakedPaint: false,
   },
 };
 
@@ -229,11 +253,20 @@ export interface DrawerInput {
   heightCm: number;
   depthCm: number;
   railLengthCm: number;
+  includeRailInQuote?: boolean;
   grooveSpec: "12" | "8.5" | "9";
   quantity: number;
   railMaterialRef: MaterialRef | null;
   wallMaterialRef: MaterialRef | null;
   bottomMaterialRef: MaterialRef | null;
+  frontMoldProcessing?: boolean;
+  frontMoldRadius?: "none" | "R20" | "R30" | "R50" | "R80" | "R100" | "R150" | "R200" | "R250" | "R300";
+  frontMoldCornerCount?: number;
+  frontHandle?: {
+    style: ProfileHandleStyle;
+    lengthCm: number;
+    bakedPaint?: boolean;
+  };
 }
 
 export interface CabinetUnitInput {
