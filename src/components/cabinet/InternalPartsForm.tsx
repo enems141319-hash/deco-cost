@@ -1,7 +1,8 @@
 // src/components/cabinet/InternalPartsForm.tsx
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { generateId } from "@/lib/utils";
 import { DEFAULT_MIDDLE_DIVIDER_ADDONS, type MiddleDividerInput, type ShelfInput, type SideTopBottomSealPanelInput } from "@/types";
 import { SpecialProcessesForm } from "./SpecialProcessesForm";
+import type { CollapseCommand } from "./CabinetUnitForm";
 
 interface Props {
   middleDividers: MiddleDividerInput[];
@@ -19,6 +21,40 @@ interface Props {
   onMiddleDividersChange: (v: MiddleDividerInput[]) => void;
   onShelvesChange: (v: ShelfInput[]) => void;
   onSideTopBottomSealPanelsChange: (v: SideTopBottomSealPanelInput[]) => void;
+  collapseCommand?: CollapseCommand;
+}
+
+function CollapsibleGroup({
+  title,
+  defaultOpen = false,
+  command,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  command?: CollapseCommand;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (!command) return;
+    setOpen(command.action === "expand");
+  }, [command]);
+
+  return (
+    <div className="rounded-md border bg-background">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm font-semibold hover:bg-muted/40"
+        onClick={() => setOpen((next) => !next)}
+      >
+        <span>{title}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="space-y-3 border-t p-3">{children}</div>}
+    </div>
+  );
 }
 
 export function InternalPartsForm({
@@ -28,6 +64,7 @@ export function InternalPartsForm({
   onMiddleDividersChange,
   onShelvesChange,
   onSideTopBottomSealPanelsChange,
+  collapseCommand,
 }: Props) {
   const defaultDividerAddons = {
     ...DEFAULT_MIDDLE_DIVIDER_ADDONS,
@@ -81,7 +118,7 @@ export function InternalPartsForm({
   return (
     <div className="space-y-4">
       {/* 中立板 */}
-      <div className="space-y-2">
+      <CollapsibleGroup title={"\u4e2d\u7acb\u677f"} command={collapseCommand}>
         <div className="flex items-center justify-between">
           <Label className="text-sm font-semibold">中立板</Label>
           <Button type="button" variant="outline" size="sm" onClick={addDivider}>
@@ -201,10 +238,10 @@ export function InternalPartsForm({
             />
           </div>
         ))}
-      </div>
+      </CollapsibleGroup>
 
       {/* 櫃內層板 */}
-      <div className="space-y-2">
+      <CollapsibleGroup title={"\u5c64\u677f"} command={collapseCommand}>
         <div className="flex items-center justify-between">
           <Label className="text-sm font-semibold">櫃內層板</Label>
           <Button type="button" variant="outline" size="sm" onClick={addShelf}>
@@ -289,10 +326,10 @@ export function InternalPartsForm({
             />
           </div>
         ))}
-      </div>
+      </CollapsibleGroup>
 
       {/* 側/頂/底封板 */}
-      <div className="space-y-2">
+      <CollapsibleGroup title={"\u5074\u9802\u5e95\u5c01\u677f"} command={collapseCommand}>
         <div className="flex items-center justify-between">
           <Label className="text-sm font-semibold">側/頂/底封板</Label>
           <Button type="button" variant="outline" size="sm" onClick={addSideTopBottomSealPanel}>
@@ -339,7 +376,7 @@ export function InternalPartsForm({
             />
           </div>
         ))}
-      </div>
+      </CollapsibleGroup>
     </div>
   );
 }

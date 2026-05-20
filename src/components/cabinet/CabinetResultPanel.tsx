@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 import type { CabinetUnitResult, DoorResult, HardwareResult, PanelResult } from "@/types";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import { AreaDisplay } from "@/components/shared/AreaDisplay";
@@ -23,7 +24,7 @@ interface DisplayProcessRow {
   quantity: number;
   unitCost: number;
   unit?: string;
-  quantityUnit?: "cm";
+  quantityUnit?: "cm" | "cai";
   cost: number;
   includedInSubtotal?: boolean;
 }
@@ -32,6 +33,44 @@ const tableShellClass = "overflow-x-auto rounded-md border";
 const headerCellClass = "px-3 py-2 text-xs font-medium text-muted-foreground";
 const bodyCellClass = "px-3 py-2 align-top";
 const numericCellClass = `${bodyCellClass} text-right tabular-nums whitespace-nowrap`;
+
+interface ResultCollapseCommand {
+  action: "expand" | "collapse";
+  version: number;
+}
+
+function ResultSection({
+  sectionNumber,
+  title,
+  command,
+  children,
+}: {
+  sectionNumber: number;
+  title: string;
+  command?: ResultCollapseCommand;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    if (!command) return;
+    setOpen(command.action === "expand");
+  }, [command]);
+
+  return (
+    <section className="space-y-2 rounded-md border bg-background">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-muted/40"
+        onClick={() => setOpen((next) => !next)}
+      >
+        <span>{sectionNumber}.{title}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="px-3 pb-3">{children}</div>}
+    </section>
+  );
+}
 
 function unitPrice(row: BoardRow): number {
   return "unitCost" in row ? row.unitCost : row.materialRef?.pricePerUnit ?? 0;
@@ -71,11 +110,16 @@ function isCmBasedHandleProcess(id: string, unitCost: number): boolean {
   );
 }
 
-function processLabelWithPerPieceQuantity(label: string, processQuantity: number, parentQuantity: number, quantityUnit?: "cm"): string {
+function processLabelWithPerPieceQuantity(label: string, processQuantity: number, parentQuantity: number, quantityUnit?: "cm" | "cai"): string {
+  if (quantityUnit === "cai") return `${label}(X1)`;
   if (parentQuantity <= 0) return label;
   const perPieceQuantity = processQuantity / parentQuantity;
   if (perPieceQuantity < 1) return label;
   return `${label}(X${formatQuantity(perPieceQuantity)}${quantityUnit ?? ""})`;
+}
+
+function isCaiBasedProcess(id: string): boolean {
+  return id.includes("-double-drill-holes") || id.includes("-non-standard-holes");
 }
 
 function isDrawerPanel(row: PanelResult): boolean {
@@ -173,6 +217,7 @@ function BoardTable({
   processRowsByRowId = {},
   highlightedBoardId = null,
   showPanelProcesses = true,
+  collapseCommand,
 }: {
   sectionNumber: number;
   title: string;
@@ -180,13 +225,13 @@ function BoardTable({
   processRowsByRowId?: Record<string, DisplayProcessRow[]>;
   highlightedBoardId?: string | null;
   showPanelProcesses?: boolean;
+  collapseCommand?: ResultCollapseCommand;
 }) {
   if (rows.length === 0) return null;
   const activeHighlightedIds = highlightedIds(highlightedBoardId);
 
   return (
-    <section className="space-y-2">
-      <h4 className="text-sm font-semibold text-slate-700">{sectionNumber}.{title}</h4>
+    <ResultSection sectionNumber={sectionNumber} title={title} command={collapseCommand}>
       <div className={tableShellClass}>
         <table className="w-full min-w-[700px] table-fixed text-sm">
           <colgroup>
@@ -216,7 +261,11 @@ function BoardTable({
                     label: process.label,
                     quantity: process.quantity,
                     unitCost: process.unitCost,
-                    quantityUnit: isCmBasedHandleProcess(process.id, process.unitCost) ? "cm" : undefined,
+                    quantityUnit: isCaiBasedProcess(process.id)
+                      ? "cai"
+                      : isCmBasedHandleProcess(process.id, process.unitCost)
+                        ? "cm"
+                        : undefined,
                     cost: process.cost,
                     includedInSubtotal: process.includedInSubtotal,
                   }))
@@ -291,16 +340,25 @@ function BoardTable({
           </tbody>
         </table>
       </div>
-    </section>
+    </ResultSection>
   );
 }
 
-function HardwareTable({ sectionNumber, title, rows }: { sectionNumber: number; title: string; rows: HardwareResult[] }) {
+function HardwareTable({
+  sectionNumber,
+  title,
+  rows,
+  collapseCommand,
+}: {
+  sectionNumber: number;
+  title: string;
+  rows: HardwareResult[];
+  collapseCommand?: ResultCollapseCommand;
+}) {
   if (rows.length === 0) return null;
 
   return (
-    <section className="space-y-2">
-      <h4 className="text-sm font-semibold text-slate-700">{sectionNumber}.{title}</h4>
+    <ResultSection sectionNumber={sectionNumber} title={title} command={collapseCommand}>
       <div className={tableShellClass}>
         <table className="w-full min-w-[520px] table-fixed text-sm">
           <colgroup>
@@ -346,12 +404,13 @@ function HardwareTable({ sectionNumber, title, rows }: { sectionNumber: number; 
           </tbody>
         </table>
       </div>
-    </section>
+    </ResultSection>
   );
 }
 
 export function CabinetResultPanel({ result, highlightedBoardId = null }: Props) {
   const { summary } = result;
+  const [resultCollapseCommand, setResultCollapseCommand] = useState<ResultCollapseCommand>({ action: "expand", version: 0 });
   const drawerPanels = result.internalParts.filter(isDrawerPanel);
   const internalParts = result.internalParts.filter((row) => !isDrawerPanel(row));
   const drawerHardware = result.hardware.filter(isDrawerHardware);
@@ -388,30 +447,46 @@ export function CabinetResultPanel({ result, highlightedBoardId = null }: Props)
         </Card>
       </div>
 
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted/50"
+          onClick={() => setResultCollapseCommand((current) => ({ action: "expand", version: current.version + 1 }))}
+        >
+          全部展開
+        </button>
+        <button
+          type="button"
+          className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted/50"
+          onClick={() => setResultCollapseCommand((current) => ({ action: "collapse", version: current.version + 1 }))}
+        >
+          全部摺疊
+        </button>
+      </div>
+
       <div className="space-y-5">
-        <BoardTable sectionNumber={bodyPanelsSection} title="桶身板材" rows={result.panels} highlightedBoardId={highlightedBoardId} />
-        <HardwareTable sectionNumber={bodyProcessSection} title="桶身加工" rows={standaloneProcessRows} />
-        <BoardTable sectionNumber={internalPartsSection} title="內部構件（中立板 / 櫃內層板）" rows={internalParts} />
+        <BoardTable sectionNumber={bodyPanelsSection} title="桶身板材" rows={result.panels} highlightedBoardId={highlightedBoardId} collapseCommand={resultCollapseCommand} />
+        <HardwareTable sectionNumber={bodyProcessSection} title="桶身加工" rows={standaloneProcessRows} collapseCommand={resultCollapseCommand} />
+        <BoardTable sectionNumber={internalPartsSection} title="內部構件（中立板 / 櫃內層板）" rows={internalParts} collapseCommand={resultCollapseCommand} />
 
         {(drawerPanels.length > 0 || drawerHardware.length > 0) && (
           <div className="space-y-3">
-            <BoardTable sectionNumber={drawerPanelsSection} title="抽屜板材" rows={drawerPanels} />
-            <HardwareTable sectionNumber={drawerHardwareSection} title="抽屜五金" rows={drawerHardware} />
+            <BoardTable sectionNumber={drawerPanelsSection} title="抽屜板材" rows={drawerPanels} collapseCommand={resultCollapseCommand} />
+            <HardwareTable sectionNumber={drawerHardwareSection} title="抽屜五金" rows={drawerHardware} collapseCommand={resultCollapseCommand} />
           </div>
         )}
 
         {result.doors.length > 0 && (
           <div className="space-y-3">
-            <BoardTable sectionNumber={doorsSection} title="門片" rows={result.doors} processRowsByRowId={doorAttachedRowsByDoorId} />
-            <HardwareTable sectionNumber={doorHardwareSection} title="門片五金" rows={doorHardware} />
+            <BoardTable sectionNumber={doorsSection} title="門片" rows={result.doors} processRowsByRowId={doorAttachedRowsByDoorId} collapseCommand={resultCollapseCommand} />
+            <HardwareTable sectionNumber={doorHardwareSection} title="門片五金" rows={doorHardware} collapseCommand={resultCollapseCommand} />
           </div>
         )}
 
-        <HardwareTable sectionNumber={otherHardwareSection} title="五金 / 另料" rows={otherHardware} />
+        <HardwareTable sectionNumber={otherHardwareSection} title="五金 / 另料" rows={otherHardware} collapseCommand={resultCollapseCommand} />
 
         {result.accessories.length > 0 && (
-          <section className="space-y-2">
-            <h4 className="text-sm font-semibold text-slate-700">{accessoriesSection}.配件</h4>
+          <ResultSection sectionNumber={accessoriesSection} title="配件" command={resultCollapseCommand}>
             <div className={tableShellClass}>
               <table className="w-full min-w-[480px] table-fixed text-sm">
                 <colgroup>
@@ -437,7 +512,7 @@ export function CabinetResultPanel({ result, highlightedBoardId = null }: Props)
                 </tbody>
               </table>
             </div>
-          </section>
+          </ResultSection>
         )}
       </div>
 

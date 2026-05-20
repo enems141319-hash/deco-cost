@@ -624,6 +624,18 @@ const dividerAddonResult = calculateCabinetUnit({
   ],
 });
 assert.equal(dividerAddonResult.internalParts[0].addonsCost, 10);
+assert.deepEqual(
+  dividerAddonResult.internalParts[0].processes.map((process) => ({
+    label: process.label,
+    quantity: process.quantity,
+    unitCost: process.unitCost,
+    cost: process.cost,
+  })),
+  [
+    { label: "\u96d9\u6392\u5b54", quantity: 1, unitCost: 5, cost: 5 },
+    { label: "\u975e\u6a19\u6e96\u6392\u5b54", quantity: 1, unitCost: 5, cost: 5 },
+  ],
+);
 assert.equal(dividerAddonResult.summary.internalPartsCost, 110);
 
 const pushDoorHardware: MaterialRef = {

@@ -1,7 +1,8 @@
 ﻿// src/components/cabinet/CabinetUnitForm.tsx
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -27,6 +28,44 @@ interface Props {
 
 const MIN_INPUT_WIDTH_PCT = 30;
 const MAX_INPUT_WIDTH_PCT = 70;
+
+export interface CollapseCommand {
+  action: "expand" | "collapse";
+  version: number;
+}
+
+function CollapsibleSection({
+  title,
+  defaultOpen = false,
+  command,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  command?: CollapseCommand;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (!command) return;
+    setOpen(command.action === "expand");
+  }, [command]);
+
+  return (
+    <section className="rounded-md border bg-background">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm font-semibold hover:bg-muted/40"
+        onClick={() => setOpen((next) => !next)}
+      >
+        <span>{title}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="space-y-4 border-t p-3">{children}</div>}
+    </section>
+  );
+}
 
 function lTurnCutoutRect(params: {
   position: LTurnCabinetPosition;
@@ -440,6 +479,7 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [inputWidthPct, setInputWidthPct] = useState(MIN_INPUT_WIDTH_PCT);
   const [highlightedBoardId, setHighlightedBoardId] = useState<string | null>(null);
+  const [leftCollapseCommand, setLeftCollapseCommand] = useState<CollapseCommand>({ action: "collapse", version: 0 });
   const update = (patch: Partial<CabinetUnitInput>) => onChange({ ...unit, ...patch });
 
   const result = calculateCabinetUnit(unit);
@@ -493,6 +533,24 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
     >
       {/* 左側輸入區 */}
       <div className="min-w-0 space-y-5 xl:pr-5">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted/50"
+            onClick={() => setLeftCollapseCommand((current) => ({ action: "expand", version: current.version + 1 }))}
+          >
+            全部展開
+          </button>
+          <button
+            type="button"
+            className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted/50"
+            onClick={() => setLeftCollapseCommand((current) => ({ action: "collapse", version: current.version + 1 }))}
+          >
+            全部摺疊
+          </button>
+        </div>
+
+        <CollapsibleSection title="桶身" command={leftCollapseCommand}>
         {/* 基本資料 */}
         <section className="space-y-3">
           <h3 className="font-semibold text-sm border-b pb-1">基本資料</h3>
@@ -659,6 +717,7 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
           value={unit.kickPlate}
           onChange={(v) => update({ kickPlate: v })}
         />
+        </CollapsibleSection>
 
         <Separator />
 
@@ -667,6 +726,7 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
           middleDividers={unit.middleDividers}
           shelves={unit.shelves}
           sideTopBottomSealPanels={unit.sideTopBottomSealPanels ?? []}
+          collapseCommand={leftCollapseCommand}
           onMiddleDividersChange={(v) => update({ middleDividers: v })}
           onShelvesChange={(v) => update({ shelves: v })}
           onSideTopBottomSealPanelsChange={(v) => update({ sideTopBottomSealPanels: v })}
@@ -675,25 +735,31 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
         <Separator />
 
         {/* 抽屜 */}
+        <CollapsibleSection title="抽屜" command={leftCollapseCommand}>
         <DrawerForm
           drawers={unit.drawers ?? []}
           onChange={(v) => update({ drawers: v })}
         />
+        </CollapsibleSection>
 
         <Separator />
 
         {/* 門片 */}
+        <CollapsibleSection title="門片" command={leftCollapseCommand}>
         <DoorForm
           doors={unit.doors}
           onChange={(v) => update({ doors: v })}
         />
+        </CollapsibleSection>
 
         <Separator />
 
+        <CollapsibleSection title="五金另料" command={leftCollapseCommand}>
         <HardwareItemsForm
           items={unit.hardwareItems ?? []}
           onChange={(v) => update({ hardwareItems: v })}
         />
+        </CollapsibleSection>
 
       </div>
 
