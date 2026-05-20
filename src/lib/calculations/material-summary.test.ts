@@ -101,6 +101,21 @@ assert.equal(projectSummary.materialCaiTotals.find((row) => row.materialId === "
 assert.equal(projectSummary.hardwareRows.length, 1);
 assert.equal(projectSummary.processingTotal, unitSummary.processingTotal);
 
+const noHingeQuoteUnit: CabinetUnitInput = {
+  ...baseUnit,
+  id: "unit-no-hinge-quote",
+  doors: baseUnit.doors.map((door) => ({
+    ...door,
+    id: "door-no-hinge-quote",
+    includeHingeInQuote: false,
+  })),
+};
+const noHingeQuoteSummary = buildCabinetUnitMaterialSummary(
+  calculateCabinetUnit(noHingeQuoteUnit),
+  noHingeQuoteUnit,
+);
+assert.equal(noHingeQuoteSummary.hardwareRows.some((row) => row.materialId === hingeMaterial.materialId), false);
+
 const legacyUnitResult = {
   ...unitResult,
   panels: unitResult.panels.map((panel) => {

@@ -64,6 +64,8 @@ function lTurnPath(params: {
 interface LTurnPreviewEdge {
   id: string;
   label: string;
+  hoverId?: string;
+  kind: "side" | "back" | "kickPlate";
   x1: number;
   y1: number;
   x2: number;
@@ -77,8 +79,9 @@ function lTurnPreviewEdges(params: {
   outerDepth: number;
   cutout: { x: number; y: number; width: number; height: number };
   isOpening: boolean;
+  hasKickPlate: boolean;
 }): LTurnPreviewEdge[] {
-  const { unitId, position, outerWidth, outerDepth, cutout, isOpening } = params;
+  const { unitId, position, outerWidth, outerDepth, cutout, isOpening, hasKickPlate } = params;
   const x1 = cutout.x;
   const y1 = cutout.y;
   const x2 = cutout.x + cutout.width;
@@ -89,6 +92,7 @@ function lTurnPreviewEdges(params: {
   const sideWidthEdge: LTurnPreviewEdge = {
     id: `${unitId}-l-turn-side-width`,
     label: "L轉側板-寬向",
+    kind: "side",
     x1: isRight ? 0 : x2,
     y1: isBottom ? outerDepth : 0,
     x2: isRight ? x1 : outerWidth,
@@ -98,6 +102,7 @@ function lTurnPreviewEdges(params: {
   const sideDepthEdge: LTurnPreviewEdge = {
     id: `${unitId}-l-turn-side-depth`,
     label: "L轉側板-深向",
+    kind: "side",
     x1: isRight ? outerWidth : 0,
     y1: isBottom ? 0 : y2,
     x2: isRight ? outerWidth : 0,
@@ -108,6 +113,7 @@ function lTurnPreviewEdges(params: {
     ? {
         id: `${unitId}-l-turn-back-width`,
         label: "L轉背板-寬向",
+        kind: "back",
         x1: 0,
         y1: isBottom ? 0 : outerDepth,
         x2: outerWidth,
@@ -116,6 +122,7 @@ function lTurnPreviewEdges(params: {
     : {
         id: `${unitId}-l-turn-back-width`,
         label: "L轉背板-寬向",
+        kind: "back",
         x1: isRight ? x1 : 0,
         y1: isBottom ? y1 : y2,
         x2: isRight ? outerWidth : x2,
@@ -126,6 +133,7 @@ function lTurnPreviewEdges(params: {
     ? {
         id: `${unitId}-l-turn-back-depth`,
         label: "L轉背板-深向",
+        kind: "back",
         x1: isRight ? 0 : outerWidth,
         y1: 0,
         x2: isRight ? 0 : outerWidth,
@@ -134,13 +142,68 @@ function lTurnPreviewEdges(params: {
     : {
         id: `${unitId}-l-turn-back-depth`,
         label: "L轉背板-深向",
+        kind: "back",
         x1: isRight ? x1 : x2,
         y1: isBottom ? y1 : 0,
         x2: isRight ? x1 : x2,
         y2: isBottom ? outerDepth : y2,
       };
 
-  return [sideWidthEdge, sideDepthEdge, backWidthEdge, backDepthEdge];
+  const kickPlateWidthId = `${unitId}-kickplate-${isOpening ? "cutout-width" : "outer-width"}`;
+  const kickPlateDepthId = `${unitId}-kickplate-${isOpening ? "cutout-depth" : "outer-depth"}`;
+  const kickPlateWidthEdge: LTurnPreviewEdge = isOpening
+    ? {
+        id: kickPlateWidthId,
+        label: "L轉踢腳板-寬向",
+        kind: "kickPlate",
+        x1,
+        y1: isBottom ? y1 : y2,
+        x2,
+        y2: isBottom ? y1 : y2,
+      }
+    : {
+        id: kickPlateWidthId,
+        label: "L轉踢腳板-寬向",
+        kind: "kickPlate",
+        x1: 0,
+        y1: isBottom ? 0 : outerDepth,
+        x2: outerWidth,
+        y2: isBottom ? 0 : outerDepth,
+      };
+  const kickPlateDepthEdge: LTurnPreviewEdge = isOpening
+    ? {
+        id: kickPlateDepthId,
+        label: "L轉踢腳板-深向",
+        kind: "kickPlate",
+        x1: isRight ? x1 : x2,
+        y1,
+        x2: isRight ? x1 : x2,
+        y2,
+      }
+    : {
+        id: kickPlateDepthId,
+        label: "L轉踢腳板-深向",
+        kind: "kickPlate",
+        x1: isRight ? 0 : outerWidth,
+        y1: 0,
+        x2: isRight ? 0 : outerWidth,
+        y2: outerDepth,
+      };
+
+  const edges = [sideWidthEdge, sideDepthEdge, backWidthEdge, backDepthEdge];
+  if (!hasKickPlate) return edges;
+
+  return [
+    ...edges,
+    kickPlateWidthEdge,
+    kickPlateDepthEdge,
+  ];
+}
+
+function lTurnPreviewEdgeColor(kind: LTurnPreviewEdge["kind"]): string {
+  if (kind === "side") return "hsl(var(--primary))";
+  if (kind === "back") return "hsl(168 76% 32%)";
+  return "hsl(var(--muted-foreground))";
 }
 
 function LTurnCabinetPreview({
@@ -151,6 +214,7 @@ function LTurnCabinetPreview({
   widthMm,
   heightMm,
   isOpening,
+  hasKickPlate,
   highlightedBoardId,
   onBoardHover,
 }: {
@@ -161,6 +225,7 @@ function LTurnCabinetPreview({
   widthMm: number;
   heightMm: number;
   isOpening: boolean;
+  hasKickPlate: boolean;
   highlightedBoardId: string | null;
   onBoardHover: (boardId: string | null) => void;
 }) {
@@ -217,7 +282,9 @@ function LTurnCabinetPreview({
     outerDepth: drawingHeight,
     cutout,
     isOpening,
+    hasKickPlate,
   });
+  const activeHighlightedIds = highlightedBoardId?.split("|") ?? [];
 
   return (
     <div className="rounded border bg-background p-3">
@@ -235,14 +302,24 @@ function LTurnCabinetPreview({
           <path d={path} fill="hsl(var(--primary) / 0.16)" stroke="hsl(var(--primary))" strokeWidth="2" />
           {previewEdges.map((edge) => (
             <g key={edge.id}>
-              {highlightedBoardId === edge.id && (
+              <line
+                x1={edge.x1}
+                y1={edge.y1}
+                x2={edge.x2}
+                y2={edge.y2}
+                stroke={lTurnPreviewEdgeColor(edge.kind)}
+                strokeWidth={edge.kind === "kickPlate" ? 2 : 4}
+                strokeLinecap="round"
+                opacity={edge.kind === "kickPlate" ? 0.55 : 0.82}
+              />
+              {activeHighlightedIds.includes(edge.id) && (
                 <line
                   x1={edge.x1}
                   y1={edge.y1}
                   x2={edge.x2}
                   y2={edge.y2}
                   stroke="hsl(var(--primary))"
-                  strokeWidth="5"
+                  strokeWidth={edge.kind === "kickPlate" ? 2 : 6}
                   strokeLinecap="round"
                 />
               )}
@@ -258,9 +335,9 @@ function LTurnCabinetPreview({
                 role="button"
                 tabIndex={0}
                 aria-label={edge.label}
-                onPointerEnter={() => onBoardHover(edge.id)}
+                onPointerEnter={() => onBoardHover(edge.hoverId ?? edge.id)}
                 onPointerLeave={() => onBoardHover(null)}
-                onFocus={() => onBoardHover(edge.id)}
+                onFocus={() => onBoardHover(edge.hoverId ?? edge.id)}
                 onBlur={() => onBoardHover(null)}
               >
                 <title>{edge.label}</title>
@@ -525,6 +602,7 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
                 widthMm={lTurnCabinet.widthMm}
                 heightMm={lTurnCabinet.heightMm}
                 isOpening={lTurnCabinet.isOpening}
+                hasKickPlate={unit.kickPlate !== null}
                 highlightedBoardId={highlightedBoardId}
                 onBoardHover={setHighlightedBoardId}
               />
@@ -576,6 +654,12 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
           onChange={(addons) => update({ addons })}
         />
 
+        {/* 踢腳板 */}
+        <KickPlateForm
+          value={unit.kickPlate}
+          onChange={(v) => update({ kickPlate: v })}
+        />
+
         <Separator />
 
         {/* 內部構件 */}
@@ -611,13 +695,6 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
           onChange={(v) => update({ hardwareItems: v })}
         />
 
-        <Separator />
-
-        {/* 踢腳板 */}
-        <KickPlateForm
-          value={unit.kickPlate}
-          onChange={(v) => update({ kickPlate: v })}
-        />
       </div>
 
       {/* 分隔拖曳把手 */}

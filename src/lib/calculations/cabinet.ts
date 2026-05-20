@@ -180,6 +180,19 @@ function lTurnBackPanelWidth(widthCm: number, deductionCm: number): number {
   return round(Math.max(widthCm - deductionCm, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
 }
 
+function lTurnKickPlateWidth(baseWidthCm: number, sideThicknessCm: number, direction: "width" | "depth"): number {
+  const extraCm = UNIT_CONFIG.L_TURN_KICK_PLATE_SHARED_OVERLAP_CM
+    + (direction === "width" ? UNIT_CONFIG.L_TURN_KICK_PLATE_WIDTH_EXTRA_CM : 0);
+  return round(Math.max(baseWidthCm - sideThicknessCm + extraCm, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
+}
+
+function lTurnClosedKickPlateWidth(baseWidthCm: number, sideThicknessCm: number, direction: "width" | "depth"): number {
+  const deductionCm = direction === "width"
+    ? UNIT_CONFIG.L_TURN_CLOSED_KICK_PLATE_WIDTH_DEDUCTION_CM
+    : UNIT_CONFIG.L_TURN_CLOSED_KICK_PLATE_DEPTH_DEDUCTION_CM;
+  return round(Math.max(baseWidthCm - sideThicknessCm - deductionCm, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
+}
+
 function lTurnCabinetPanels(input: CabinetUnitInput, unitQty: number): PanelResult[] {
   const option = input.addons.lTurnCabinet;
   if (!option?.enabled) return [];
@@ -263,14 +276,23 @@ function lTurnCabinetKickPlatePanels(input: CabinetUnitInput, unitQty: number, a
   const cutoutDepthCm = round(Math.min(Math.max(option.heightMm / 10, 0), input.depthCm), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
   const remainingWidthCm = round(Math.max(input.widthCm - cutoutWidthCm, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
   const remainingDepthCm = round(Math.max(input.depthCm - cutoutDepthCm, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
+  const sideThicknessCm = materialThicknessCm(input.panelMaterialRef);
+  const kickPlateWidthBaseCm = option.isOpening ? cutoutWidthCm : input.widthCm;
+  const kickPlateDepthBaseCm = option.isOpening ? cutoutDepthCm : input.depthCm;
+  const kickPlateWidthCm = option.isOpening
+    ? lTurnKickPlateWidth(kickPlateWidthBaseCm, sideThicknessCm, "width")
+    : lTurnClosedKickPlateWidth(kickPlateWidthBaseCm, sideThicknessCm, "width");
+  const kickPlateDepthCm = option.isOpening
+    ? lTurnKickPlateWidth(kickPlateDepthBaseCm, sideThicknessCm, "depth")
+    : lTurnClosedKickPlateWidth(kickPlateDepthBaseCm, sideThicknessCm, "depth");
   const kickPlateLines = option.isOpening
     ? [
-        { id: "cutout-width", name: "L轉踢腳板-缺口寬向", widthCm: cutoutWidthCm },
-        { id: "cutout-depth", name: "L轉踢腳板-缺口深向", widthCm: cutoutDepthCm },
+        { id: "cutout-width", name: "L轉踢腳板-缺口寬向", widthCm: kickPlateWidthCm },
+        { id: "cutout-depth", name: "L轉踢腳板-缺口深向", widthCm: kickPlateDepthCm },
       ]
     : [
-        { id: "outer-width", name: "L轉踢腳板-外側寬向", widthCm: remainingWidthCm },
-        { id: "outer-depth", name: "L轉踢腳板-外側深向", widthCm: remainingDepthCm },
+        { id: "outer-width", name: "L轉踢腳板-外側寬向", widthCm: kickPlateWidthCm },
+        { id: "outer-depth", name: "L轉踢腳板-外側深向", widthCm: kickPlateDepthCm },
       ];
 
   return kickPlateLines
@@ -393,7 +415,7 @@ function priceForGroup(prices: Partial<Record<ThicknessPriceGroup, number>>, gro
 function calcSpecialProcessUnitCost(process: SpecialProcessInput, materialRef: MaterialRef | null): number | null {
   const group = thicknessPriceGroup(materialRef);
 
-  if (process.kind === "roundCorner") {
+  if (process.kind === "roundCorner" || process.kind === "quarterRound") {
     const radiusMm = process.radiusMm ?? 0;
     const mode = process.radiusMode ?? "factory";
     if (mode === "factory") {
@@ -432,16 +454,17 @@ function calcSpecialProcessUnitCost(process: SpecialProcessInput, materialRef: M
 }
 
 function specialProcessKindLabel(kind: SpecialProcessInput["kind"]): string {
-  if (kind === "roundCorner") return "導圓加工";
-  if (kind === "cutCorner") return "切角加工";
-  if (kind === "outerShape") return "板外造型加工";
-  return "板內開孔加工";
+  if (kind === "roundCorner") return "\u5c0e\u5713\u52a0\u5de5";
+  if (kind === "quarterRound") return "1/4\u5713\u52a0\u5de5";
+  if (kind === "cutCorner") return "\u5207\u89d2\u52a0\u5de5";
+  if (kind === "outerShape") return "\u677f\u5916\u9020\u578b\u52a0\u5de5";
+  return "\u677f\u5167\u958b\u5b54\u52a0\u5de5";
 }
 
 function specialProcessLabel(process: SpecialProcessInput, unitCost: number | null): string {
   const label = process.label || specialProcessKindLabel(process.kind);
   if (unitCost === null) return `${specialProcessKindLabel(process.kind)}-${label} 需另詢價`;
-  if (process.kind === "roundCorner") {
+  if (process.kind === "roundCorner" || process.kind === "quarterRound") {
     const mode = (process.radiusMode ?? "factory") === "factory" ? "廠模" : "客製";
     const radius = process.radiusMm && !label.includes(`R${process.radiusMm}`) ? ` R${process.radiusMm}` : "";
     return `${specialProcessKindLabel(process.kind)}-${label}${radius} ${mode}`;
@@ -488,7 +511,7 @@ function specialProcesses(
     const processQuantityPerBoard = Math.max(1, process.quantity);
     const label = specialProcessLabel(process, unitCost);
 
-    if (process.kind === "roundCorner" && unitCost !== null) {
+    if ((process.kind === "roundCorner" || process.kind === "quarterRound") && unitCost !== null) {
       const discountKey = roundCornerDiscountKey(process, materialRef);
       const previousCountPerBoard = roundCornerCounts.get(discountKey) ?? 0;
       roundCornerCounts.set(discountKey, previousCountPerBoard + processQuantityPerBoard);
@@ -868,6 +891,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
   }
 
   for (const drawer of input.drawers ?? []) {
+    const drawerLabel = drawer.name.trim() || "\u62bd\u5c5c";
     const quantity = drawer.quantity * unitQty;
     const drawerWallThicknessCm = materialThicknessCm(drawer.wallMaterialRef ?? input.panelMaterialRef);
     const wallHeightCm = drawer.heightCm - 7;
@@ -884,7 +908,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
 
     drawerParts.push(buildPanelResult({
       id: `${drawer.id}-front-panel`,
-      name: "抽屜面板/抽頭",
+      name: `${drawerLabel}-\u62bd\u5c5c\u9762\u677f/\u62bd\u982d`,
       widthCm: drawer.widthCm,
       heightCm: drawer.heightCm,
       quantity,
@@ -898,7 +922,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
 
     drawerParts.push(buildPanelResult({
       id: `${drawer.id}-side-panels`,
-      name: "抽屜左右側板",
+      name: `${drawerLabel}-\u62bd\u5c5c\u5de6\u53f3\u5074\u677f`,
       widthCm: drawer.railLengthCm,
       heightCm: wallHeightCm,
       quantity: quantity * 2,
@@ -922,7 +946,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
 
     drawerParts.push(buildPanelResult({
       id: `${drawer.id}-front-back-panels`,
-      name: "抽屜前後牆板",
+      name: `${drawerLabel}-\u62bd\u5c5c\u524d\u5f8c\u7246\u677f`,
       widthCm: frontBackWidthCm,
       heightCm: wallHeightCm,
       quantity: quantity * 2,
@@ -946,7 +970,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
 
     drawerParts.push(buildPanelResult({
       id: `${drawer.id}-bottom-panel`,
-      name: "抽屜8mm底板",
+      name: `${drawerLabel}-\u62bd\u5c5c8mm\u5e95\u677f`,
       widthCm: bottomWidthCm,
       heightCm: bottomDepthCm,
       quantity,
@@ -1077,6 +1101,20 @@ function drawerFrontProcesses(drawer: DrawerInput, quantity: number): PanelProce
         quantity,
         price,
       ));
+    } else {
+      const billableLengthCm = Math.max(
+        frontHandle.lengthCm,
+        ADDON_PRICES.PROFILE_HANDLE_MIN_LENGTH_CM,
+      );
+      const unitCost = ADDON_PRICES.PROFILE_HANDLE_PER_CM;
+      processes.push(panelProcess(
+        `${drawer.id}-front-handle-processing`,
+        `\u62bd\u982d\u628a\u624b\u52a0\u5de5 ${frontHandle.style}`,
+        billableLengthCm * quantity * unitCost,
+        true,
+        billableLengthCm * quantity,
+        unitCost,
+      ));
     }
 
     if (frontHandle.bakedPaint) {
@@ -1137,7 +1175,7 @@ function calculateDoors(
     const glassCost = door.materialRef?.unit === "才" && doorAddons.temperedGlass
       ? round(billableTotalArea.cai * ADDON_PRICES.TEMPERED_GLASS, UNIT_CONFIG.COST_DECIMAL_PLACES)
       : 0;
-    const hingeHoleCost = doorAddons.hingeHoleDrilling && door.type === "HINGED"
+    const hingeHoleCost = door.type === "HINGED"
       ? hingesPerDoor * totalQty * ADDON_PRICES.HINGE_HOLE_DRILLING
       : 0;
     const addonsCost = patternCost + glassCost + hingeHoleCost;
@@ -1159,9 +1197,21 @@ function calculateDoors(
       materialRef: door.materialRef,
       subtotal: baseCost + glassCost + hingeHoleCost,
       addonsCost,
+      processes: hingeHoleCost > 0
+        ? [
+            panelProcess(
+              `${door.id}-hinge-hole`,
+              "\u9580\u677f\u9278\u93c8\u5b54",
+              hingeHoleCost,
+              true,
+              hingesPerDoor * totalQty,
+              ADDON_PRICES.HINGE_HOLE_DRILLING,
+            ),
+          ]
+        : [],
     });
 
-    if (door.type === "HINGED") {
+    if (door.type === "HINGED" && (door.includeHingeInQuote ?? true)) {
       const totalHinges = hingesPerDoor * totalQty;
       const hingeRef = door.hingeMaterialRef ?? null;
 
@@ -1176,7 +1226,7 @@ function calculateDoors(
       });
     }
 
-    if (door.type === "SLIDING") {
+    if (door.type === "SLIDING" && (door.includeSlidingHardwareInQuote ?? true)) {
       const railRef = door.railMaterialRef ?? null;
       if (railRef) {
         const quantity = railRef.unit === "M"

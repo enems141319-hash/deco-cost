@@ -196,6 +196,8 @@ export function InternalPartsForm({
             <SpecialProcessesForm
               value={d.specialProcesses ?? []}
               onChange={(specialProcesses) => updateDivider(i, { specialProcesses })}
+              boardWidthCm={d.widthCm}
+              boardHeightCm={d.heightCm}
             />
           </div>
         ))}
@@ -282,6 +284,8 @@ export function InternalPartsForm({
             <SpecialProcessesForm
               value={s.specialProcesses ?? []}
               onChange={(specialProcesses) => updateShelf(i, { specialProcesses })}
+              boardWidthCm={s.widthCm}
+              boardHeightCm={s.depthCm}
             />
           </div>
         ))}

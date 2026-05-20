@@ -120,6 +120,8 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
     })),
     doors: (unit.doors ?? []).map((door) => ({
       ...door,
+      includeHingeInQuote: door.includeHingeInQuote ?? true,
+      includeSlidingHardwareInQuote: door.includeSlidingHardwareInQuote ?? true,
       addons: {
         ...DEFAULT_DOOR_ADDONS,
         ...door.addons,

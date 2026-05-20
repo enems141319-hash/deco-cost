@@ -116,9 +116,10 @@ export interface MiddleDividerAddons {
   lightGroove?: MiddleDividerLightGroove;
 }
 
-export type SpecialProcessKind = "roundCorner" | "cutCorner" | "outerShape" | "innerCutout";
+export type SpecialProcessKind = "roundCorner" | "quarterRound" | "cutCorner" | "outerShape" | "innerCutout";
 export type SpecialProcessEdgeBanding = "none" | "withEdge";
 export type SpecialProcessRadiusMode = "factory" | "custom";
+export type SpecialProcessOuterShapeSide = "long" | "short";
 
 export interface SpecialProcessInput {
   id: string;
@@ -127,6 +128,9 @@ export interface SpecialProcessInput {
   edgeBanding: SpecialProcessEdgeBanding;
   quantity: number;
   dimensionSumMm?: number;
+  dimensionAMm?: number;
+  dimensionBMm?: number;
+  outerShapeSide?: SpecialProcessOuterShapeSide;
   radiusMm?: number;
   radiusMode?: SpecialProcessRadiusMode;
   sharpCornerGte90Count?: number;
@@ -197,6 +201,8 @@ export interface DoorInput {
   quantity: number;
   materialRef: MaterialRef | null;
   addons: DoorAddons;
+  includeHingeInQuote?: boolean;
+  includeSlidingHardwareInQuote?: boolean;
   hingeMaterialRef?: MaterialRef | null;
   railMaterialRef?: MaterialRef | null;
   wireMeshMaterialRef?: MaterialRef | null;
@@ -332,6 +338,7 @@ export interface DoorResult {
   materialRef: MaterialRef | null;
   subtotal: number;
   addonsCost: number;
+  processes: PanelProcessResult[];
 }
 
 export interface HardwareResult {

@@ -165,7 +165,7 @@ function panelProcessRow(parent: PanelResult, process: PanelProcessResult): Mate
   const parentCategory = panelCategory(parent);
   return processSummaryRow({
     id: `${parent.id}:${process.id}`,
-    itemName: process.label.startsWith("加工-") ? process.label : `加工-${process.label}`,
+    itemName: process.label,
     quantity,
     note: process.label,
     unitPrice: process.unitCost,
@@ -284,7 +284,7 @@ function doorAddonRows(row: DoorResult, input: DoorInput | undefined): MaterialS
     }));
   }
 
-  if (input.type === "HINGED" && addons.hingeHoleDrilling) {
+  if (input.type === "HINGED") {
     const hingesPerDoor = Math.max(
       UNIT_CONFIG.MIN_HINGES_PER_DOOR,
       Math.ceil(input.heightCm / UNIT_CONFIG.HINGE_SPACING_CM),

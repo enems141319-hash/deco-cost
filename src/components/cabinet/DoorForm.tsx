@@ -42,6 +42,8 @@ function emptyDoor(): DoorInput {
     quantity: 1,
     materialRef: null,
     addons: DEFAULT_DOOR_ADDONS,
+    includeHingeInQuote: true,
+    includeSlidingHardwareInQuote: true,
     hingeMaterialRef: null,
     railMaterialRef: null,
     wireMeshMaterialRef: null,
@@ -205,12 +207,6 @@ export function DoorForm({ doors, onChange }: Props) {
                   <Label className="text-[10px] text-muted-foreground">強化玻璃加工</Label>
                   <Switch checked={addons.temperedGlass} onCheckedChange={(temperedGlass) => update(i, { addons: { ...addons, temperedGlass } })} />
                 </div>
-                {door.type === "HINGED" && (
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px] text-muted-foreground">鉸鏈孔加工</Label>
-                    <Switch checked={addons.hingeHoleDrilling} onCheckedChange={(hingeHoleDrilling) => update(i, { addons: { ...addons, hingeHoleDrilling } })} />
-                  </div>
-                )}
               </div>
 
               {door.materialRef?.materialName.includes("鐵網") && (
@@ -325,15 +321,27 @@ export function DoorForm({ doors, onChange }: Props) {
               </div>
 
               {door.type === "HINGED" && (
-                <div>
-                  <Label className="text-[10px] text-muted-foreground">鉸鏈材料</Label>
+                <div className="space-y-2 rounded border bg-background p-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label className="text-sm font-semibold">{"\u8a02\u8cfc\u9278\u93c8"}</Label>
+                    <Switch
+                      checked={door.includeHingeInQuote ?? true}
+                      onCheckedChange={(includeHingeInQuote) => update(i, { includeHingeInQuote })}
+                    />
+                  </div>
                   <MaterialDropdown value={door.hingeMaterialRef ?? null} onChange={(ref) => update(i, { hingeMaterialRef: ref })} categoryFilter="HARDWARE_HINGE" />
                 </div>
               )}
 
               {door.type === "SLIDING" && (
-                <div>
-                  <Label className="text-[10px] text-muted-foreground">滑門五金</Label>
+                <div className="space-y-2 rounded border bg-background p-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label className="text-sm font-semibold">{"\u8a02\u8cfc\u6ed1\u9580\u4e94\u91d1"}</Label>
+                    <Switch
+                      checked={door.includeSlidingHardwareInQuote ?? true}
+                      onCheckedChange={(includeSlidingHardwareInQuote) => update(i, { includeSlidingHardwareInQuote })}
+                    />
+                  </div>
                   <MaterialDropdown value={door.railMaterialRef ?? null} onChange={(ref) => update(i, { railMaterialRef: ref })} categoryFilter="HARDWARE_OTHER" fixedBrandFilter="推拉門五金" />
                 </div>
               )}

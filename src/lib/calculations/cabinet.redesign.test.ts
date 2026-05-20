@@ -27,6 +27,14 @@ const doorMaterial: MaterialRef = {
   minCai: 1.5,
 };
 
+const hingeMaterial: MaterialRef = {
+  materialId: "hinge-1",
+  materialName: "hinge",
+  unit: "pc",
+  pricePerUnit: 30,
+  minCai: null,
+};
+
 const baseUnit: CabinetUnitInput = {
   id: "unit-1",
   name: "測試桶身",
@@ -131,8 +139,8 @@ assert.deepEqual(
     .filter((panel) => panel.id.includes("kickplate"))
     .map((panel) => ({ id: panel.id, widthCm: panel.widthCm, heightCm: panel.heightCm, quantity: panel.quantity })),
   [
-    { id: "unit-1-kickplate-cutout-width", widthCm: 30, heightCm: 8, quantity: 1 },
-    { id: "unit-1-kickplate-cutout-depth", widthCm: 30, heightCm: 8, quantity: 1 },
+    { id: "unit-1-kickplate-cutout-width", widthCm: 32, heightCm: 8, quantity: 1 },
+    { id: "unit-1-kickplate-cutout-depth", widthCm: 30.2, heightCm: 8, quantity: 1 },
   ],
 );
 
@@ -165,8 +173,8 @@ assert.deepEqual(
     .filter((panel) => panel.id.includes("kickplate"))
     .map((panel) => ({ id: panel.id, widthCm: panel.widthCm, heightCm: panel.heightCm, quantity: panel.quantity })),
   [
-    { id: "unit-1-kickplate-outer-width", widthCm: 60, heightCm: 8, quantity: 1 },
-    { id: "unit-1-kickplate-outer-depth", widthCm: 60, heightCm: 8, quantity: 1 },
+    { id: "unit-1-kickplate-outer-width", widthCm: 86.2, heightCm: 8, quantity: 1 },
+    { id: "unit-1-kickplate-outer-depth", widthCm: 84.4, heightCm: 8, quantity: 1 },
   ],
 );
 
@@ -573,6 +581,32 @@ assert.equal(doorResult.summary.addonsBreakdown.temperedGlass, 75);
 assert.equal(doorResult.summary.addonsBreakdown.hingeHoleDrilling, 10);
 assert.equal(doorResult.summary.doorsCost, 445);
 
+const doorWithoutHingeQuoteResult = calculateCabinetUnit({
+  ...baseUnit,
+  panelMaterialRef: null,
+  doors: [
+    {
+      id: "door-no-hinge-quote",
+      type: "HINGED",
+      name: "door",
+      widthCm: 45,
+      heightCm: 120,
+      quantity: 2,
+      materialRef: doorMaterial,
+      addons: {
+        ...DEFAULT_DOOR_ADDONS,
+        hingeHoleDrilling: true,
+      },
+      includeHingeInQuote: false,
+      hingeMaterialRef: hingeMaterial,
+      railMaterialRef: null,
+    },
+  ],
+});
+assert.equal(doorWithoutHingeQuoteResult.hardware.some((item) => item.id === "door-no-hinge-quote-hinge"), false);
+assert.equal(doorWithoutHingeQuoteResult.summary.hardwareCost, 0);
+assert.equal(doorWithoutHingeQuoteResult.summary.addonsBreakdown.hingeHoleDrilling, 20);
+
 const dividerAddonResult = calculateCabinetUnit({
   ...baseUnit,
   middleDividers: [
@@ -626,6 +660,35 @@ assert.equal(slidingDoorResult.hardware[0].name, "推拉門五金");
 assert.equal(slidingDoorResult.hardware[0].quantity, 2);
 assert.equal(slidingDoorResult.hardware[0].unitCost, 500);
 assert.equal(slidingDoorResult.hardware[0].subtotal, 1000);
+
+const slidingDoorWithoutHardwareQuoteResult = calculateCabinetUnit({
+  ...baseUnit,
+  doors: [
+    {
+      id: "sliding-door-no-hardware-quote",
+      type: "SLIDING",
+      name: "sliding door",
+      widthCm: 45,
+      heightCm: 90,
+      quantity: 2,
+      materialRef: doorMaterial,
+      addons: {
+        ...DEFAULT_DOOR_ADDONS,
+        patternMatch: "none",
+        temperedGlass: false,
+        hingeHoleDrilling: false,
+      },
+      includeSlidingHardwareInQuote: false,
+      hingeMaterialRef: null,
+      railMaterialRef: pushDoorHardware,
+    },
+  ],
+});
+assert.equal(
+  slidingDoorWithoutHardwareQuoteResult.hardware.some((item) => item.id === "sliding-door-no-hardware-quote-push-door-hardware"),
+  false,
+);
+assert.equal(slidingDoorWithoutHardwareQuoteResult.summary.hardwareCost, 0);
 
 const slidingDoorWithoutHardwareResult = calculateCabinetUnit({
   ...baseUnit,
@@ -927,10 +990,10 @@ assert.deepEqual(
     note: part.note,
   })),
   [
-    { name: "抽屜面板/抽頭", widthCm: 60, heightCm: 16, quantity: 3, note: undefined },
-    { name: "抽屜左右側板", widthCm: 45, heightCm: 9, quantity: 6, note: "內側下方打溝 (10mm, 深9mm)" },
-    { name: "抽屜前後牆板", widthCm: 49.8, heightCm: 9, quantity: 6, note: "內側下方打溝 (10mm, 深9mm)" },
-    { name: "抽屜8mm底板", widthCm: 57.8, heightCm: 42.8, quantity: 3, note: undefined },
+    { name: "\u62bd\u5c5c-\u62bd\u5c5c\u9762\u677f/\u62bd\u982d", widthCm: 60, heightCm: 16, quantity: 3, note: undefined },
+    { name: "\u62bd\u5c5c-\u62bd\u5c5c\u5de6\u53f3\u5074\u677f", widthCm: 45, heightCm: 9, quantity: 6, note: "內側下方打溝 (10mm, 深9mm)" },
+    { name: "\u62bd\u5c5c-\u62bd\u5c5c\u524d\u5f8c\u7246\u677f", widthCm: 49.8, heightCm: 9, quantity: 6, note: "內側下方打溝 (10mm, 深9mm)" },
+    { name: "\u62bd\u5c5c-\u62bd\u5c5c8mm\u5e95\u677f", widthCm: 57.8, heightCm: 42.8, quantity: 3, note: undefined },
   ],
 );
 
@@ -973,6 +1036,37 @@ assert.deepEqual(
     { label: "抽頭把手加工 N5IA", quantity: 2, unitCost: 2300, cost: 4600 },
   ],
 );
+
+const drawerFrontHandleFallbackResult = calculateCabinetUnit({
+  ...baseUnit,
+  drawers: [
+    {
+      id: "drawer-front-handle-fallback",
+      name: "drawer",
+      widthCm: 60,
+      heightCm: 16,
+      depthCm: 45,
+      railLengthCm: 45,
+      quantity: 2,
+      railMaterialRef: null,
+      wallMaterialRef: bodyMaterial,
+      bottomMaterialRef: bodyMaterial,
+      grooveSpec: "8.5",
+      frontHandle: {
+        style: "SFJA",
+        lengthCm: 60,
+        bakedPaint: false,
+      },
+    },
+  ],
+});
+const drawerFrontHandleFallbackProcess = drawerFrontHandleFallbackResult.internalParts
+  .find((part) => part.id === "drawer-front-handle-fallback-front-panel")
+  ?.processes.find((process) => process.id === "drawer-front-handle-fallback-front-handle-processing");
+assert.equal(drawerFrontHandleFallbackProcess?.label, "\u62bd\u982d\u628a\u624b\u52a0\u5de5 SFJA");
+assert.equal(drawerFrontHandleFallbackProcess?.quantity, 120);
+assert.equal(drawerFrontHandleFallbackProcess?.unitCost, 8.5);
+assert.equal(drawerFrontHandleFallbackProcess?.cost, 1020);
 
 const specialProcessingResult = calculateCabinetUnit({
   ...baseUnit,
