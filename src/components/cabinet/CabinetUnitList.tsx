@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { CabinetUnitForm } from "./CabinetUnitForm";
+import { CabinetUnitForm, type CabinetPrintProjectInfo } from "./CabinetUnitForm";
 import { MaterialSummaryPanel } from "./MaterialSummaryPanel";
 import { formatCurrency, generateId } from "@/lib/utils";
 import { calculateCabinetUnit } from "@/lib/calculations/cabinet";
@@ -20,6 +20,7 @@ interface Props {
   itemId?: string;
   initialLabel?: string | null;
   initialUnits?: CabinetUnitInput[];
+  projectInfo?: CabinetPrintProjectInfo;
 }
 
 function emptyUnit(): CabinetUnitInput {
@@ -81,6 +82,8 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
     },
     middleDividers: (unit.middleDividers ?? []).map((divider) => ({
       ...divider,
+      fullHeight: divider.fullHeight ?? false,
+      fullWidth: divider.fullWidth ?? false,
       addons: {
         ...DEFAULT_MIDDLE_DIVIDER_ADDONS,
         ...divider.addons,
@@ -93,6 +96,7 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
     })),
     shelves: (unit.shelves ?? []).map((shelf) => ({
       ...shelf,
+      fullDepth: shelf.fullDepth ?? false,
       lightGroove: shelf.lightGroove ?? { side: "none", offsetFromFrontMm: 50 },
       specialProcesses: shelf.specialProcesses ?? [],
     })),
@@ -139,7 +143,7 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
   };
 }
 
-export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits }: Props) {
+export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits, projectInfo }: Props) {
   const [currentItemId, setCurrentItemId] = useState<string | undefined>(itemId);
   const [estimateLabel, setEstimateLabel] = useState(initialLabel ?? "");
   const [units, setUnits] = useState<CabinetUnitInput[]>(
@@ -292,6 +296,8 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits 
               <div className="p-4">
                 <CabinetUnitForm
                   unit={unit}
+                  estimateLabel={estimateLabel}
+                  projectInfo={projectInfo}
                   onChange={(updated) => updateUnit(unit.id, updated)}
                 />
               </div>

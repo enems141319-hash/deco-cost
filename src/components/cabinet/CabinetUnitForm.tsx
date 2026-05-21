@@ -2,7 +2,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import { Archive, Box, ChevronDown, DoorOpen, Printer, Wrench, type LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +23,8 @@ import { UNIT_CONFIG } from "@/lib/config/units";
 
 interface Props {
   unit: CabinetUnitInput;
+  estimateLabel?: string;
+  projectInfo?: CabinetPrintProjectInfo;
   onChange: (unit: CabinetUnitInput) => void;
   onResult?: (result: CabinetUnitResult) => void;
 }
@@ -34,13 +37,26 @@ export interface CollapseCommand {
   version: number;
 }
 
+export interface CabinetPrintProjectInfo {
+  name: string;
+  address?: string | null;
+  clientName?: string | null;
+  clientTitle?: string | null;
+  clientPhone?: string | null;
+  clientLineId?: string | null;
+  designerName?: string | null;
+  designerPhone?: string | null;
+}
+
 function CollapsibleSection({
   title,
+  icon: Icon,
   defaultOpen = false,
   command,
   children,
 }: {
   title: string;
+  icon: LucideIcon;
   defaultOpen?: boolean;
   command?: CollapseCommand;
   children: ReactNode;
@@ -53,13 +69,18 @@ function CollapsibleSection({
   }, [command]);
 
   return (
-    <section className="rounded-md border bg-background">
+    <section className="overflow-hidden rounded-md border border-blue-200 bg-background">
       <button
         type="button"
-        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm font-semibold hover:bg-muted/40"
+        className="flex w-full items-center justify-between gap-3 bg-blue-600 px-4 py-3 text-left text-sm font-semibold text-white transition-colors hover:bg-blue-700"
         onClick={() => setOpen((next) => !next)}
       >
-        <span>{title}</span>
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded bg-white/15">
+            <Icon className="h-4 w-4" />
+          </span>
+          <span className="truncate">{title}</span>
+        </span>
         <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="space-y-4 border-t p-3">{children}</div>}
@@ -475,14 +496,26 @@ function LTurnCabinetPreview({
   );
 }
 
-export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
+export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, onResult }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const resultPrintRef = useRef<HTMLDivElement | null>(null);
   const [inputWidthPct, setInputWidthPct] = useState(MIN_INPUT_WIDTH_PCT);
   const [highlightedBoardId, setHighlightedBoardId] = useState<string | null>(null);
   const [leftCollapseCommand, setLeftCollapseCommand] = useState<CollapseCommand>({ action: "collapse", version: 0 });
   const update = (patch: Partial<CabinetUnitInput>) => onChange({ ...unit, ...patch });
 
   const result = calculateCabinetUnit(unit);
+  const printTitle = [estimateLabel?.trim(), unit.name].filter(Boolean).join(" - ");
+  const projectClientLabel = [projectInfo?.clientName, projectInfo?.clientTitle].filter(Boolean).join("");
+  const projectInfoRows = [
+    { label: "專案名稱", value: projectInfo?.name },
+    { label: "業主", value: projectClientLabel },
+    { label: "專案地址", value: projectInfo?.address },
+    { label: "業主電話", value: projectInfo?.clientPhone },
+    { label: "Line ID", value: projectInfo?.clientLineId },
+    { label: "設計師", value: projectInfo?.designerName },
+    { label: "設計師電話", value: projectInfo?.designerPhone },
+  ].filter((row) => row.value);
   const lTurnCabinet = {
     ...DEFAULT_UNIT_ADDONS.lTurnCabinet!,
     ...unit.addons.lTurnCabinet,
@@ -525,6 +558,132 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
     window.addEventListener("pointerup", stopResize);
   }, []);
 
+  const printResult = useCallback(() => {
+    const target = resultPrintRef.current;
+    if (!target) return;
+
+    const printWindow = window.open("", "_blank", "width=1100,height=800");
+    if (!printWindow) return;
+
+    const clonedTarget = target.cloneNode(true) as HTMLElement;
+    clonedTarget.setAttribute("data-cabinet-print-target", "true");
+    clonedTarget.querySelectorAll(".cabinet-print-hidden").forEach((element) => element.remove());
+
+    const documentStyles = Array.from(document.querySelectorAll("link[rel='stylesheet'], style"))
+      .map((node) => node.outerHTML)
+      .join("\n");
+
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${printTitle}</title>
+    ${documentStyles}
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 10mm 14mm;
+      }
+
+      html,
+      body {
+        width: 182mm;
+        margin: 0;
+        background: #ffffff;
+        color: #020617;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      body {
+        padding: 0;
+      }
+
+      [data-cabinet-print-target="true"] {
+        box-sizing: border-box;
+        width: 182mm;
+        max-width: 182mm;
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+      }
+
+      .cabinet-print-title {
+        display: block !important;
+      }
+
+      .cabinet-print-hidden {
+        display: none !important;
+      }
+
+      .overflow-x-auto {
+        overflow: visible !important;
+      }
+
+      table {
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+        page-break-inside: auto;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      tbody,
+      tr {
+        break-inside: auto;
+        page-break-inside: auto;
+      }
+
+      .print-summary,
+      .cabinet-print-title {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .rounded-md,
+      .rounded-lg {
+        border-radius: 0 !important;
+      }
+
+      .shadow,
+      .shadow-sm,
+      .shadow-md,
+      .shadow-lg {
+        box-shadow: none !important;
+      }
+
+      @media screen {
+        body {
+          width: auto;
+          min-height: 100vh;
+          padding: 24px;
+          background: #f8fafc;
+        }
+
+        [data-cabinet-print-target="true"] {
+          margin: 0 auto;
+          padding: 10mm;
+          border: 1px solid #d8dee9;
+          background: #ffffff;
+        }
+      }
+    </style>
+  </head>
+  <body>${clonedTarget.outerHTML}</body>
+</html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.setTimeout(() => {
+      printWindow.print();
+    }, 350);
+  }, [printTitle]);
+
   return (
     <div
       ref={containerRef}
@@ -550,7 +709,7 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
           </button>
         </div>
 
-        <CollapsibleSection title="桶身" command={leftCollapseCommand}>
+        <CollapsibleSection title="桶身" icon={Box} command={leftCollapseCommand}>
         {/* 基本資料 */}
         <section className="space-y-3">
           <h3 className="font-semibold text-sm border-b pb-1">基本資料</h3>
@@ -726,6 +885,11 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
           middleDividers={unit.middleDividers}
           shelves={unit.shelves}
           sideTopBottomSealPanels={unit.sideTopBottomSealPanels ?? []}
+          cabinetDepthCm={unit.depthCm}
+          cabinetHeightCm={unit.heightCm}
+          hasBackPanel={unit.hasBackPanel}
+          panelMaterialRef={unit.panelMaterialRef}
+          kickPlateHeightCm={unit.kickPlate?.heightCm ?? 0}
           collapseCommand={leftCollapseCommand}
           onMiddleDividersChange={(v) => update({ middleDividers: v })}
           onShelvesChange={(v) => update({ shelves: v })}
@@ -735,7 +899,7 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
         <Separator />
 
         {/* 抽屜 */}
-        <CollapsibleSection title="抽屜" command={leftCollapseCommand}>
+        <CollapsibleSection title="抽屜" icon={Archive} command={leftCollapseCommand}>
         <DrawerForm
           drawers={unit.drawers ?? []}
           onChange={(v) => update({ drawers: v })}
@@ -745,7 +909,7 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
         <Separator />
 
         {/* 門片 */}
-        <CollapsibleSection title="門片" command={leftCollapseCommand}>
+        <CollapsibleSection title="門片" icon={DoorOpen} command={leftCollapseCommand}>
         <DoorForm
           doors={unit.doors}
           onChange={(v) => update({ doors: v })}
@@ -754,7 +918,7 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
 
         <Separator />
 
-        <CollapsibleSection title="五金另料" command={leftCollapseCommand}>
+        <CollapsibleSection title="五金另料" icon={Wrench} command={leftCollapseCommand}>
         <HardwareItemsForm
           items={unit.hardwareItems ?? []}
           onChange={(v) => update({ hardwareItems: v })}
@@ -775,8 +939,32 @@ export function CabinetUnitForm({ unit, onChange, onResult }: Props) {
       </button>
 
       <div className="min-w-0 xl:pl-5">
-        <h3 className="font-semibold text-sm border-b pb-1 mb-4">即時計算結果</h3>
-        <CabinetResultPanel result={result} highlightedBoardId={highlightedBoardId} />
+        <div className="cabinet-print-hidden mb-4 flex items-center justify-between gap-3 border-b pb-2">
+          <h3 className="text-sm font-semibold">即時計算結果</h3>
+          <Button type="button" variant="outline" size="sm" onClick={printResult}>
+            <Printer className="h-4 w-4" />
+            匯出PDF
+          </Button>
+        </div>
+        <div ref={resultPrintRef} className="cabinet-print-area">
+          <div className="hidden cabinet-print-title mb-4 border-b pb-3">
+            {projectInfoRows.length > 0 && (
+              <section className="grid grid-cols-3 gap-x-4 gap-y-2 text-[12px] leading-snug">
+                {projectInfoRows.map((row) => (
+                  <div key={row.label} className="min-w-0">
+                    <p className="text-[10px] font-semibold tracking-[0.16em] text-muted-foreground">{row.label}</p>
+                    <p className="mt-0.5 break-words text-foreground">{row.value}</p>
+                  </div>
+                ))}
+              </section>
+            )}
+            <h1 className="mt-3 text-xl font-bold">{printTitle}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              櫃體尺寸：{unit.widthCm} x {unit.depthCm} x {unit.heightCm} cm / 數量 {unit.quantity}
+            </p>
+          </div>
+          <CabinetResultPanel result={result} highlightedBoardId={highlightedBoardId} />
+        </div>
       </div>
     </div>
   );

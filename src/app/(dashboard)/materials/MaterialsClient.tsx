@@ -41,6 +41,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   BOARD_BODY: "桶身板材",
   BOARD_BACKING: "背板",
   BOARD_DOOR: "門片",
+  LOUVER_DOOR: "格柵門",
   HARDWARE_HINGE: "鉸鏈",
   HARDWARE_HANDLE: "把手",
   HARDWARE_RAIL: "滑軌",
@@ -82,6 +83,7 @@ function buildGroups(materials: MaterialData[]) {
   add({ id: "BOARD_BODY", section: "系統板材", label: "桶身板材", category: "BOARD_BODY", brand: null });
   add({ id: "BOARD_BACKING", section: "系統板材", label: "背板", category: "BOARD_BACKING", brand: null });
   add({ id: "BOARD_DOOR", section: "系統板材", label: "門片", category: "BOARD_DOOR", brand: null });
+  add({ id: "LOUVER_DOOR", section: "系統板材", label: "格柵門", category: "LOUVER_DOOR", brand: null });
 
   const hingeBrands = Array.from(
     new Set(materials.filter((material) => material.category === "HARDWARE_HINGE").map(materialBrand)),
@@ -113,6 +115,7 @@ function buildGroups(materials: MaterialData[]) {
         "BOARD_BODY",
         "BOARD_BACKING",
         "BOARD_DOOR",
+        "LOUVER_DOOR",
         "HARDWARE_HINGE",
         "HARDWARE_RAIL",
         "HARDWARE_HANDLE",

@@ -1,8 +1,8 @@
 // src/components/cabinet/DoorForm.tsx
 "use client";
 
-import { useMemo, useState } from "react";
-import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, Plus, Search, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { PROFILE_HANDLE_PROCESSING_RULES } from "@/lib/config/units";
 import { cn, generateId } from "@/lib/utils";
-import { DEFAULT_DOOR_ADDONS, type DoorInput, type DoorType, type ProfileHandleStyle } from "@/types";
+import { DEFAULT_DOOR_ADDONS, type DoorInput, type DoorType, type MaterialRef, type ProfileHandleStyle } from "@/types";
 
 interface Props {
   doors: DoorInput[];
@@ -31,6 +31,243 @@ const profileHandleOptions: Array<{ value: ProfileHandleStyle; label: string; se
     search: `${value} ${rule.label}`,
   })),
 ];
+
+interface MaterialOption {
+  id: string;
+  name: string;
+  spec: string | null;
+  unit: string;
+  price: number;
+  minCai: number | null;
+  category: string;
+  brand: string | null;
+  colorCode: string | null;
+  surfaceTreatment: string | null;
+  boardType: string | null;
+}
+
+function toMaterialRef(material: MaterialOption): MaterialRef {
+  return {
+    materialId: material.id,
+    materialName: `${material.name}${material.spec ? ` (${material.spec})` : ""}`,
+    unit: material.unit,
+    pricePerUnit: material.price,
+    minCai: material.minCai,
+  };
+}
+
+function louverColorLabel(material: MaterialOption): string {
+  return [material.brand, material.colorCode].filter(Boolean).join(" ") || material.name;
+}
+
+function louverSurfaceLabel(material: MaterialOption): string {
+  return `${material.surfaceTreatment ?? "未標示"} / ${material.price}元/${material.unit}`;
+}
+
+function useCloseOnOutsideClick(open: boolean, onClose: () => void) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (!rootRef.current || rootRef.current.contains(target)) return;
+      onClose();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [onClose, open]);
+
+  return rootRef;
+}
+
+function SearchDropdown({
+  valueLabel,
+  placeholder,
+  queryPlaceholder,
+  options,
+  onSelect,
+}: {
+  valueLabel: string | null;
+  placeholder: string;
+  queryPlaceholder: string;
+  options: Array<{ id: string; label: string; search: string }>;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useCloseOnOutsideClick(open, () => setOpen(false));
+  const filtered = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return options;
+    return options.filter((option) => option.search.toLowerCase().includes(keyword));
+  }, [options, query]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        className={cn(
+          "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-left text-xs ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+          !valueLabel && "text-muted-foreground",
+        )}
+        onClick={() => setOpen((next) => !next)}
+      >
+        <span className="truncate">{valueLabel ?? placeholder}</span>
+        <ChevronDown className="ml-2 h-3 w-3 shrink-0 opacity-60" />
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover p-2 shadow-md">
+          <div className="flex items-center gap-1">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                autoFocus
+                className="h-8 pl-7 text-xs"
+                placeholder={queryPlaceholder}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setOpen(false);
+                }}
+              />
+            </div>
+            <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpen(false)}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <div className="mt-2 max-h-64 overflow-y-auto">
+            {filtered.length === 0 && <div className="px-2 py-2 text-xs text-muted-foreground">找不到品項</div>}
+            {filtered.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={cn(
+                  "flex w-full items-center rounded px-2 py-1.5 text-left text-xs hover:bg-muted",
+                  option.label === valueLabel && "bg-muted font-medium",
+                )}
+                onClick={() => {
+                  onSelect(option.id);
+                  setQuery("");
+                  setOpen(false);
+                }}
+              >
+                <span className="truncate">{option.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LouverDoorMaterialSelect({
+  value,
+  onChange,
+}: {
+  value: MaterialRef | null;
+  onChange: (ref: MaterialRef | null) => void;
+}) {
+  const [materials, setMaterials] = useState<MaterialOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const selected = materials.find((material) => material.id === value?.materialId) ?? null;
+  const [selectedColorKey, setSelectedColorKey] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch("/api/materials?category=LOUVER_DOOR", { credentials: "same-origin" })
+      .then(async (response) => {
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !Array.isArray(data)) throw new Error("格柵門材料載入失敗");
+        return data as MaterialOption[];
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setMaterials(data);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("[LouverDoorMaterialSelect] failed to load materials", error);
+        setMaterials([]);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selected) {
+      setSelectedColorKey(`${selected.brand ?? ""}|${selected.colorCode ?? selected.name}`);
+    }
+  }, [selected]);
+
+  const colorOptions = useMemo(() => {
+    const map = new Map<string, { id: string; label: string; search: string }>();
+    for (const material of materials) {
+      const key = `${material.brand ?? ""}|${material.colorCode ?? material.name}`;
+      if (map.has(key)) continue;
+      const label = louverColorLabel(material);
+      map.set(key, {
+        id: key,
+        label,
+        search: [label, material.name, material.brand, material.colorCode].filter(Boolean).join(" "),
+      });
+    }
+    return Array.from(map.values());
+  }, [materials]);
+
+  const surfaceOptions = useMemo(() => {
+    if (!selectedColorKey) return [];
+    return materials
+      .filter((material) => `${material.brand ?? ""}|${material.colorCode ?? material.name}` === selectedColorKey)
+      .map((material) => ({
+        id: material.id,
+        label: louverSurfaceLabel(material),
+        search: [material.surfaceTreatment, material.name, material.price].filter(Boolean).join(" "),
+      }));
+  }, [materials, selectedColorKey]);
+
+  return (
+    <div className="grid gap-2 rounded border p-2">
+      <div>
+        <Label className="text-[10px] text-muted-foreground">格柵門色號</Label>
+        <SearchDropdown
+          valueLabel={selectedColorKey ? colorOptions.find((option) => option.id === selectedColorKey)?.label ?? null : null}
+          placeholder={loading ? "載入中..." : "選擇色號"}
+          queryPlaceholder="搜尋品牌或色號"
+          options={colorOptions}
+          onSelect={(id) => {
+            setSelectedColorKey(id);
+            const firstSurface = materials.find((material) => `${material.brand ?? ""}|${material.colorCode ?? material.name}` === id);
+            onChange(firstSurface ? toMaterialRef(firstSurface) : null);
+          }}
+        />
+      </div>
+      <div>
+        <Label className="text-[10px] text-muted-foreground">表面處理</Label>
+        <SearchDropdown
+          valueLabel={selected ? louverSurfaceLabel(selected) : null}
+          placeholder={selectedColorKey ? "選擇表面處理" : "請先選擇色號"}
+          queryPlaceholder="搜尋表面處理"
+          options={surfaceOptions}
+          onSelect={(id) => {
+            const material = materials.find((candidate) => candidate.id === id);
+            onChange(material ? toMaterialRef(material) : null);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 function emptyDoor(): DoorInput {
   return {
@@ -62,6 +299,7 @@ function ProfileHandleSearchSelect({
   const selected = profileHandleOptions.find((option) => option.value === value) ?? profileHandleOptions[0];
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const rootRef = useCloseOnOutsideClick(open, () => setOpen(false));
   const filtered = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     if (!keyword) return profileHandleOptions;
@@ -69,7 +307,7 @@ function ProfileHandleSearchSelect({
   }, [query]);
 
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <button
         type="button"
         className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-left text-xs ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -156,7 +394,17 @@ export function DoorForm({ doors, onChange }: Props) {
           <div key={door.id} className="space-y-2 rounded-md border bg-muted/20 p-3">
             <div className="flex items-center justify-between">
               <div className="flex flex-1 items-center gap-2">
-                <Select value={door.type} onValueChange={(value) => update(i, { type: value as DoorType })}>
+                <Select
+                  value={door.type}
+                  onValueChange={(value) => {
+                    const type = value as DoorType;
+                    update(i, {
+                      type,
+                      addons: type === "HINGED" ? addons : { ...addons, louverDoor: false },
+                      materialRef: type === "HINGED" ? door.materialRef : null,
+                    });
+                  }}
+                >
                   <SelectTrigger className="h-8 w-28 text-xs">
                     <SelectValue />
                   </SelectTrigger>
@@ -193,9 +441,27 @@ export function DoorForm({ doors, onChange }: Props) {
             </div>
 
             <div className="grid grid-cols-1 gap-1.5">
+              {door.type === "HINGED" && (
+                <div className="flex items-center justify-between gap-3 rounded border p-2">
+                  <Label className="text-[10px] text-muted-foreground">格柵門</Label>
+                  <Switch
+                    checked={addons.louverDoor}
+                    onCheckedChange={(louverDoor) =>
+                      update(i, {
+                        addons: { ...addons, louverDoor },
+                        materialRef: null,
+                      })
+                    }
+                  />
+                </div>
+              )}
               <div>
-                <Label className="text-[10px] text-muted-foreground">門片材料</Label>
-                <MaterialDropdown value={door.materialRef} onChange={(ref) => update(i, { materialRef: ref })} categoryFilter="BOARD_DOOR" />
+                <Label className="text-[10px] text-muted-foreground">{addons.louverDoor ? "格柵門材料" : "門片材料"}</Label>
+                {addons.louverDoor ? (
+                  <LouverDoorMaterialSelect value={door.materialRef} onChange={(ref) => update(i, { materialRef: ref })} />
+                ) : (
+                  <MaterialDropdown value={door.materialRef} onChange={(ref) => update(i, { materialRef: ref })} categoryFilter="BOARD_DOOR" />
+                )}
               </div>
 
               <div className="grid gap-2 rounded border p-2">

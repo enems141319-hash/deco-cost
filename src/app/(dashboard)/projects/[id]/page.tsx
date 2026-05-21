@@ -36,6 +36,12 @@ const MODULE_LABELS: Record<string, { label: string; color: "default" | "seconda
   CEILING: { label: "天花板", color: "secondary" },
 };
 
+function modulePath(moduleType: string): string {
+  if (moduleType === "CABINET") return "cabinet";
+  if (moduleType === "CEILING") return "ceiling";
+  return "cabinet";
+}
+
 export default async function ProjectDetailPage({
   params,
 }: {
@@ -53,6 +59,15 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
 
   const grandTotal = project.items.reduce((acc, i) => acc + Number(i.totalCost), 0);
+  const clientLabel = [project.clientName, project.clientTitle].filter(Boolean).join("");
+  const contactRows = [
+    project.address ? `專案地址：${project.address}` : null,
+    clientLabel ? `業主：${clientLabel}` : null,
+    project.clientPhone ? `業主電話：${project.clientPhone}` : null,
+    project.clientLineId ? `Line ID：${project.clientLineId}` : null,
+    project.designerName ? `設計師：${project.designerName}` : null,
+    project.designerPhone ? `設計師電話：${project.designerPhone}` : null,
+  ].filter((row): row is string => Boolean(row));
 
   return (
     <div className="p-6 space-y-6 max-w-4xl">
@@ -68,8 +83,12 @@ export default async function ProjectDetailPage({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">{project.name}</h1>
-            {project.clientName && (
-              <p className="text-muted-foreground text-sm mt-0.5">業主：{project.clientName}</p>
+            {contactRows.length > 0 && (
+              <div className="mt-2 grid gap-x-5 gap-y-1 text-sm text-muted-foreground sm:grid-cols-2">
+                {contactRows.map((row) => (
+                  <p key={row}>{row}</p>
+                ))}
+              </div>
             )}
             {project.notes && (
               <p className="text-muted-foreground text-sm mt-1 max-w-lg">{project.notes}</p>
@@ -149,7 +168,7 @@ export default async function ProjectDetailPage({
                   <div className="flex gap-1 shrink-0">
                     <Button asChild variant="outline" size="sm">
                       <Link
-                        href={`/projects/${id}/${item.moduleType === "CABINET" ? "cabinet" : "ceiling"}?itemId=${item.id}`}
+                        href={`/projects/${id}/${modulePath(item.moduleType)}?itemId=${item.id}`}
                       >
                         編輯
                       </Link>

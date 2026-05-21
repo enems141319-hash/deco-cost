@@ -138,6 +138,7 @@ export interface SpecialProcessInput {
 }
 
 export interface DoorAddons {
+  louverDoor?: boolean;
   patternMatch: "none" | "grain";
   temperedGlass: boolean;
   hingeHoleDrilling: boolean;
@@ -180,6 +181,7 @@ export const DEFAULT_MIDDLE_DIVIDER_ADDONS: MiddleDividerAddons = {
 };
 
 export const DEFAULT_DOOR_ADDONS: DoorAddons = {
+  louverDoor: false,
   patternMatch: "none",
   temperedGlass: false,
   hingeHoleDrilling: false,
@@ -221,6 +223,8 @@ export interface MiddleDividerInput {
   id: string;
   widthCm: number;
   heightCm: number;
+  fullHeight?: boolean;
+  fullWidth?: boolean;
   quantity: number;
   materialRef: MaterialRef | null;
   addons: MiddleDividerAddons;
@@ -231,6 +235,7 @@ export interface ShelfInput {
   id: string;
   widthCm: number;
   depthCm: number;
+  fullDepth?: boolean;
   quantity: number;
   materialRef: MaterialRef | null;
   lightGroove?: ShelfLightGroove;
@@ -328,6 +333,7 @@ export interface PanelProcessResult {
 export interface DoorResult {
   id: string;
   type: DoorType;
+  isLouverDoor?: boolean;
   name: string;
   widthCm: number;
   heightCm: number;

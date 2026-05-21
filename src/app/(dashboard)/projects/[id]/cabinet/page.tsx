@@ -27,7 +27,17 @@ export default async function CabinetEstimatePage({
   // 驗證專案所有權
   const project = await prisma.estimateProject.findFirst({
     where: { id: projectId, userId },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      address: true,
+      clientName: true,
+      clientTitle: true,
+      clientPhone: true,
+      clientLineId: true,
+      designerName: true,
+      designerPhone: true,
+    },
   });
   if (!project) notFound();
 
@@ -68,6 +78,7 @@ export default async function CabinetEstimatePage({
         itemId={estimateItemId}
         initialLabel={initialLabel}
         initialUnits={initialUnits}
+        projectInfo={project}
       />
     </div>
   );

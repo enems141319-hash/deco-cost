@@ -116,6 +116,7 @@ export default async function DashboardPage() {
                 (acc, i) => acc + Number(i.totalCost),
                 0
               );
+              const clientLabel = [project.clientName, project.clientTitle].filter(Boolean).join("");
               return (
                 <Link key={project.id} href={`/projects/${project.id}`}>
                   <Card className="hover:shadow-md transition-shadow cursor-pointer">
@@ -123,8 +124,8 @@ export default async function DashboardPage() {
                       <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{project.name}</p>
-                        {project.clientName && (
-                          <p className="text-xs text-muted-foreground">{project.clientName}</p>
+                        {clientLabel && (
+                          <p className="text-xs text-muted-foreground">{clientLabel}</p>
                         )}
                       </div>
                       <Badge variant="outline" className="text-xs shrink-0">

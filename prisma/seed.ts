@@ -4,6 +4,7 @@ import { Prisma, PrismaClient, MaterialCategory } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import path from "node:path";
 import * as XLSX from "xlsx";
+import { LOUVER_DOOR_CONFIG, LOUVER_DOOR_PRICE_OPTIONS } from "../src/lib/config/units";
 
 const prisma = new PrismaClient();
 
@@ -368,6 +369,32 @@ function buildCeilingFallbackMaterials(): Prisma.MaterialCreateManyInput[] {
   ];
 }
 
+function buildLouverDoorMaterials(): Prisma.MaterialCreateManyInput[] {
+  const materials: Prisma.MaterialCreateManyInput[] = [];
+  let sortOrder = 40_000;
+
+  for (const option of LOUVER_DOOR_PRICE_OPTIONS) {
+    for (const colorCode of option.colorCodes) {
+      materials.push({
+        category: MaterialCategory.LOUVER_DOOR,
+        brand: option.brand,
+        colorCode,
+        surfaceTreatment: option.surfaceTreatment,
+        boardType: "格柵門",
+        name: `格柵門 ${option.brand} ${colorCode} ${option.surfaceTreatment}`,
+        spec: null,
+        unit: "才",
+        price: option.unitPrice,
+        minCai: LOUVER_DOOR_CONFIG.MIN_CAI,
+        wasteRate: 0,
+        sortOrder: sortOrder++,
+      });
+    }
+  }
+
+  return materials;
+}
+
 async function main() {
   console.log("🌱 開始植入種子資料...");
 
@@ -386,6 +413,7 @@ async function main() {
     ...buildHorngChang114122601Materials(boardMaterials),
     ...buildHardwareMaterials(rows),
     ...buildCeilingFallbackMaterials(),
+    ...buildLouverDoorMaterials(),
   ];
 
   await prisma.material.deleteMany();

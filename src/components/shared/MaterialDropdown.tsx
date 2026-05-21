@@ -38,6 +38,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   BOARD_BODY: "桶身板材",
   BOARD_BACKING: "背板",
   BOARD_DOOR: "門片",
+  LOUVER_DOOR: "格柵門",
   HARDWARE_HINGE: "鉸鏈",
   HARDWARE_HANDLE: "把手",
   HARDWARE_RAIL: "滑軌",

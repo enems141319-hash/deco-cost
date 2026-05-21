@@ -100,6 +100,7 @@ export const specialProcessSchema = z.object({
 });
 
 export const doorAddonsSchema = z.object({
+  louverDoor: z.boolean().default(false),
   patternMatch: z.enum(["none", "grain"]),
   temperedGlass: z.boolean(),
   hingeHoleDrilling: z.boolean(),
@@ -169,6 +170,8 @@ export const middleDividerSchema = z.object({
   id: z.string().min(1),
   widthCm: z.number().positive("寬度必須大於 0"),
   heightCm: z.number().positive("高度必須大於 0"),
+  fullHeight: z.boolean().default(false),
+  fullWidth: z.boolean().default(false),
   quantity: z.number().int().positive("數量必須大於 0"),
   materialRef: materialRefSchema,
   addons: middleDividerAddonsSchema.default({
@@ -182,6 +185,7 @@ export const shelfSchema = z.object({
   id: z.string().min(1),
   widthCm: z.number().positive("寬度必須大於 0"),
   depthCm: z.number().positive("深度必須大於 0"),
+  fullDepth: z.boolean().default(false),
   quantity: z.number().int().positive("數量必須大於 0"),
   materialRef: materialRefSchema,
 });
@@ -196,7 +200,7 @@ export const shelfSchemaWithLightGroove = shelfSchema.extend({
 
 export const sideTopBottomSealPanelSchema = z.object({
   id: z.string().min(1),
-  name: z.string().min(1, "品項名稱不能為空").default("側/頂/底封板"),
+  name: z.string().min(1, "板件名稱不可空白").default("側頂底封板"),
   widthCm: z.number().positive("寬度必須大於 0"),
   heightCm: z.number().positive("高度必須大於 0"),
   quantity: z.number().int().positive("數量必須大於 0"),

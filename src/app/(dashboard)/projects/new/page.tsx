@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "新增專案" };
 
 export default function NewProjectPage() {
   return (
-    <div className="p-6 max-w-lg">
+    <div className="p-6 max-w-2xl">
       <NewProjectForm />
     </div>
   );

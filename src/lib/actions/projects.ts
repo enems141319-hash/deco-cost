@@ -22,7 +22,13 @@ export async function createProject(
 
   const parsed = createProjectSchema.safeParse({
     name: formData.get("name"),
+    address: formData.get("address") || undefined,
     clientName: formData.get("clientName") || undefined,
+    clientTitle: formData.get("clientTitle") || undefined,
+    clientPhone: formData.get("clientPhone") || undefined,
+    clientLineId: formData.get("clientLineId") || undefined,
+    designerName: formData.get("designerName") || undefined,
+    designerPhone: formData.get("designerPhone") || undefined,
     notes: formData.get("notes") || undefined,
   });
 
@@ -50,7 +56,13 @@ export async function updateProject(projectId: string, formData: FormData) {
 
   const parsed = updateProjectSchema.safeParse({
     name: formData.get("name"),
+    address: formData.get("address") || undefined,
     clientName: formData.get("clientName") || undefined,
+    clientTitle: formData.get("clientTitle") || undefined,
+    clientPhone: formData.get("clientPhone") || undefined,
+    clientLineId: formData.get("clientLineId") || undefined,
+    designerName: formData.get("designerName") || undefined,
+    designerPhone: formData.get("designerPhone") || undefined,
     notes: formData.get("notes") || undefined,
   });
 

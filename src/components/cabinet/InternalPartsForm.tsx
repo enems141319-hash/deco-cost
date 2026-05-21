@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Columns3, Layers3, PanelTop, Plus, Trash2, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { generateId } from "@/lib/utils";
-import { DEFAULT_MIDDLE_DIVIDER_ADDONS, type MiddleDividerInput, type ShelfInput, type SideTopBottomSealPanelInput } from "@/types";
+import { DEFAULT_MIDDLE_DIVIDER_ADDONS, type MaterialRef, type MiddleDividerInput, type ShelfInput, type SideTopBottomSealPanelInput } from "@/types";
 import { SpecialProcessesForm } from "./SpecialProcessesForm";
 import type { CollapseCommand } from "./CabinetUnitForm";
 
@@ -18,19 +18,44 @@ interface Props {
   middleDividers: MiddleDividerInput[];
   shelves: ShelfInput[];
   sideTopBottomSealPanels: SideTopBottomSealPanelInput[];
+  cabinetDepthCm: number;
+  cabinetHeightCm: number;
+  hasBackPanel: boolean;
+  panelMaterialRef: MaterialRef | null;
+  kickPlateHeightCm: number;
   onMiddleDividersChange: (v: MiddleDividerInput[]) => void;
   onShelvesChange: (v: ShelfInput[]) => void;
   onSideTopBottomSealPanelsChange: (v: SideTopBottomSealPanelInput[]) => void;
   collapseCommand?: CollapseCommand;
 }
 
+function materialThicknessCm(materialRef: MaterialRef | null): number {
+  const match = materialRef?.materialName.match(/(\d+(?:\.\d+)?)\s*mm/i);
+  if (!match) return 0;
+  return Number(match[1]) / 10;
+}
+
+function autoFullHeightCm(params: {
+  cabinetHeightCm: number;
+  panelMaterialRef: MaterialRef | null;
+  kickPlateHeightCm: number;
+}): number {
+  return Math.max(params.cabinetHeightCm - materialThicknessCm(params.panelMaterialRef) * 2 - params.kickPlateHeightCm, 0);
+}
+
+function autoFullDepthCm(cabinetDepthCm: number, hasBackPanel: boolean): number {
+  return Math.max(cabinetDepthCm - (hasBackPanel ? 2.8 : 0), 0);
+}
+
 function CollapsibleGroup({
   title,
+  icon: Icon,
   defaultOpen = false,
   command,
   children,
 }: {
   title: string;
+  icon: LucideIcon;
   defaultOpen?: boolean;
   command?: CollapseCommand;
   children: ReactNode;
@@ -43,13 +68,18 @@ function CollapsibleGroup({
   }, [command]);
 
   return (
-    <div className="rounded-md border bg-background">
+    <div className="overflow-hidden rounded-md border border-blue-200 bg-background">
       <button
         type="button"
-        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm font-semibold hover:bg-muted/40"
+        className="flex w-full items-center justify-between gap-3 bg-blue-600 px-4 py-3 text-left text-sm font-semibold text-white transition-colors hover:bg-blue-700"
         onClick={() => setOpen((next) => !next)}
       >
-        <span>{title}</span>
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded bg-white/15">
+            <Icon className="h-4 w-4" />
+          </span>
+          <span className="truncate">{title}</span>
+        </span>
         <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="space-y-3 border-t p-3">{children}</div>}
@@ -61,6 +91,11 @@ export function InternalPartsForm({
   middleDividers,
   shelves,
   sideTopBottomSealPanels,
+  cabinetDepthCm,
+  cabinetHeightCm,
+  hasBackPanel,
+  panelMaterialRef,
+  kickPlateHeightCm,
   onMiddleDividersChange,
   onShelvesChange,
   onSideTopBottomSealPanelsChange,
@@ -70,6 +105,8 @@ export function InternalPartsForm({
     ...DEFAULT_MIDDLE_DIVIDER_ADDONS,
     lightGroove: DEFAULT_MIDDLE_DIVIDER_ADDONS.lightGroove ?? { side: "none", offsetFromFrontMm: 50 },
   };
+  const computedFullHeightCm = autoFullHeightCm({ cabinetHeightCm, panelMaterialRef, kickPlateHeightCm });
+  const computedFullDepthCm = autoFullDepthCm(cabinetDepthCm, hasBackPanel);
 
   const addDivider = () =>
     onMiddleDividersChange([
@@ -78,6 +115,8 @@ export function InternalPartsForm({
         id: generateId(),
         widthCm: 60,
         heightCm: 80,
+        fullHeight: false,
+        fullWidth: false,
         quantity: 1,
         materialRef: null,
         addons: defaultDividerAddons,
@@ -94,7 +133,7 @@ export function InternalPartsForm({
   const addShelf = () =>
     onShelvesChange([
       ...shelves,
-      { id: generateId(), widthCm: 60, depthCm: 35, quantity: 1, materialRef: null, lightGroove: { side: "none", offsetFromFrontMm: 50 }, specialProcesses: [] },
+      { id: generateId(), widthCm: 60, depthCm: 35, fullDepth: false, quantity: 1, materialRef: null, lightGroove: { side: "none", offsetFromFrontMm: 50 }, specialProcesses: [] },
     ]);
 
   const updateShelf = (i: number, patch: Partial<ShelfInput>) =>
@@ -118,7 +157,7 @@ export function InternalPartsForm({
   return (
     <div className="space-y-4">
       {/* 中立板 */}
-      <CollapsibleGroup title={"\u4e2d\u7acb\u677f"} command={collapseCommand}>
+      <CollapsibleGroup title={"\u4e2d\u7acb\u677f"} icon={Columns3} command={collapseCommand}>
         <div className="flex items-center justify-between">
           <Label className="text-sm font-semibold">中立板</Label>
           <Button type="button" variant="outline" size="sm" onClick={addDivider}>
@@ -133,12 +172,14 @@ export function InternalPartsForm({
             <div className="grid grid-cols-4 gap-2 items-end">
               <div>
                 <Label className="text-[10px] text-muted-foreground">寬(cm)</Label>
-                <Input type="number" min={1} className="h-8 text-xs" value={d.widthCm}
+                <Input type="number" min={1} className="h-8 text-xs" value={d.fullWidth ? computedFullDepthCm : d.widthCm}
+                  disabled={d.fullWidth}
                   onChange={(e) => updateDivider(i, { widthCm: Number(e.target.value) })} />
               </div>
               <div>
                 <Label className="text-[10px] text-muted-foreground">高(cm)</Label>
-                <Input type="number" min={1} className="h-8 text-xs" value={d.heightCm}
+                <Input type="number" min={1} className="h-8 text-xs" value={d.fullHeight ? computedFullHeightCm : d.heightCm}
+                  disabled={d.fullHeight}
                   onChange={(e) => updateDivider(i, { heightCm: Number(e.target.value) })} />
               </div>
               <div>
@@ -149,6 +190,22 @@ export function InternalPartsForm({
               <Button type="button" variant="ghost" size="icon" onClick={() => removeDivider(i)} className="h-8 w-8 text-destructive">
                 <Trash2 className="h-3 w-3" />
               </Button>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="flex items-center justify-between rounded border bg-background px-3 py-2">
+                <span className="text-xs">全高</span>
+                <Switch
+                  checked={d.fullHeight ?? false}
+                  onCheckedChange={(fullHeight) => updateDivider(i, { fullHeight })}
+                />
+              </label>
+              <label className="flex items-center justify-between rounded border bg-background px-3 py-2">
+                <span className="text-xs">全寬</span>
+                <Switch
+                  checked={d.fullWidth ?? false}
+                  onCheckedChange={(fullWidth) => updateDivider(i, { fullWidth })}
+                />
+              </label>
             </div>
             <MaterialDropdown value={d.materialRef} onChange={(ref) => updateDivider(i, { materialRef: ref })} categoryFilter="BOARD_BODY" />
             <div className="grid gap-2 sm:grid-cols-2">
@@ -233,15 +290,15 @@ export function InternalPartsForm({
             <SpecialProcessesForm
               value={d.specialProcesses ?? []}
               onChange={(specialProcesses) => updateDivider(i, { specialProcesses })}
-              boardWidthCm={d.widthCm}
-              boardHeightCm={d.heightCm}
+              boardWidthCm={d.fullWidth ? computedFullDepthCm : d.widthCm}
+              boardHeightCm={d.fullHeight ? computedFullHeightCm : d.heightCm}
             />
           </div>
         ))}
       </CollapsibleGroup>
 
       {/* 櫃內層板 */}
-      <CollapsibleGroup title={"\u5c64\u677f"} command={collapseCommand}>
+      <CollapsibleGroup title={"\u5c64\u677f"} icon={Layers3} command={collapseCommand}>
         <div className="flex items-center justify-between">
           <Label className="text-sm font-semibold">櫃內層板</Label>
           <Button type="button" variant="outline" size="sm" onClick={addShelf}>
@@ -261,7 +318,8 @@ export function InternalPartsForm({
               </div>
               <div>
                 <Label className="text-[10px] text-muted-foreground">深(cm)</Label>
-                <Input type="number" min={1} className="h-8 text-xs" value={s.depthCm}
+                <Input type="number" min={1} className="h-8 text-xs" value={s.fullDepth ? computedFullDepthCm : s.depthCm}
+                  disabled={s.fullDepth}
                   onChange={(e) => updateShelf(i, { depthCm: Number(e.target.value) })} />
               </div>
               <div>
@@ -273,6 +331,13 @@ export function InternalPartsForm({
                 <Trash2 className="h-3 w-3" />
               </Button>
             </div>
+            <label className="flex items-center justify-between rounded border bg-background px-3 py-2">
+              <span className="text-xs">全深</span>
+              <Switch
+                checked={s.fullDepth ?? false}
+                onCheckedChange={(fullDepth) => updateShelf(i, { fullDepth })}
+              />
+            </label>
             <MaterialDropdown value={s.materialRef} onChange={(ref) => updateShelf(i, { materialRef: ref })} categoryFilter="BOARD_BODY" />
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
@@ -322,14 +387,14 @@ export function InternalPartsForm({
               value={s.specialProcesses ?? []}
               onChange={(specialProcesses) => updateShelf(i, { specialProcesses })}
               boardWidthCm={s.widthCm}
-              boardHeightCm={s.depthCm}
+              boardHeightCm={s.fullDepth ? computedFullDepthCm : s.depthCm}
             />
           </div>
         ))}
       </CollapsibleGroup>
 
       {/* 側/頂/底封板 */}
-      <CollapsibleGroup title={"\u5074\u9802\u5e95\u5c01\u677f"} command={collapseCommand}>
+      <CollapsibleGroup title={"\u5074\u9802\u5e95\u5c01\u677f"} icon={PanelTop} command={collapseCommand}>
         <div className="flex items-center justify-between">
           <Label className="text-sm font-semibold">側/頂/底封板</Label>
           <Button type="button" variant="outline" size="sm" onClick={addSideTopBottomSealPanel}>

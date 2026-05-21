@@ -53,3 +53,94 @@
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 14mm;
+  }
+
+  html,
+  body {
+    width: 182mm;
+    background: #ffffff !important;
+    color: #020617 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  [data-cabinet-print-target="true"],
+  [data-cabinet-print-target="true"] * {
+    visibility: visible !important;
+  }
+
+  [data-cabinet-print-target="true"] {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    box-sizing: border-box !important;
+    width: 182mm !important;
+    max-width: 182mm !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+  }
+
+  .cabinet-print-hidden {
+    display: none !important;
+  }
+
+  .cabinet-print-title {
+    display: block !important;
+  }
+
+  .cabinet-print-area {
+    color: black !important;
+  }
+
+  [data-cabinet-print-target="true"] .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  [data-cabinet-print-target="true"] table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  [data-cabinet-print-target="true"] thead {
+    display: table-header-group;
+  }
+
+  [data-cabinet-print-target="true"] tbody,
+  [data-cabinet-print-target="true"] tr {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  [data-cabinet-print-target="true"] .print-summary,
+  [data-cabinet-print-target="true"] .cabinet-print-title {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-cabinet-print-target="true"] .rounded-md,
+  [data-cabinet-print-target="true"] .rounded-lg {
+    border-radius: 0 !important;
+  }
+
+  [data-cabinet-print-target="true"] .shadow,
+  [data-cabinet-print-target="true"] .shadow-sm,
+  [data-cabinet-print-target="true"] .shadow-md,
+  [data-cabinet-print-target="true"] .shadow-lg {
+    box-shadow: none !important;
+  }
+}

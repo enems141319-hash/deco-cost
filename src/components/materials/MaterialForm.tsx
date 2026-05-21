@@ -15,6 +15,7 @@ const CATEGORIES = [
   { value: "BOARD_BODY", label: "桶身板材" },
   { value: "BOARD_BACKING", label: "背板" },
   { value: "BOARD_DOOR", label: "門片" },
+  { value: "LOUVER_DOOR", label: "格柵門" },
   { value: "HARDWARE_HINGE", label: "鉸鏈" },
   { value: "HARDWARE_HANDLE", label: "把手" },
   { value: "HARDWARE_RAIL", label: "滑軌" },

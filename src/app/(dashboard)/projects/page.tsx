@@ -56,6 +56,7 @@ export default async function ProjectsPage() {
           {projects.map((project) => {
             const total = project.items.reduce((acc, i) => acc + Number(i.totalCost), 0);
             const moduleTypes = [...new Set(project.items.map((i) => i.moduleType))];
+            const clientLabel = [project.clientName, project.clientTitle].filter(Boolean).join("");
 
             return (
               <Card key={project.id} className="hover:shadow-md transition-shadow">
@@ -66,8 +67,11 @@ export default async function ProjectsPage() {
                     <Link href={`/projects/${project.id}`} className="hover:underline">
                       <p className="font-semibold truncate">{project.name}</p>
                     </Link>
-                    {project.clientName && (
-                      <p className="text-xs text-muted-foreground">業主：{project.clientName}</p>
+                    {clientLabel && (
+                      <p className="text-xs text-muted-foreground">業主：{clientLabel}</p>
+                    )}
+                    {project.address && (
+                      <p className="text-xs text-muted-foreground truncate">地址：{project.address}</p>
                     )}
                     <div className="flex gap-1.5 mt-1.5 flex-wrap">
                       {moduleTypes.map((t) => (
