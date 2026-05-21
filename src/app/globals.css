@@ -57,12 +57,12 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm 14mm;
+    margin: 10mm 8mm;
   }
 
   html,
   body {
-    width: 182mm;
+    width: 194mm;
     background: #ffffff !important;
     color: #020617 !important;
     -webkit-print-color-adjust: exact;
@@ -83,8 +83,8 @@
     left: 0 !important;
     top: 0 !important;
     box-sizing: border-box !important;
-    width: 182mm !important;
-    max-width: 182mm !important;
+    width: 194mm !important;
+    max-width: 194mm !important;
     min-width: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -130,6 +130,22 @@
   [data-cabinet-print-target="true"] .cabinet-print-title {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  [data-cabinet-print-target="true"] .cabinet-result-section-header,
+  [data-cabinet-print-target="true"] .cabinet-result-section thead {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  [data-cabinet-print-target="true"] .cabinet-result-section,
+  [data-cabinet-print-target="true"] .cabinet-result-section-body,
+  [data-cabinet-print-target="true"] .cabinet-result-section table,
+  [data-cabinet-print-target="true"] .cabinet-result-section tbody,
+  [data-cabinet-print-target="true"] .cabinet-result-section tr {
+    overflow: visible !important;
+    break-inside: auto;
+    page-break-inside: auto;
   }
 
   [data-cabinet-print-target="true"] .rounded-md,

@@ -506,6 +506,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
 
   const result = calculateCabinetUnit(unit);
   const printTitle = [estimateLabel?.trim(), unit.name].filter(Boolean).join(" - ");
+  const pdfDocumentTitle = [projectInfo?.name?.trim(), printTitle].filter(Boolean).join(" - ");
   const projectClientLabel = [projectInfo?.clientName, projectInfo?.clientTitle].filter(Boolean).join("");
   const projectInfoRows = [
     { label: "專案名稱", value: projectInfo?.name },
@@ -579,17 +580,17 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${printTitle}</title>
+    <title>${pdfDocumentTitle}</title>
     ${documentStyles}
     <style>
       @page {
         size: A4 portrait;
-        margin: 10mm 14mm;
+        margin: 10mm 8mm;
       }
 
       html,
       body {
-        width: 182mm;
+        width: 194mm;
         margin: 0;
         background: #ffffff;
         color: #020617;
@@ -603,8 +604,8 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
 
       [data-cabinet-print-target="true"] {
         box-sizing: border-box;
-        width: 182mm;
-        max-width: 182mm;
+        width: 194mm;
+        max-width: 194mm;
         margin: 0;
         padding: 0;
         background: #ffffff;
@@ -630,6 +631,96 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
         page-break-inside: auto;
       }
 
+      [data-cabinet-print-target="true"] .cabinet-board-table .cabinet-name-col {
+        width: 45% !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-board-table .cabinet-size-col {
+        width: 21mm !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-board-table .cabinet-qty-col {
+        width: 12mm !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-board-table .cabinet-area-col {
+        width: 18mm !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-board-table .cabinet-price-col,
+      [data-cabinet-print-target="true"] .cabinet-board-table .cabinet-subtotal-col {
+        width: 22mm !important;
+      }
+
+      [data-cabinet-print-target="true"] th {
+        font-size: 10pt !important;
+        line-height: 1.25 !important;
+      }
+
+      [data-cabinet-print-target="true"] td {
+        font-size: 10.5pt !important;
+        line-height: 1.32 !important;
+        white-space: normal !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-board-index,
+      [data-cabinet-print-target="true"] .cabinet-board-title {
+        display: inline !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+        word-break: keep-all !important;
+        overflow-wrap: normal !important;
+        font-size: 10pt !important;
+        line-height: 1.22 !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-board-index {
+        color: #1d4ed8 !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-board-material {
+        display: inline !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+        word-break: keep-all !important;
+        overflow-wrap: normal !important;
+        font-size: 10pt !important;
+        line-height: 1.22 !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-board-material {
+        display: block !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-process-label,
+      [data-cabinet-print-target="true"] .cabinet-secondary-text {
+        font-size: 8pt !important;
+        line-height: 1.18 !important;
+        white-space: normal !important;
+        word-break: keep-all !important;
+        overflow-wrap: normal !important;
+      }
+
+      [data-cabinet-print-target="true"] td:nth-child(2),
+      [data-cabinet-print-target="true"] td:nth-child(3),
+      [data-cabinet-print-target="true"] td:nth-child(4),
+      [data-cabinet-print-target="true"] td:nth-child(5),
+      [data-cabinet-print-target="true"] td:nth-child(6) {
+        font-size: 10pt !important;
+        line-height: 1.22 !important;
+        white-space: nowrap !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-secondary-text,
+      [data-cabinet-print-target="true"] .badge,
+      [data-cabinet-print-target="true"] [class*="text-\\[10px\\]"],
+      [data-cabinet-print-target="true"] [class*="text-xs"] {
+        font-size: 8pt !important;
+        line-height: 1.25 !important;
+      }
+
       thead {
         display: table-header-group;
       }
@@ -644,6 +735,22 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
       .cabinet-print-title {
         break-inside: avoid;
         page-break-inside: avoid;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-result-section-header,
+      [data-cabinet-print-target="true"] .cabinet-result-section thead {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-result-section,
+      [data-cabinet-print-target="true"] .cabinet-result-section-body,
+      [data-cabinet-print-target="true"] .cabinet-result-section table,
+      [data-cabinet-print-target="true"] .cabinet-result-section tbody,
+      [data-cabinet-print-target="true"] .cabinet-result-section tr {
+        overflow: visible !important;
+        break-inside: auto;
+        page-break-inside: auto;
       }
 
       .rounded-md,
@@ -682,7 +789,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
     printWindow.setTimeout(() => {
       printWindow.print();
     }, 350);
-  }, [printTitle]);
+  }, [pdfDocumentTitle]);
 
   return (
     <div
