@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
@@ -50,6 +50,7 @@ function emptyDrawer(): DrawerInput {
     depthCm: 45,
     railLengthCm: 45,
     includeRailInQuote: true,
+    bodyKdProcessing: false,
     grooveSpec: "8.5",
     quantity: 1,
     railMaterialRef: null,
@@ -176,7 +177,7 @@ export function DrawerForm({ drawers, onChange }: Props) {
                 <Input type="number" min={1} className="h-8 text-xs" value={drawer.heightCm} onChange={(event) => update(i, { heightCm: Number(event.target.value) })} />
               </div>
               <div>
-                <Label className="text-[10px] text-muted-foreground">滑軌長度(cm)</Label>
+                <Label className="text-[10px] text-muted-foreground">抽身長度(cm)</Label>
                 <Input
                   type="number"
                   min={1}
@@ -216,6 +217,13 @@ export function DrawerForm({ drawers, onChange }: Props) {
             </div>
 
             <div className="grid gap-2 rounded border bg-background p-2">
+              <div className="flex items-center justify-between rounded border bg-muted/20 px-3 py-2">
+                <Label className="text-xs">抽身指定KD</Label>
+                <Switch
+                  checked={drawer.bodyKdProcessing ?? false}
+                  onCheckedChange={(bodyKdProcessing) => update(i, { bodyKdProcessing })}
+                />
+              </div>
               <div className="grid gap-2 sm:grid-cols-[160px_96px_minmax(0,1fr)_96px_auto]">
                 <div>
                   <Label className="text-[10px] text-muted-foreground">抽頭合廠模 R角</Label>

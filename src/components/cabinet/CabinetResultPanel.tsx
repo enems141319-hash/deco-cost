@@ -109,6 +109,7 @@ function isCmBasedHandleProcess(id: string, unitCost: number): boolean {
   if (unitCost >= 100) return false;
   return (
     id.includes("-front-handle-processing") ||
+    id.includes("-front-edge-abs") ||
     (id.includes("-profile-handle") && !id.includes("-profile-handle-modification") && !id.includes("-profile-handle-baked-paint"))
   );
 }

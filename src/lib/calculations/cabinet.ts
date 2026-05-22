@@ -2,7 +2,7 @@
 // 純函式：零 UI 依賴、零副作用。
 
 import { ADDON_PRICES, DRAWER_FRONT_MOLD_CORNER_PRICING, DRAWER_FRONT_MOLD_PROCESSING_PRICES, PROFILE_HANDLE_BAKED_PAINT_SURCHARGE, PROFILE_HANDLE_PROCESSING_RULES, SIDE_SEAL_BENDING_PRICES, SPECIAL_PROCESSING_PRICES, UNIT_CONFIG } from "../config/units";
-import { DEFAULT_DOOR_ADDONS } from "../../types";
+import { DEFAULT_DOOR_ADDONS, DEFAULT_UNIT_ADDONS } from "../../types";
 import type {
   AccessoryResult,
   AddonsBreakdown,
@@ -19,10 +19,12 @@ import type {
   MaterialRef,
   PanelProcessResult,
   PanelResult,
+  ProcessingQuantitySwitch,
   ProfileHandleStyle,
   SpecialProcessInput,
   SideSealBendingOption,
   UnitAddons,
+  UnitBodyPanelProcesses,
   SlidingDoorTrackShape,
 } from "../../types";
 
@@ -73,6 +75,9 @@ function emptyBreakdown(): AddonsBreakdown {
     lTurnCabinet: 0,
     specialProcessing: 0,
     sideSealBending: 0,
+    sidePanelInset: 0,
+    panelHardwareProcessing: 0,
+    drawerBodyKdProcessing: 0,
   };
 }
 
@@ -80,6 +85,80 @@ function calcFrontEdgeAddon(frontEdgeABS: UnitAddons["frontEdgeABS"]): number {
   if (frontEdgeABS === "one_long") return ADDON_PRICES.FRONT_EDGE_ABS_ONE_LONG;
   if (frontEdgeABS === "two_long") return ADDON_PRICES.FRONT_EDGE_ABS_TWO_LONG;
   return 0;
+}
+
+function frontEdgeABSEdgeCount(frontEdgeABS: UnitAddons["frontEdgeABS"]): number {
+  if (frontEdgeABS !== "none") return 1;
+  return 0;
+}
+
+function frontEdgeABSUnitCost(materialRef: MaterialRef | null): number {
+  const thicknessMm = materialThicknessMm(materialRef);
+  if (thicknessMm >= 25) return UNIT_CONFIG.FRONT_EDGE_ABS_25MM_UNIT_COST_PER_CM;
+  if (thicknessMm >= 18) return UNIT_CONFIG.FRONT_EDGE_ABS_18MM_UNIT_COST_PER_CM;
+  return 0;
+}
+
+function frontEdgeABSProcess(
+  panelId: string,
+  widthCm: number,
+  heightCm: number,
+  quantity: number,
+  materialRef: MaterialRef | null,
+  frontEdgeABS: UnitAddons["frontEdgeABS"],
+): PanelProcessResult | undefined {
+  const edgeCount = frontEdgeABSEdgeCount(frontEdgeABS);
+  const unitCost = frontEdgeABSUnitCost(materialRef);
+  if (edgeCount <= 0 || unitCost <= 0) return undefined;
+
+  const billableLengthCm = Math.min(
+    Math.max(Math.max(widthCm, heightCm), UNIT_CONFIG.FRONT_EDGE_ABS_MIN_LENGTH_CM),
+    UNIT_CONFIG.FRONT_EDGE_ABS_MAX_LENGTH_CM,
+  );
+  const processQuantity = billableLengthCm * edgeCount * quantity;
+
+  return panelProcess(
+    `${panelId}-front-edge-abs`,
+    "板厚處切斜邊封ABS",
+    processQuantity * unitCost,
+    true,
+    processQuantity,
+    unitCost,
+  );
+}
+
+function sidePanelInsetProcess(panelId: string, unitQty: number, includedInSubtotal = true): PanelProcessResult {
+  const unitCost = UNIT_CONFIG.SIDE_PANEL_INSET_PROCESS_COST;
+  return {
+    id: `${panelId}-side-panel-inset`,
+    label: "側板崁凹(檔板設計)",
+    quantity: unitQty,
+    unitCost: includedInSubtotal ? unitCost : 0,
+    cost: includedInSubtotal ? unitCost * unitQty : 0,
+    includedInSubtotal,
+  };
+}
+
+function quantityProcess(
+  id: string,
+  label: string,
+  option: ProcessingQuantitySwitch | undefined,
+  boardQuantity: number,
+  unitCost: number,
+): PanelProcessResult | undefined {
+  if (!option?.enabled) return undefined;
+  const perBoardQuantity = Math.max(option.quantity || 0, 0);
+  if (perBoardQuantity <= 0 || boardQuantity <= 0) return undefined;
+  const quantity = perBoardQuantity * boardQuantity;
+
+  return panelProcess(
+    id,
+    `${label}(X${perBoardQuantity})`,
+    quantity * unitCost,
+    true,
+    quantity,
+    unitCost,
+  );
 }
 
 function middleDividerHoleProcesses(
@@ -200,6 +279,17 @@ function drawerGrooveNote(): string {
   return `內側下方打溝 (${UNIT_CONFIG.DRAWER_GROOVE_WIDTH_MM}mm, 深${UNIT_CONFIG.DRAWER_GROOVE_DEPTH_MM}mm)`;
 }
 
+function drawerBodyKdProcess(drawerId: string, quantity: number): PanelProcessResult {
+  return panelProcess(
+    `${drawerId}-body-kd-processing`,
+    "抽身指定KD",
+    UNIT_CONFIG.DRAWER_BODY_KD_PROCESSING_COST_PER_SET * quantity,
+    true,
+    quantity,
+    UNIT_CONFIG.DRAWER_BODY_KD_PROCESSING_COST_PER_SET,
+  );
+}
+
 function backPanelOuterHeight(input: CabinetUnitInput): number {
   return Math.max(input.heightCm - (input.kickPlate?.heightCm ?? 0), 0);
 }
@@ -229,7 +319,8 @@ function lTurnCabinetPanels(input: CabinetUnitInput, unitQty: number): PanelResu
   const cutoutDepthCm = round(Math.min(Math.max(option.heightMm / 10, 0), input.depthCm), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
   const remainingWidthCm = round(Math.max(input.widthCm - cutoutWidthCm, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
   const remainingDepthCm = round(Math.max(input.depthCm - cutoutDepthCm, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
-  const sideThicknessCm = materialThicknessCm(input.panelMaterialRef);
+  const bodyMaterials = bodyPanelMaterialRefs(input);
+  const sideThicknessCm = materialThicknessCm(bodyMaterials.side);
   const backWidthOuterCm = option.isOpening ? input.widthCm : cutoutWidthCm;
   const backDepthOuterCm = option.isOpening ? input.depthCm : cutoutDepthCm;
   const backWidthCm = lTurnBackPanelWidth(backWidthOuterCm, UNIT_CONFIG.L_TURN_BACK_PANEL_WIDTH_DEDUCTION_CM);
@@ -245,7 +336,7 @@ function lTurnCabinetPanels(input: CabinetUnitInput, unitQty: number): PanelResu
       widthCm: input.heightCm,
       heightCm: remainingWidthCm,
       quantity: unitQty,
-      materialRef: input.panelMaterialRef,
+      materialRef: bodyMaterials.side,
       isAutoGenerated: true,
       addonPricePerCai: calcFrontEdgeAddon(input.addons.frontEdgeABS),
       note: backPanelGrooveNote,
@@ -259,7 +350,7 @@ function lTurnCabinetPanels(input: CabinetUnitInput, unitQty: number): PanelResu
       widthCm: input.heightCm,
       heightCm: remainingDepthCm,
       quantity: unitQty,
-      materialRef: input.panelMaterialRef,
+      materialRef: bodyMaterials.side,
       isAutoGenerated: true,
       addonPricePerCai: calcFrontEdgeAddon(input.addons.frontEdgeABS),
       note: backPanelGrooveNote,
@@ -304,7 +395,8 @@ function lTurnCabinetKickPlatePanels(input: CabinetUnitInput, unitQty: number, a
   const cutoutDepthCm = round(Math.min(Math.max(option.heightMm / 10, 0), input.depthCm), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
   const remainingWidthCm = round(Math.max(input.widthCm - cutoutWidthCm, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
   const remainingDepthCm = round(Math.max(input.depthCm - cutoutDepthCm, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
-  const sideThicknessCm = materialThicknessCm(input.panelMaterialRef);
+  const bodyMaterials = bodyPanelMaterialRefs(input);
+  const sideThicknessCm = materialThicknessCm(bodyMaterials.side);
   const kickPlateWidthBaseCm = option.isOpening ? cutoutWidthCm : input.widthCm;
   const kickPlateDepthBaseCm = option.isOpening ? cutoutDepthCm : input.depthCm;
   const kickPlateWidthCm = option.isOpening
@@ -331,7 +423,7 @@ function lTurnCabinetKickPlatePanels(input: CabinetUnitInput, unitQty: number, a
       widthCm: line.widthCm,
       heightCm: kickPlate.heightCm,
       quantity: unitQty,
-      materialRef: input.panelMaterialRef,
+      materialRef: bodyMaterials.side,
       isAutoGenerated: true,
       addonPricePerCai,
     }));
@@ -409,6 +501,60 @@ function sideSealBendingProcesses(
 function joinNotes(...notes: Array<string | undefined>): string | undefined {
   return notes.filter(Boolean).join("; ") || undefined;
 }
+
+function bodyPanelMaterialRefs(input: CabinetUnitInput): {
+  top: MaterialRef | null;
+  side: MaterialRef | null;
+  bottom: MaterialRef | null;
+} {
+  return {
+    top: input.topPanelMaterialRef ?? input.panelMaterialRef,
+    side: input.sidePanelMaterialRef ?? input.panelMaterialRef,
+    bottom: input.bottomPanelMaterialRef ?? input.panelMaterialRef,
+  };
+}
+
+function bodyPanelProcesses(addons: UnitAddons): UnitBodyPanelProcesses {
+  const defaults = DEFAULT_UNIT_ADDONS.bodyPanelProcesses!;
+  const legacyLightGrooves = addons.lightGrooves;
+  const legacySlidingDoorTrackGrooves = addons.slidingDoorTrackGrooves;
+  const legacySideSealBending = addons.sideSealBending;
+  const current = addons.bodyPanelProcesses;
+
+  return {
+    top: {
+      frontEdgeABS: current?.top.frontEdgeABS ?? addons.frontEdgeABS ?? defaults.top.frontEdgeABS,
+      lightGroove: current?.top.lightGroove ?? legacyLightGrooves?.topInner ?? defaults.top.lightGroove,
+      slidingDoorTrackGroove: current?.top.slidingDoorTrackGroove ?? legacySlidingDoorTrackGrooves?.top ?? defaults.top.slidingDoorTrackGroove,
+      bookcaseGuideWheelHole: current?.top.bookcaseGuideWheelHole ?? defaults.top.bookcaseGuideWheelHole,
+    },
+    bottom: {
+      frontEdgeABS: current?.bottom.frontEdgeABS ?? addons.frontEdgeABS ?? defaults.bottom.frontEdgeABS,
+      slidingDoorTrackGroove: current?.bottom.slidingDoorTrackGroove ?? legacySlidingDoorTrackGrooves?.bottom ?? defaults.bottom.slidingDoorTrackGroove,
+      smallAdjustableFootHole: current?.bottom.smallAdjustableFootHole ?? defaults.bottom.smallAdjustableFootHole,
+      lightStWheelHole: current?.bottom.lightStWheelHole ?? defaults.bottom.lightStWheelHole,
+      heavyStWheelHole: current?.bottom.heavyStWheelHole ?? defaults.bottom.heavyStWheelHole,
+      bookcaseGuideWheelHole: current?.bottom.bookcaseGuideWheelHole ?? defaults.bottom.bookcaseGuideWheelHole,
+    },
+    left: {
+      frontEdgeABS: current?.left.frontEdgeABS ?? addons.frontEdgeABS ?? defaults.left.frontEdgeABS,
+      lightGroove: current?.left.lightGroove ?? legacyLightGrooves?.sideInner ?? defaults.left.lightGroove,
+      sideSealBending: current?.left.sideSealBending ?? legacySideSealBending?.left ?? defaults.left.sideSealBending,
+      hiddenReturnSlideRail: current?.left.hiddenReturnSlideRail ?? defaults.left.hiddenReturnSlideRail,
+      specialUGlassPivot: current?.left.specialUGlassPivot ?? defaults.left.specialUGlassPivot,
+      tRailBedSet: current?.left.tRailBedSet ?? defaults.left.tRailBedSet,
+    },
+    right: {
+      frontEdgeABS: current?.right.frontEdgeABS ?? addons.frontEdgeABS ?? defaults.right.frontEdgeABS,
+      lightGroove: current?.right.lightGroove ?? legacyLightGrooves?.sideInner ?? defaults.right.lightGroove,
+      sideSealBending: current?.right.sideSealBending ?? legacySideSealBending?.right ?? defaults.right.sideSealBending,
+      hiddenReturnSlideRail: current?.right.hiddenReturnSlideRail ?? defaults.right.hiddenReturnSlideRail,
+      specialUGlassPivot: current?.right.specialUGlassPivot ?? defaults.right.specialUGlassPivot,
+      tRailBedSet: current?.right.tRailBedSet ?? defaults.right.tRailBedSet,
+    },
+  };
+}
+
 function materialThicknessCm(materialRef: MaterialRef | null): number {
   const match = materialRef?.materialName.match(/(\d+(?:\.\d+)?)\s*mm/i);
   if (!match) return 0;
@@ -416,9 +562,11 @@ function materialThicknessCm(materialRef: MaterialRef | null): number {
 }
 
 function internalFullHeightCm(input: CabinetUnitInput): number {
-  const panelThicknessCm = materialThicknessCm(input.panelMaterialRef);
+  const bodyMaterials = bodyPanelMaterialRefs(input);
+  const topThicknessCm = materialThicknessCm(bodyMaterials.top);
+  const bottomThicknessCm = materialThicknessCm(bodyMaterials.bottom);
   return round(
-    Math.max(input.heightCm - panelThicknessCm * 2 - (input.kickPlate?.heightCm ?? 0), 0),
+    Math.max(input.heightCm - topThicknessCm - bottomThicknessCm - (input.kickPlate?.heightCm ?? 0), 0),
     UNIT_CONFIG.DIMENSION_DECIMAL_PLACES,
   );
 }
@@ -713,26 +861,57 @@ function buildPanelResult(params: {
 }
 
 function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelResult[] {
-  const { id, widthCm, depthCm, heightCm, panelMaterialRef, backPanelMaterialRef, hasBackPanel, addons } = input;
+  const { id, widthCm, depthCm, heightCm, backPanelMaterialRef, hasBackPanel, addons } = input;
+  const materials = bodyPanelMaterialRefs(input);
   const frontEdgeAddon = calcFrontEdgeAddon(addons.frontEdgeABS);
-  const sideThicknessCm = materialThicknessCm(panelMaterialRef);
-  const topBottomWidthCm = round(Math.max(widthCm - sideThicknessCm * 2, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
+  const sideThicknessCm = materialThicknessCm(materials.side);
+  const topThicknessCm = materialThicknessCm(materials.top);
+  const joinMode = input.bodyPanelJoinMode ?? "SIDE_COVERS_TOP";
+  const topPanelOverhang = {
+    ...DEFAULT_UNIT_ADDONS.topPanelOverhang!,
+    ...addons.topPanelOverhang,
+  };
+  const topOverhangLeftCm = topPanelOverhang.leftCm ?? ((topPanelOverhang.leftMm ?? 0) / 10);
+  const topOverhangRightCm = topPanelOverhang.rightCm ?? ((topPanelOverhang.rightMm ?? 0) / 10);
+  const topOverhangFrontCm = topPanelOverhang.frontCm ?? ((topPanelOverhang.frontMm ?? 0) / 10);
+  const topOverhangBackCm = topPanelOverhang.backCm ?? ((topPanelOverhang.backMm ?? 0) / 10);
+  const topOverhangWidthCm = joinMode === "TOP_COVERS_SIDES" && topPanelOverhang.enabled
+    ? topOverhangLeftCm + topOverhangRightCm
+    : 0;
+  const topOverhangDepthCm = joinMode === "TOP_COVERS_SIDES" && topPanelOverhang.enabled
+    ? topOverhangFrontCm + topOverhangBackCm
+    : 0;
+  const sidePanelWidthCm = round(
+    Math.max(heightCm - (joinMode === "TOP_COVERS_SIDES" ? topThicknessCm : 0), 0),
+    UNIT_CONFIG.DIMENSION_DECIMAL_PLACES,
+  );
+  const topWidthCm = round(
+    Math.max((joinMode === "TOP_COVERS_SIDES" ? widthCm : widthCm - sideThicknessCm * 2) + topOverhangWidthCm, 0),
+    UNIT_CONFIG.DIMENSION_DECIMAL_PLACES,
+  );
+  const topDepthCm = round(Math.max(depthCm + topOverhangDepthCm, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
+  const bottomWidthCm = round(Math.max(widthCm - sideThicknessCm * 2, 0), UNIT_CONFIG.DIMENSION_DECIMAL_PLACES);
   const backPanelWidthCm = insetPanelDimension(widthCm, sideThicknessCm);
   const backPanelHeightCm = insetPanelDimension(backPanelOuterHeight(input), sideThicknessCm);
   const backPanelGrooveNote = hasBackPanel ? buildBackPanelGrooveNote() : undefined;
   const backPanelGrooveCostPerLine = hasBackPanel ? UNIT_CONFIG.BACK_PANEL_GROOVE_COST_PER_LINE : 0;
-  const topLightGroove = addons.lightGrooves?.topInner;
-  const sideLightGroove = addons.lightGrooves?.sideInner;
-  const topLightGrooveCost = topLightGroove?.enabled ? calcLightGrooveCost(topBottomWidthCm, unitQty) : 0;
-  const sideLightGrooveCost = sideLightGroove?.enabled ? calcLightGrooveCost(heightCm, unitQty) : 0;
-  const topLightGrooveNote = topLightGroove?.enabled ? lightGrooveNote("上板內側", topLightGroove.offsetFromFrontMm) : undefined;
-  const sideLightGrooveNote = sideLightGroove?.enabled ? lightGrooveNote("側板內側", sideLightGroove.offsetFromFrontMm) : undefined;
-  const slidingDoorTrackGrooves = addons.slidingDoorTrackGrooves;
-  const topSlidingDoorTrackGrooveProcess = slidingDoorTrackGrooves?.top.enabled
-    ? slidingDoorTrackGrooveProcess(`${id}-top-sliding-door-track-groove`, unitQty, slidingDoorTrackGrooves.top.trackShape)
+  const panelProcesses = bodyPanelProcesses(addons);
+  const topLightGroove = panelProcesses.top.lightGroove;
+  const leftLightGroove = panelProcesses.left.lightGroove;
+  const rightLightGroove = panelProcesses.right.lightGroove;
+  const topLightGrooveCost = topLightGroove.enabled ? calcLightGrooveCost(topWidthCm, unitQty) : 0;
+  const leftLightGrooveCost = leftLightGroove.enabled ? calcLightGrooveCost(sidePanelWidthCm, unitQty) : 0;
+  const rightLightGrooveCost = rightLightGroove.enabled ? calcLightGrooveCost(sidePanelWidthCm, unitQty) : 0;
+  const topLightGrooveNote = topLightGroove.enabled ? lightGrooveNote("上板內側", topLightGroove.offsetFromFrontMm) : undefined;
+  const leftLightGrooveNote = leftLightGroove.enabled ? lightGrooveNote("側板內側", leftLightGroove.offsetFromFrontMm) : undefined;
+  const rightLightGrooveNote = rightLightGroove.enabled ? lightGrooveNote("側板內側", rightLightGroove.offsetFromFrontMm) : undefined;
+  const topSlidingDoorTrackGroove = panelProcesses.top.slidingDoorTrackGroove;
+  const bottomSlidingDoorTrackGroove = panelProcesses.bottom.slidingDoorTrackGroove;
+  const topSlidingDoorTrackGrooveProcess = topSlidingDoorTrackGroove.enabled
+    ? slidingDoorTrackGrooveProcess(`${id}-top-sliding-door-track-groove`, unitQty, topSlidingDoorTrackGroove.trackShape)
     : undefined;
-  const bottomSlidingDoorTrackGrooveProcess = slidingDoorTrackGrooves?.bottom.enabled
-    ? slidingDoorTrackGrooveProcess(`${id}-bottom-sliding-door-track-groove`, unitQty, slidingDoorTrackGrooves.bottom.trackShape)
+  const bottomSlidingDoorTrackGrooveProcess = bottomSlidingDoorTrackGroove.enabled
+    ? slidingDoorTrackGrooveProcess(`${id}-bottom-sliding-door-track-groove`, unitQty, bottomSlidingDoorTrackGroove.trackShape)
     : undefined;
   const topSlidingDoorTrackGrooveCost = topSlidingDoorTrackGrooveProcess?.cost ?? 0;
   const bottomSlidingDoorTrackGrooveCost = bottomSlidingDoorTrackGrooveProcess?.cost ?? 0;
@@ -760,31 +939,75 @@ function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelRes
         false,
       )
     : undefined;
-  const leftSideSealProcesses = sideSealBendingProcesses(`${id}-left`, "左側", heightCm, addons.sideSealBending?.left, unitQty);
-  const rightSideSealProcesses = sideSealBendingProcesses(`${id}-right`, "右側", heightCm, addons.sideSealBending?.right, unitQty);
+  const leftSideSealProcesses = sideSealBendingProcesses(`${id}-left`, "左側", sidePanelWidthCm, panelProcesses.left.sideSealBending, unitQty);
+  const rightSideSealProcesses = sideSealBendingProcesses(`${id}-right`, "右側", sidePanelWidthCm, panelProcesses.right.sideSealBending, unitQty);
   const leftSideSealCost = leftSideSealProcesses.reduce((sum, process) => sum + process.cost, 0);
   const rightSideSealCost = rightSideSealProcesses.reduce((sum, process) => sum + process.cost, 0);
+  const leftFrontEdgeProcess = frontEdgeABSProcess(`${id}-left`, sidePanelWidthCm, depthCm, unitQty, materials.side, panelProcesses.left.frontEdgeABS);
+  const rightFrontEdgeProcess = frontEdgeABSProcess(`${id}-right`, sidePanelWidthCm, depthCm, unitQty, materials.side, panelProcesses.right.frontEdgeABS);
+  const topFrontEdgeProcess = frontEdgeABSProcess(`${id}-top`, topWidthCm, topDepthCm, unitQty, materials.top, panelProcesses.top.frontEdgeABS);
+  const bottomFrontEdgeProcess = frontEdgeABSProcess(`${id}-bottom`, bottomWidthCm, depthCm, unitQty, materials.bottom, panelProcesses.bottom.frontEdgeABS);
+  const leftSidePanelInset = addons.sidePanelInset?.enabled ? sidePanelInsetProcess(`${id}-left`, unitQty) : undefined;
+  const rightSidePanelInset = addons.sidePanelInset?.enabled ? sidePanelInsetProcess(`${id}-right`, unitQty, false) : undefined;
+  const topHardwareProcesses = [
+    quantityProcess(`${id}-top-bookcase-guide-wheel-hole`, "活動書櫃導輪孔", panelProcesses.top.bookcaseGuideWheelHole, unitQty, UNIT_CONFIG.BOOKCASE_GUIDE_WHEEL_HOLE_COST),
+  ].filter((process): process is PanelProcessResult => Boolean(process));
+  const bottomHardwareProcesses = [
+    quantityProcess(`${id}-bottom-small-adjustable-foot-hole`, "小調整腳孔", panelProcesses.bottom.smallAdjustableFootHole, unitQty, UNIT_CONFIG.SMALL_ADJUSTABLE_FOOT_HOLE_COST),
+    quantityProcess(`${id}-bottom-light-st-wheel-hole`, "輕型 ST 輪孔", panelProcesses.bottom.lightStWheelHole, unitQty, UNIT_CONFIG.LIGHT_ST_WHEEL_HOLE_COST),
+    quantityProcess(`${id}-bottom-heavy-st-wheel-hole`, "重型 ST 輪孔", panelProcesses.bottom.heavyStWheelHole, unitQty, UNIT_CONFIG.HEAVY_ST_WHEEL_HOLE_COST),
+    quantityProcess(`${id}-bottom-bookcase-guide-wheel-hole`, "活動書櫃導輪孔", panelProcesses.bottom.bookcaseGuideWheelHole, unitQty, UNIT_CONFIG.BOOKCASE_GUIDE_WHEEL_HOLE_COST),
+  ].filter((process): process is PanelProcessResult => Boolean(process));
+  const leftHardwareProcesses = [
+    quantityProcess(`${id}-left-hidden-return-slide-rail`, "隱藏式回歸滑軌加工", panelProcesses.left.hiddenReturnSlideRail, unitQty, UNIT_CONFIG.HIDDEN_RETURN_SLIDE_RAIL_PROCESS_COST),
+    quantityProcess(`${id}-left-special-u-glass-pivot`, "特殊 U 型玻璃抽加工", panelProcesses.left.specialUGlassPivot, unitQty, UNIT_CONFIG.SPECIAL_U_GLASS_PIVOT_PROCESS_COST),
+    quantityProcess(`${id}-left-t-rail-bed-set`, "T螺床組加工", panelProcesses.left.tRailBedSet, unitQty, UNIT_CONFIG.T_RAIL_BED_SET_PROCESS_COST),
+  ].filter((process): process is PanelProcessResult => Boolean(process));
+  const rightHardwareProcesses = [
+    quantityProcess(`${id}-right-hidden-return-slide-rail`, "隱藏式回歸滑軌加工", panelProcesses.right.hiddenReturnSlideRail, unitQty, UNIT_CONFIG.HIDDEN_RETURN_SLIDE_RAIL_PROCESS_COST),
+    quantityProcess(`${id}-right-special-u-glass-pivot`, "特殊 U 型玻璃抽加工", panelProcesses.right.specialUGlassPivot, unitQty, UNIT_CONFIG.SPECIAL_U_GLASS_PIVOT_PROCESS_COST),
+    quantityProcess(`${id}-right-t-rail-bed-set`, "T螺床組加工", panelProcesses.right.tRailBedSet, unitQty, UNIT_CONFIG.T_RAIL_BED_SET_PROCESS_COST),
+  ].filter((process): process is PanelProcessResult => Boolean(process));
+  const leftFrontEdgeCost = leftFrontEdgeProcess?.cost ?? 0;
+  const rightFrontEdgeCost = rightFrontEdgeProcess?.cost ?? 0;
+  const topFrontEdgeCost = topFrontEdgeProcess?.cost ?? 0;
+  const bottomFrontEdgeCost = bottomFrontEdgeProcess?.cost ?? 0;
+  const sidePanelInsetCost = leftSidePanelInset?.cost ?? 0;
+  const topHardwareCost = topHardwareProcesses.reduce((sum, process) => sum + process.cost, 0);
+  const bottomHardwareCost = bottomHardwareProcesses.reduce((sum, process) => sum + process.cost, 0);
+  const leftHardwareCost = leftHardwareProcesses.reduce((sum, process) => sum + process.cost, 0);
+  const rightHardwareCost = rightHardwareProcesses.reduce((sum, process) => sum + process.cost, 0);
 
   const panels: PanelResult[] = [
-    buildPanelResult({ id: `${id}-left`, name: "左側板", widthCm: heightCm, heightCm: depthCm, quantity: unitQty, materialRef: panelMaterialRef, isAutoGenerated: true, addonPricePerCai: frontEdgeAddon, extraAddonCost: sideLightGrooveCost + leftSideSealCost, lightGrooveCost: sideLightGrooveCost, note: joinNotes(backPanelGrooveNote, sideLightGrooveNote), processes: [
+    buildPanelResult({ id: `${id}-left`, name: "左側板", widthCm: sidePanelWidthCm, heightCm: depthCm, quantity: unitQty, materialRef: materials.side, isAutoGenerated: true, extraAddonCost: leftFrontEdgeCost + leftLightGrooveCost + leftSideSealCost + sidePanelInsetCost + leftHardwareCost, lightGrooveCost: leftLightGrooveCost, note: joinNotes(backPanelGrooveNote, leftLightGrooveNote), processes: [
       ...(backPanelGrooveNote ? [panelProcess(`${id}-left-back-groove`, backPanelGrooveNote, backPanelGrooveCostPerLine, false)] : []),
-      ...(sideLightGrooveNote ? [lightGrooveProcess(`${id}-left-light-groove`, sideLightGrooveNote, heightCm, unitQty)] : []),
+      ...(leftFrontEdgeProcess ? [leftFrontEdgeProcess] : []),
+      ...(leftSidePanelInset ? [leftSidePanelInset] : []),
+      ...(leftLightGrooveNote ? [lightGrooveProcess(`${id}-left-light-groove`, leftLightGrooveNote, sidePanelWidthCm, unitQty)] : []),
       ...leftSideSealProcesses,
+      ...leftHardwareProcesses,
     ] }),
-    buildPanelResult({ id: `${id}-right`, name: "右側板", widthCm: heightCm, heightCm: depthCm, quantity: unitQty, materialRef: panelMaterialRef, isAutoGenerated: true, addonPricePerCai: frontEdgeAddon, extraAddonCost: sideLightGrooveCost + rightSideSealCost, lightGrooveCost: sideLightGrooveCost, note: joinNotes(backPanelGrooveNote, sideLightGrooveNote), processes: [
+    buildPanelResult({ id: `${id}-right`, name: "右側板", widthCm: sidePanelWidthCm, heightCm: depthCm, quantity: unitQty, materialRef: materials.side, isAutoGenerated: true, extraAddonCost: rightFrontEdgeCost + rightLightGrooveCost + rightSideSealCost + rightHardwareCost, lightGrooveCost: rightLightGrooveCost, note: joinNotes(backPanelGrooveNote, rightLightGrooveNote), processes: [
       ...(backPanelGrooveNote ? [panelProcess(`${id}-right-back-groove`, backPanelGrooveNote, backPanelGrooveCostPerLine, false)] : []),
-      ...(sideLightGrooveNote ? [lightGrooveProcess(`${id}-right-light-groove`, sideLightGrooveNote, heightCm, unitQty)] : []),
+      ...(rightFrontEdgeProcess ? [rightFrontEdgeProcess] : []),
+      ...(rightSidePanelInset ? [rightSidePanelInset] : []),
+      ...(rightLightGrooveNote ? [lightGrooveProcess(`${id}-right-light-groove`, rightLightGrooveNote, sidePanelWidthCm, unitQty)] : []),
       ...rightSideSealProcesses,
+      ...rightHardwareProcesses,
     ] }),
-    buildPanelResult({ id: `${id}-top`, name: "頂板", widthCm: topBottomWidthCm, heightCm: depthCm, quantity: unitQty, materialRef: panelMaterialRef, isAutoGenerated: true, addonPricePerCai: frontEdgeAddon, extraAddonCost: topLightGrooveCost + topSlidingDoorTrackGrooveCost, lightGrooveCost: topLightGrooveCost, note: joinNotes(backPanelGrooveNote, topLightGrooveNote, topSlidingDoorTrackGrooveNote, lTurnCabinetNote), processes: [
+    buildPanelResult({ id: `${id}-top`, name: "頂板", widthCm: topWidthCm, heightCm: topDepthCm, quantity: unitQty, materialRef: materials.top, isAutoGenerated: true, extraAddonCost: topFrontEdgeCost + topLightGrooveCost + topSlidingDoorTrackGrooveCost + topHardwareCost, lightGrooveCost: topLightGrooveCost, note: joinNotes(backPanelGrooveNote, topLightGrooveNote, topSlidingDoorTrackGrooveNote, lTurnCabinetNote), processes: [
       ...(backPanelGrooveNote ? [panelProcess(`${id}-top-back-groove`, backPanelGrooveNote, backPanelGrooveCostPerLine, false)] : []),
-      ...(topLightGrooveNote ? [lightGrooveProcess(`${id}-top-light-groove`, topLightGrooveNote, topBottomWidthCm, unitQty)] : []),
+      ...(topFrontEdgeProcess ? [topFrontEdgeProcess] : []),
+      ...(topLightGrooveNote ? [lightGrooveProcess(`${id}-top-light-groove`, topLightGrooveNote, topWidthCm, unitQty)] : []),
       ...(topSlidingDoorTrackGrooveProcess ? [topSlidingDoorTrackGrooveProcess] : []),
+      ...topHardwareProcesses,
       ...(lTurnCabinetTopProcess ? [lTurnCabinetTopProcess] : []),
     ] }),
-    buildPanelResult({ id: `${id}-bottom`, name: "底板", widthCm: topBottomWidthCm, heightCm: depthCm, quantity: unitQty, materialRef: panelMaterialRef, isAutoGenerated: true, addonPricePerCai: frontEdgeAddon, extraAddonCost: bottomSlidingDoorTrackGrooveCost, note: joinNotes(backPanelGrooveNote, bottomSlidingDoorTrackGrooveNote, lTurnCabinetNote), processes: [
+    buildPanelResult({ id: `${id}-bottom`, name: "底板", widthCm: bottomWidthCm, heightCm: depthCm, quantity: unitQty, materialRef: materials.bottom, isAutoGenerated: true, extraAddonCost: bottomFrontEdgeCost + bottomSlidingDoorTrackGrooveCost + bottomHardwareCost, note: joinNotes(backPanelGrooveNote, bottomSlidingDoorTrackGrooveNote, lTurnCabinetNote), processes: [
       ...(backPanelGrooveNote ? [panelProcess(`${id}-bottom-back-groove`, backPanelGrooveNote, backPanelGrooveCostPerLine, false)] : []),
+      ...(bottomFrontEdgeProcess ? [bottomFrontEdgeProcess] : []),
       ...(bottomSlidingDoorTrackGrooveProcess ? [bottomSlidingDoorTrackGrooveProcess] : []),
+      ...bottomHardwareProcesses,
       ...(lTurnCabinetBottomProcess ? [lTurnCabinetBottomProcess] : []),
     ] }),
   ];
@@ -811,10 +1034,10 @@ function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelRes
       buildPanelResult({
         id: `${id}-kickplate`,
         name: "踢腳板",
-        widthCm: topBottomWidthCm,
+        widthCm: bottomWidthCm,
         heightCm: input.kickPlate.heightCm,
         quantity: unitQty,
-        materialRef: panelMaterialRef,
+        materialRef: materials.side,
         isAutoGenerated: true,
         addonPricePerCai: frontEdgeAddon,
       }),
@@ -845,7 +1068,12 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
   const frontEdgeAddon = calcFrontEdgeAddon(input.addons.frontEdgeABS);
   const autoDrawerDividerHeightCm = internalFullHeightCm(input);
   const autoFullDepthCm = internalFullDepthCm(input);
-  const sideSealBending = input.addons.sideSealBending;
+  const bodyMaterials = bodyPanelMaterialRefs(input);
+  const panelProcesses = bodyPanelProcesses(input.addons);
+  const sideSealBending = {
+    left: panelProcesses.left.sideSealBending,
+    right: panelProcesses.right.sideSealBending,
+  };
 
   ([
     ["left", "左側"] as const,
@@ -860,7 +1088,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
       widthCm: autoDrawerDividerHeightCm,
       heightCm: option.drawerDividerDepthCm ?? 55,
       quantity: unitQty,
-      materialRef: input.panelMaterialRef,
+      materialRef: bodyMaterials.side,
       isAutoGenerated: true,
       addonPricePerCai: frontEdgeAddon,
     }));
@@ -879,6 +1107,10 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
     const dividerQuantity = d.quantity * unitQty;
     const dividerHoleProcesses = middleDividerHoleProcesses(d.id, dividerWidthCm, dividerHeightCm, dividerQuantity, d.materialRef, d.addons);
     const dividerHoleCost = dividerHoleProcesses.reduce((sum, process) => sum + process.cost, 0);
+    const dividerHardwareProcesses = [
+      quantityProcess(`${d.id}-hidden-return-slide-rail`, "隱藏式回歸滑軌加工", d.addons?.hiddenReturnSlideRail, dividerQuantity, UNIT_CONFIG.HIDDEN_RETURN_SLIDE_RAIL_PROCESS_COST),
+    ].filter((process): process is PanelProcessResult => Boolean(process));
+    const dividerHardwareCost = dividerHardwareProcesses.reduce((sum, process) => sum + process.cost, 0);
     const dividerSpecialProcesses = specialProcesses(d.id, d.materialRef, dividerQuantity, d.specialProcesses);
     const dividerSpecialCost = dividerSpecialProcesses.reduce((sum, process) => sum + process.cost, 0);
     parts.push(buildPanelResult({
@@ -890,7 +1122,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
       materialRef: d.materialRef,
       isAutoGenerated: false,
       addonPricePerCai: frontEdgeAddon,
-      extraAddonCost: dividerLightGrooveCost + dividerSpecialCost + dividerHoleCost,
+      extraAddonCost: dividerLightGrooveCost + dividerSpecialCost + dividerHoleCost + dividerHardwareCost,
       lightGrooveCost: dividerLightGrooveCost,
       note: dividerLightGrooveNote,
       processes: [
@@ -898,6 +1130,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
         ...(dividerLightGrooveNote
           ? [lightGrooveProcess(`${d.id}-light-groove`, dividerLightGrooveNote, dividerHeightCm, dividerQuantity)]
           : []),
+        ...dividerHardwareProcesses,
         ...dividerSpecialProcesses,
       ],
     }));
@@ -915,6 +1148,11 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
     const shelfQuantity = s.quantity * unitQty;
     const shelfSpecialProcesses = specialProcesses(s.id, s.materialRef, shelfQuantity, s.specialProcesses);
     const shelfSpecialCost = shelfSpecialProcesses.reduce((sum, process) => sum + process.cost, 0);
+    const shelfHardwareProcesses = [
+      quantityProcess(`${s.id}-hidden-shelf-screw-hole`, "隱藏式層板螺絲孔", s.hardwareProcesses?.hiddenShelfScrewHole, shelfQuantity, UNIT_CONFIG.HIDDEN_SHELF_SCREW_HOLE_COST),
+      quantityProcess(`${s.id}-heavy-hidden-shelf-screw-hole`, "重型隱藏式層板螺絲孔", s.hardwareProcesses?.heavyHiddenShelfScrewHole, shelfQuantity, UNIT_CONFIG.HEAVY_HIDDEN_SHELF_SCREW_HOLE_COST),
+    ].filter((process): process is PanelProcessResult => Boolean(process));
+    const shelfHardwareCost = shelfHardwareProcesses.reduce((sum, process) => sum + process.cost, 0);
     parts.push(buildPanelResult({
       id: s.id,
       name: "櫃內層板",
@@ -924,13 +1162,14 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
       materialRef: s.materialRef,
       isAutoGenerated: false,
       addonPricePerCai: frontEdgeAddon,
-      extraAddonCost: shelfLightGrooveCost + shelfSpecialCost,
+      extraAddonCost: shelfLightGrooveCost + shelfSpecialCost + shelfHardwareCost,
       lightGrooveCost: shelfLightGrooveCost,
       note: shelfLightGrooveNote,
       processes: [
         ...(shelfLightGrooveNote
           ? [lightGrooveProcess(`${s.id}-light-groove`, shelfLightGrooveNote, s.widthCm, shelfQuantity)]
           : []),
+        ...shelfHardwareProcesses,
         ...shelfSpecialProcesses,
       ],
     }));
@@ -939,7 +1178,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
   for (const drawer of input.drawers ?? []) {
     const drawerLabel = drawer.name.trim() || "\u62bd\u5c5c";
     const quantity = drawer.quantity * unitQty;
-    const drawerWallThicknessCm = materialThicknessCm(drawer.wallMaterialRef ?? input.panelMaterialRef);
+    const drawerWallThicknessCm = materialThicknessCm(drawer.wallMaterialRef ?? bodyMaterials.side);
     const wallHeightCm = drawer.heightCm - 7;
     const frontBackWidthCm = drawer.widthCm - 10.2;
     const bottomWidthCm = drawerBottomDimension(drawer.widthCm, drawerWallThicknessCm);
@@ -951,6 +1190,8 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
     const frontBackGrooveCost = frontBackGrooveQuantity * UNIT_CONFIG.DRAWER_GROOVE_COST_PER_PANEL;
     const frontProcesses = drawerFrontProcesses(drawer, quantity);
     const frontProcessCost = frontProcesses.reduce((sum, process) => sum + process.cost, 0);
+    const bodyKdProcess = drawer.bodyKdProcessing ? drawerBodyKdProcess(drawer.id, quantity) : undefined;
+    const bodyKdCost = bodyKdProcess?.cost ?? 0;
 
     drawerParts.push(buildPanelResult({
       id: `${drawer.id}-front-panel`,
@@ -958,7 +1199,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
       widthCm: drawer.widthCm,
       heightCm: drawer.heightCm,
       quantity,
-      materialRef: drawer.wallMaterialRef ?? input.panelMaterialRef,
+      materialRef: drawer.wallMaterialRef ?? bodyMaterials.side,
       isAutoGenerated: true,
       addonPricePerCai: frontEdgeAddon,
       extraAddonCost: frontProcessCost,
@@ -975,10 +1216,11 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
       materialRef: drawer.wallMaterialRef,
       isAutoGenerated: true,
       addonPricePerCai: frontEdgeAddon,
-      extraAddonCost: sideGrooveCost,
+      extraAddonCost: sideGrooveCost + bodyKdCost,
       billableMinCai: null,
       note: grooveNote,
       processes: [
+        ...(bodyKdProcess ? [bodyKdProcess] : []),
         panelProcess(
           `${drawer.id}-side-panels-groove`,
           grooveNote,
@@ -1434,6 +1676,35 @@ function buildSummary(
       .reduce((sum, process) => sum + process.cost, 0),
     0,
   );
+  const sidePanelInset = allPanels.reduce(
+    (acc, p) => acc + (p.processes ?? [])
+      .filter((process) => process.id.includes("-side-panel-inset") && process.includedInSubtotal)
+      .reduce((sum, process) => sum + process.cost, 0),
+    0,
+  );
+  const drawerBodyKdProcessing = allPanels.reduce(
+    (acc, p) => acc + (p.processes ?? [])
+      .filter((process) => process.id.includes("-body-kd-processing") && process.includedInSubtotal)
+      .reduce((sum, process) => sum + process.cost, 0),
+    0,
+  );
+  const panelHardwareProcessing = allPanels.reduce(
+    (acc, p) => acc + (p.processes ?? [])
+      .filter((process) =>
+        [
+          "-small-adjustable-foot-hole",
+          "-light-st-wheel-hole",
+          "-heavy-st-wheel-hole",
+          "-bookcase-guide-wheel-hole",
+          "-hidden-shelf-screw-hole",
+          "-heavy-hidden-shelf-screw-hole",
+          "-hidden-return-slide-rail",
+          "-special-u-glass-pivot",
+          "-t-rail-bed-set",
+        ].some((key) => process.id.includes(key)) && process.includedInSubtotal)
+      .reduce((sum, process) => sum + process.cost, 0),
+    0,
+  );
   const slidingDoorTrackGroove = allPanels.reduce(
     (acc, p) => acc + (p.processes ?? [])
       .filter((process) => process.id.includes("-sliding-door-track-groove") && process.includedInSubtotal)
@@ -1465,6 +1736,9 @@ function buildSummary(
   const frontEdgeABS = allPanels.reduce((acc, p) => acc + p.addonsCost - p.lightGrooveCost, 0)
     - specialProcessing
     - sideSealBending
+    - sidePanelInset
+    - drawerBodyKdProcessing
+    - panelHardwareProcessing
     - slidingDoorTrackGroove
     - lTurnCabinetPanelCost
     - doubleDrillHoles
@@ -1487,6 +1761,9 @@ function buildSummary(
     lTurnCabinet,
     specialProcessing,
     sideSealBending,
+    sidePanelInset,
+    panelHardwareProcessing,
+    drawerBodyKdProcessing,
     doubleDrillHoles,
     nonStandardHoles,
   };

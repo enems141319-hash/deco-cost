@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { generateId } from "@/lib/utils";
-import { DEFAULT_MIDDLE_DIVIDER_ADDONS, type MaterialRef, type MiddleDividerInput, type ShelfInput, type SideTopBottomSealPanelInput } from "@/types";
+import { DEFAULT_MIDDLE_DIVIDER_ADDONS, type MaterialRef, type MiddleDividerInput, type ProcessingQuantitySwitch, type ShelfInput, type SideTopBottomSealPanelInput } from "@/types";
 import { SpecialProcessesForm } from "./SpecialProcessesForm";
 import type { CollapseCommand } from "./CabinetUnitForm";
 
@@ -104,6 +104,11 @@ export function InternalPartsForm({
   const defaultDividerAddons = {
     ...DEFAULT_MIDDLE_DIVIDER_ADDONS,
     lightGroove: DEFAULT_MIDDLE_DIVIDER_ADDONS.lightGroove ?? { side: "none", offsetFromFrontMm: 50 },
+    hiddenReturnSlideRail: DEFAULT_MIDDLE_DIVIDER_ADDONS.hiddenReturnSlideRail ?? { enabled: false, quantity: 1 },
+  };
+  const defaultShelfHardwareProcesses = {
+    hiddenShelfScrewHole: { enabled: false, quantity: 1 },
+    heavyHiddenShelfScrewHole: { enabled: false, quantity: 1 },
   };
   const computedFullHeightCm = autoFullHeightCm({ cabinetHeightCm, panelMaterialRef, kickPlateHeightCm });
   const computedFullDepthCm = autoFullDepthCm(cabinetDepthCm, hasBackPanel);
@@ -133,11 +138,43 @@ export function InternalPartsForm({
   const addShelf = () =>
     onShelvesChange([
       ...shelves,
-      { id: generateId(), widthCm: 60, depthCm: 35, fullDepth: false, quantity: 1, materialRef: null, lightGroove: { side: "none", offsetFromFrontMm: 50 }, specialProcesses: [] },
+      { id: generateId(), widthCm: 60, depthCm: 35, fullDepth: false, quantity: 1, materialRef: null, lightGroove: { side: "none", offsetFromFrontMm: 50 }, hardwareProcesses: defaultShelfHardwareProcesses, specialProcesses: [] },
     ]);
 
   const updateShelf = (i: number, patch: Partial<ShelfInput>) =>
     onShelvesChange(shelves.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+
+  const renderQuantityProcess = (
+    label: string,
+    option: ProcessingQuantitySwitch | undefined,
+    onPatch: (patch: Partial<ProcessingQuantitySwitch>) => void,
+  ) => {
+    const normalized = option ?? { enabled: false, quantity: 1 };
+
+    return (
+      <div className="space-y-2 rounded border bg-background px-3 py-2">
+        <div className="flex items-center justify-between gap-3">
+          <Label className="text-xs">{label}</Label>
+          <Switch
+            checked={normalized.enabled}
+            onCheckedChange={(enabled) => onPatch({ enabled })}
+          />
+        </div>
+        {normalized.enabled && (
+          <div>
+            <Label className="text-[10px] text-muted-foreground">單片加工數量</Label>
+            <Input
+              type="number"
+              min={0}
+              className="h-8 text-xs"
+              value={normalized.quantity}
+              onChange={(event) => onPatch({ quantity: Number(event.target.value) })}
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const removeShelf = (i: number) =>
     onShelvesChange(shelves.filter((_, idx) => idx !== i));
@@ -236,6 +273,22 @@ export function InternalPartsForm({
                   }
                 />
               </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {renderQuantityProcess(
+                "隱藏式回歸滑軌加工",
+                (d.addons ?? defaultDividerAddons).hiddenReturnSlideRail,
+                (patch) =>
+                  updateDivider(i, {
+                    addons: {
+                      ...(d.addons ?? defaultDividerAddons),
+                      hiddenReturnSlideRail: {
+                        ...((d.addons ?? defaultDividerAddons).hiddenReturnSlideRail ?? { enabled: false, quantity: 1 }),
+                        ...patch,
+                      },
+                    },
+                  }),
+              )}
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
@@ -339,6 +392,36 @@ export function InternalPartsForm({
               />
             </label>
             <MaterialDropdown value={s.materialRef} onChange={(ref) => updateShelf(i, { materialRef: ref })} categoryFilter="BOARD_BODY" />
+            <div className="grid gap-2 sm:grid-cols-2">
+              {renderQuantityProcess(
+                "隱藏式層板螺絲孔（限25mm）",
+                (s.hardwareProcesses ?? defaultShelfHardwareProcesses).hiddenShelfScrewHole,
+                (patch) =>
+                  updateShelf(i, {
+                    hardwareProcesses: {
+                      ...(s.hardwareProcesses ?? defaultShelfHardwareProcesses),
+                      hiddenShelfScrewHole: {
+                        ...((s.hardwareProcesses ?? defaultShelfHardwareProcesses).hiddenShelfScrewHole),
+                        ...patch,
+                      },
+                    },
+                  }),
+              )}
+              {renderQuantityProcess(
+                "重型隱藏式層板螺絲孔",
+                (s.hardwareProcesses ?? defaultShelfHardwareProcesses).heavyHiddenShelfScrewHole,
+                (patch) =>
+                  updateShelf(i, {
+                    hardwareProcesses: {
+                      ...(s.hardwareProcesses ?? defaultShelfHardwareProcesses),
+                      heavyHiddenShelfScrewHole: {
+                        ...((s.hardwareProcesses ?? defaultShelfHardwareProcesses).heavyHiddenShelfScrewHole),
+                        ...patch,
+                      },
+                    },
+                  }),
+              )}
+            </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
                 <Label className="text-[10px] text-muted-foreground">櫃內層板燈溝面</Label>

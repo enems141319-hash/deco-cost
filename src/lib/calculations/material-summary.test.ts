@@ -147,8 +147,8 @@ const multiPanelSummary = buildCabinetUnitMaterialSummary(multiPanelProcessingRe
   },
   doors: [],
 });
-const leftPanelAddon = multiPanelSummary.rows.find((row) => row.id === "unit-1-left:panel-addon");
-assert.equal(leftPanelAddon?.quantity, 2);
+const leftPanelAddon = multiPanelSummary.rows.find((row) => row.id === "unit-1-left:unit-1-left-front-edge-abs");
+assert.equal(leftPanelAddon?.quantity, 160);
 assert.equal(
   leftPanelAddon?.subtotal,
   multiPanelProcessingResult.panels.find((panel) => panel.id === "unit-1-left")?.addonsCost,

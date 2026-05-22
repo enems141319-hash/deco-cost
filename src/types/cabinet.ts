@@ -46,6 +46,7 @@ export type LightGrooveSide = "none" | "left" | "right";
 export type LightGrooveFace = "none" | "top" | "bottom";
 export type SlidingDoorTrackShape = "ㄇ" | "V" | "T";
 export type LTurnCabinetPosition = "rightTop" | "rightBottom" | "leftTop" | "leftBottom";
+export type BodyPanelJoinMode = "SIDE_COVERS_TOP" | "TOP_COVERS_SIDES";
 
 export interface LightGrooveSwitch {
   enabled: boolean;
@@ -54,6 +55,10 @@ export interface LightGrooveSwitch {
 
 export interface ProcessingSwitch {
   enabled: boolean;
+}
+
+export interface ProcessingQuantitySwitch extends ProcessingSwitch {
+  quantity: number;
 }
 
 export interface SlidingDoorTrackGrooveOption extends ProcessingSwitch {
@@ -78,6 +83,18 @@ export interface LTurnCabinetOption {
   isOpening: boolean;
 }
 
+export interface TopPanelOverhangOption {
+  enabled: boolean;
+  frontCm: number;
+  backCm: number;
+  leftCm: number;
+  rightCm: number;
+  frontMm?: number;
+  backMm?: number;
+  leftMm?: number;
+  rightMm?: number;
+}
+
 export interface SideSealBendingOption {
   enabled: boolean;
   depthMm: number;
@@ -90,6 +107,39 @@ export interface SideSealBendingOption {
 export interface UnitSideSealBending {
   left: SideSealBendingOption;
   right: SideSealBendingOption;
+}
+
+export interface UnitBodyPanelProcesses {
+  top: {
+    frontEdgeABS: UnitAddons["frontEdgeABS"];
+    lightGroove: LightGrooveSwitch;
+    slidingDoorTrackGroove: SlidingDoorTrackGrooveOption;
+    bookcaseGuideWheelHole: ProcessingQuantitySwitch;
+  };
+  bottom: {
+    frontEdgeABS: UnitAddons["frontEdgeABS"];
+    slidingDoorTrackGroove: SlidingDoorTrackGrooveOption;
+    smallAdjustableFootHole: ProcessingQuantitySwitch;
+    lightStWheelHole: ProcessingQuantitySwitch;
+    heavyStWheelHole: ProcessingQuantitySwitch;
+    bookcaseGuideWheelHole: ProcessingQuantitySwitch;
+  };
+  left: {
+    frontEdgeABS: UnitAddons["frontEdgeABS"];
+    lightGroove: LightGrooveSwitch;
+    sideSealBending: SideSealBendingOption;
+    hiddenReturnSlideRail: ProcessingQuantitySwitch;
+    specialUGlassPivot: ProcessingQuantitySwitch;
+    tRailBedSet: ProcessingQuantitySwitch;
+  };
+  right: {
+    frontEdgeABS: UnitAddons["frontEdgeABS"];
+    lightGroove: LightGrooveSwitch;
+    sideSealBending: SideSealBendingOption;
+    hiddenReturnSlideRail: ProcessingQuantitySwitch;
+    specialUGlassPivot: ProcessingQuantitySwitch;
+    tRailBedSet: ProcessingQuantitySwitch;
+  };
 }
 
 export interface MiddleDividerLightGroove {
@@ -105,15 +155,24 @@ export interface ShelfLightGroove {
 export interface UnitAddons {
   frontEdgeABS: "none" | "one_long" | "two_long";
   lTurnCabinet?: LTurnCabinetOption;
+  topPanelOverhang?: TopPanelOverhangOption;
+  sidePanelInset?: ProcessingSwitch;
   lightGrooves?: UnitLightGrooves;
   slidingDoorTrackGrooves?: UnitSlidingDoorTrackGrooves;
   sideSealBending?: UnitSideSealBending;
+  bodyPanelProcesses?: UnitBodyPanelProcesses;
 }
 
 export interface MiddleDividerAddons {
   doubleDrillHoles: boolean;
   nonStandardHoles: boolean;
   lightGroove?: MiddleDividerLightGroove;
+  hiddenReturnSlideRail?: ProcessingQuantitySwitch;
+}
+
+export interface ShelfHardwareProcesses {
+  hiddenShelfScrewHole: ProcessingQuantitySwitch;
+  heavyHiddenShelfScrewHole: ProcessingQuantitySwitch;
 }
 
 export type SpecialProcessKind = "roundCorner" | "quarterRound" | "cutCorner" | "outerShape" | "innerCutout";
@@ -160,6 +219,14 @@ export const DEFAULT_UNIT_ADDONS: UnitAddons = {
     heightMm: 0,
     isOpening: true,
   },
+  sidePanelInset: { enabled: false },
+  topPanelOverhang: {
+    enabled: false,
+    frontCm: 0,
+    backCm: 0,
+    leftCm: 0,
+    rightCm: 0,
+  },
   lightGrooves: {
     topInner: { enabled: false, offsetFromFrontMm: 50 },
     sideInner: { enabled: false, offsetFromFrontMm: 50 },
@@ -172,12 +239,45 @@ export const DEFAULT_UNIT_ADDONS: UnitAddons = {
     left: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
     right: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
   },
+  bodyPanelProcesses: {
+    top: {
+      frontEdgeABS: "none",
+      lightGroove: { enabled: false, offsetFromFrontMm: 50 },
+      slidingDoorTrackGroove: { enabled: false, trackShape: "ㄇ" },
+      bookcaseGuideWheelHole: { enabled: false, quantity: 1 },
+    },
+    bottom: {
+      frontEdgeABS: "none",
+      slidingDoorTrackGroove: { enabled: false, trackShape: "ㄇ" },
+      smallAdjustableFootHole: { enabled: false, quantity: 1 },
+      lightStWheelHole: { enabled: false, quantity: 1 },
+      heavyStWheelHole: { enabled: false, quantity: 1 },
+      bookcaseGuideWheelHole: { enabled: false, quantity: 1 },
+    },
+    left: {
+      frontEdgeABS: "none",
+      lightGroove: { enabled: false, offsetFromFrontMm: 50 },
+      sideSealBending: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
+      hiddenReturnSlideRail: { enabled: false, quantity: 1 },
+      specialUGlassPivot: { enabled: false, quantity: 1 },
+      tRailBedSet: { enabled: false, quantity: 1 },
+    },
+    right: {
+      frontEdgeABS: "none",
+      lightGroove: { enabled: false, offsetFromFrontMm: 50 },
+      sideSealBending: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
+      hiddenReturnSlideRail: { enabled: false, quantity: 1 },
+      specialUGlassPivot: { enabled: false, quantity: 1 },
+      tRailBedSet: { enabled: false, quantity: 1 },
+    },
+  },
 };
 
 export const DEFAULT_MIDDLE_DIVIDER_ADDONS: MiddleDividerAddons = {
   doubleDrillHoles: false,
   nonStandardHoles: false,
   lightGroove: { side: "none", offsetFromFrontMm: 50 },
+  hiddenReturnSlideRail: { enabled: false, quantity: 1 },
 };
 
 export const DEFAULT_DOOR_ADDONS: DoorAddons = {
@@ -239,6 +339,7 @@ export interface ShelfInput {
   quantity: number;
   materialRef: MaterialRef | null;
   lightGroove?: ShelfLightGroove;
+  hardwareProcesses?: ShelfHardwareProcesses;
   specialProcesses?: SpecialProcessInput[];
 }
 
@@ -265,6 +366,7 @@ export interface DrawerInput {
   depthCm: number;
   railLengthCm: number;
   includeRailInQuote?: boolean;
+  bodyKdProcessing?: boolean;
   grooveSpec: "12" | "8.5" | "9";
   quantity: number;
   railMaterialRef: MaterialRef | null;
@@ -288,7 +390,11 @@ export interface CabinetUnitInput {
   heightCm: number;
   quantity: number;
   hasBackPanel: boolean;
+  bodyPanelJoinMode?: BodyPanelJoinMode;
   panelMaterialRef: MaterialRef | null;
+  topPanelMaterialRef?: MaterialRef | null;
+  sidePanelMaterialRef?: MaterialRef | null;
+  bottomPanelMaterialRef?: MaterialRef | null;
   backPanelMaterialRef: MaterialRef | null;
   addons: UnitAddons;
   middleDividers: MiddleDividerInput[];
@@ -399,6 +505,9 @@ export interface AddonsBreakdown {
   lTurnCabinet: number;
   specialProcessing: number;
   sideSealBending: number;
+  sidePanelInset: number;
+  panelHardwareProcessing: number;
+  drawerBodyKdProcessing: number;
 }
 
 export interface CabinetUnitResult {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { calculateCabinetUnit } from "./cabinet";
-import { DEFAULT_DOOR_ADDONS } from "@/types";
+import { DEFAULT_DOOR_ADDONS, DEFAULT_MIDDLE_DIVIDER_ADDONS, DEFAULT_UNIT_ADDONS } from "@/types";
 import type { CabinetUnitInput, MaterialRef } from "@/types";
 
 const bodyMaterial: MaterialRef = {
@@ -76,6 +76,181 @@ const cabinetWith25mmBody = calculateCabinetUnit({
 });
 assert.equal(cabinetWith25mmBody.panels.find((panel) => panel.id === "unit-1-top")?.widthCm, 35);
 assert.equal(cabinetWith25mmBody.panels.find((panel) => panel.id === "unit-1-bottom")?.widthCm, 35);
+
+const cabinetWithTopCoverSide = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 90,
+  depthCm: 60,
+  heightCm: 240,
+  bodyPanelJoinMode: "TOP_COVERS_SIDES",
+  panelMaterialRef: bodyMaterial,
+  topPanelMaterialRef: thickBodyMaterial,
+  sidePanelMaterialRef: bodyMaterial,
+  bottomPanelMaterialRef: bodyMaterial,
+});
+assert.equal(cabinetWithTopCoverSide.panels.find((panel) => panel.id === "unit-1-left")?.widthCm, 237.5);
+assert.equal(cabinetWithTopCoverSide.panels.find((panel) => panel.id === "unit-1-right")?.widthCm, 237.5);
+assert.equal(cabinetWithTopCoverSide.panels.find((panel) => panel.id === "unit-1-top")?.widthCm, 90);
+assert.equal(cabinetWithTopCoverSide.panels.find((panel) => panel.id === "unit-1-bottom")?.widthCm, 86.4);
+assert.equal(cabinetWithTopCoverSide.panels.find((panel) => panel.id === "unit-1-top")?.materialRef?.materialId, thickBodyMaterial.materialId);
+assert.equal(cabinetWithTopCoverSide.panels.find((panel) => panel.id === "unit-1-left")?.materialRef?.materialId, bodyMaterial.materialId);
+
+const cabinetWithPerPanelFrontEdge = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 90,
+  depthCm: 60,
+  heightCm: 240,
+  panelMaterialRef: {
+    ...bodyMaterial,
+    minCai: null,
+  },
+  addons: {
+    ...baseUnit.addons,
+    bodyPanelProcesses: {
+      ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!,
+      top: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top,
+        frontEdgeABS: "one_long",
+      },
+      bottom: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom,
+        frontEdgeABS: "one_long",
+      },
+      left: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left,
+        frontEdgeABS: "none",
+      },
+      right: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right,
+        frontEdgeABS: "none",
+      },
+    },
+  },
+});
+const perPanelTop = cabinetWithPerPanelFrontEdge.panels.find((panel) => panel.id === "unit-1-top");
+const perPanelBottom = cabinetWithPerPanelFrontEdge.panels.find((panel) => panel.id === "unit-1-bottom");
+const perPanelLeft = cabinetWithPerPanelFrontEdge.panels.find((panel) => panel.id === "unit-1-left");
+const perPanelTopFrontEdge = perPanelTop?.processes.find((process) => process.id === "unit-1-top-front-edge-abs");
+const perPanelBottomFrontEdge = perPanelBottom?.processes.find((process) => process.id === "unit-1-bottom-front-edge-abs");
+assert.equal(perPanelTop?.addonsCost, 432);
+assert.equal(perPanelBottom?.addonsCost, 432);
+assert.equal(perPanelLeft?.addonsCost, 0);
+assert.equal(perPanelTopFrontEdge?.label, "板厚處切斜邊封ABS");
+assert.equal(perPanelTopFrontEdge?.quantity, 86.4);
+assert.equal(perPanelTopFrontEdge?.unitCost, 5);
+assert.equal(perPanelTopFrontEdge?.cost, 432);
+assert.equal(perPanelBottomFrontEdge?.quantity, 86.4);
+assert.equal(perPanelBottomFrontEdge?.cost, 432);
+
+const sidePanelRecessResult = calculateCabinetUnit({
+  ...baseUnit,
+  quantity: 2,
+  addons: {
+    ...baseUnit.addons,
+    sidePanelInset: { enabled: true },
+  },
+});
+const sidePanelInsetProcess = sidePanelRecessResult.panels
+  .flatMap((panel) => panel.processes)
+  .find((process) => process.id === "unit-1-left-side-panel-inset");
+const rightSidePanelInsetProcess = sidePanelRecessResult.panels
+  .flatMap((panel) => panel.processes)
+  .find((process) => process.id === "unit-1-right-side-panel-inset");
+assert.equal(sidePanelInsetProcess?.label, "側板崁凹(檔板設計)");
+assert.equal(sidePanelInsetProcess?.quantity, 2);
+assert.equal(sidePanelInsetProcess?.unitCost, 200);
+assert.equal(sidePanelInsetProcess?.cost, 400);
+assert.equal(rightSidePanelInsetProcess?.label, "側板崁凹(檔板設計)");
+assert.equal(rightSidePanelInsetProcess?.quantity, 2);
+assert.equal(rightSidePanelInsetProcess?.includedInSubtotal, false);
+assert.equal(rightSidePanelInsetProcess?.cost, 0);
+assert.equal(sidePanelRecessResult.summary.addonsBreakdown.sidePanelInset, 400);
+
+const panelHardwareResult = calculateCabinetUnit({
+  ...baseUnit,
+  quantity: 2,
+  addons: {
+    ...baseUnit.addons,
+    bodyPanelProcesses: {
+      ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!,
+      top: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top,
+        bookcaseGuideWheelHole: { enabled: true, quantity: 2 },
+      },
+      bottom: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom,
+        smallAdjustableFootHole: { enabled: true, quantity: 3 },
+        bookcaseGuideWheelHole: { enabled: true, quantity: 1 },
+      },
+      left: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left,
+        hiddenReturnSlideRail: { enabled: true, quantity: 2 },
+      },
+      right: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right,
+        specialUGlassPivot: { enabled: true, quantity: 1 },
+        tRailBedSet: { enabled: true, quantity: 1 },
+      },
+    },
+  },
+  middleDividers: [
+    {
+      id: "divider-hardware",
+      widthCm: 40,
+      heightCm: 80,
+      quantity: 1,
+      materialRef: bodyMaterial,
+      addons: {
+        ...DEFAULT_MIDDLE_DIVIDER_ADDONS,
+        hiddenReturnSlideRail: { enabled: true, quantity: 1 },
+      },
+    },
+  ],
+  shelves: [
+    {
+      id: "shelf-hardware",
+      widthCm: 40,
+      depthCm: 35,
+      quantity: 1,
+      materialRef: bodyMaterial,
+      hardwareProcesses: {
+        hiddenShelfScrewHole: { enabled: true, quantity: 4 },
+        heavyHiddenShelfScrewHole: { enabled: true, quantity: 1 },
+      },
+    },
+  ],
+});
+const panelHardwareProcesses = [
+  ...panelHardwareResult.panels,
+  ...panelHardwareResult.internalParts,
+].flatMap((panel) => panel.processes);
+assert.equal(panelHardwareProcesses.find((process) => process.id === "unit-1-bottom-small-adjustable-foot-hole")?.quantity, 6);
+assert.equal(panelHardwareProcesses.find((process) => process.id === "unit-1-bottom-small-adjustable-foot-hole")?.cost, 300);
+assert.equal(panelHardwareProcesses.find((process) => process.id === "unit-1-top-bookcase-guide-wheel-hole")?.label, "活動書櫃導輪孔(X2)");
+assert.equal(panelHardwareProcesses.find((process) => process.id === "unit-1-left-hidden-return-slide-rail")?.quantity, 4);
+assert.equal(panelHardwareProcesses.find((process) => process.id === "shelf-hardware-hidden-shelf-screw-hole")?.quantity, 8);
+assert.equal(panelHardwareResult.summary.addonsBreakdown.panelHardwareProcessing, 4730);
+
+const topCoverWithOverhangResult = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 90,
+  depthCm: 60,
+  heightCm: 240,
+  bodyPanelJoinMode: "TOP_COVERS_SIDES",
+  addons: {
+    ...baseUnit.addons,
+    topPanelOverhang: {
+      enabled: true,
+      frontCm: 2,
+      backCm: 3,
+      leftCm: 4,
+      rightCm: 5,
+    },
+  },
+});
+const overhangTopPanel = topCoverWithOverhangResult.panels.find((panel) => panel.id === "unit-1-top");
+assert.equal(overhangTopPanel?.widthCm, 99);
+assert.equal(overhangTopPanel?.heightCm, 65);
 
 const kickPlateBodyMaterialResult = calculateCabinetUnit({
   ...baseUnit,
@@ -548,9 +723,9 @@ const addonResult = calculateCabinetUnit({
     frontEdgeABS: "two_long",
   },
 });
-assert.equal(addonResult.summary.addonsBreakdown.frontEdgeABS, 40);
-assert.equal(addonResult.summary.addonsCost, 40);
-assert.equal(addonResult.summary.totalCost, 440);
+assert.equal(addonResult.summary.addonsBreakdown.frontEdgeABS, 800);
+assert.equal(addonResult.summary.addonsCost, 800);
+assert.equal(addonResult.summary.totalCost, 1200);
 
 const doorResult = calculateCabinetUnit({
   ...baseUnit,
@@ -959,6 +1134,7 @@ const drawerResult = calculateCabinetUnit({
       wallMaterialRef: bodyMaterial,
       bottomMaterialRef: bodyMaterial,
       grooveSpec: "8.5",
+      bodyKdProcessing: true,
     },
   ],
 });
@@ -989,10 +1165,19 @@ assert.equal(drawerWithoutRailQuoteResult.hardware.some((item) => item.id === "d
 assert.equal(drawerWithoutRailQuoteResult.summary.hardwareCost, 0);
 
 const drawerParts = drawerResult.internalParts.filter((part) => part.id.startsWith("drawer-1-"));
-const drawerGrooveProcesses = drawerParts.flatMap((part) => part.processes ?? []);
+const drawerGrooveProcesses = drawerParts
+  .flatMap((part) => part.processes ?? [])
+  .filter((process) => process.id.endsWith("-groove"));
 assert.equal(drawerParts.length, 4);
 assert.equal(drawerGrooveProcesses.length, 2);
 assert.equal(drawerGrooveProcesses.reduce((sum, process) => sum + process.cost, 0), 1440);
+const drawerBodyKdProcess = drawerParts
+  .flatMap((part) => part.processes)
+  .find((process) => process.id === "drawer-1-body-kd-processing");
+assert.equal(drawerBodyKdProcess?.label, "抽身指定KD");
+assert.equal(drawerBodyKdProcess?.quantity, 3);
+assert.equal(drawerBodyKdProcess?.unitCost, 80);
+assert.equal(drawerBodyKdProcess?.cost, 240);
 assert.deepEqual(
   drawerParts.map((part) => ({
     name: part.name,

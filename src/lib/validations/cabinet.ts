@@ -10,6 +10,30 @@ export const materialRefSchema = z.object({
   minCai: z.number().nonnegative().nullable(),
 }).nullable();
 
+const lightGrooveSwitchSchema = z.object({
+  enabled: z.boolean().default(false),
+  offsetFromFrontMm: z.number().nonnegative().default(50),
+});
+
+const processingQuantitySwitchSchema = z.object({
+  enabled: z.boolean().default(false),
+  quantity: z.number().nonnegative().default(1),
+});
+
+const slidingDoorTrackGrooveOptionSchema = z.object({
+  enabled: z.boolean().default(false),
+  trackShape: z.enum(["ㄇ", "V", "T"]).default("ㄇ"),
+});
+
+const sideSealBendingOptionSchema = z.object({
+  enabled: z.boolean().default(false),
+  depthMm: z.number().min(80).max(600).default(80),
+  depthCm: z.number().min(80).max(600).optional(),
+  isDrawerCabinet: z.boolean().default(false),
+  drawerDividerDepthCm: z.number().positive().default(55),
+  visibleEdgeBand: z.boolean().default(false),
+});
+
 export const unitAddonsSchema = z.object({
   frontEdgeABS: z.enum(["none", "one_long", "two_long"]),
   lTurnCabinet: z.object({
@@ -24,6 +48,26 @@ export const unitAddonsSchema = z.object({
     widthMm: 0,
     heightMm: 0,
     isOpening: true,
+  }),
+  sidePanelInset: z.object({
+    enabled: z.boolean().default(false),
+  }).default({ enabled: false }),
+  topPanelOverhang: z.object({
+    enabled: z.boolean().default(false),
+    frontCm: z.number().nonnegative().default(0),
+    backCm: z.number().nonnegative().default(0),
+    leftCm: z.number().nonnegative().default(0),
+    rightCm: z.number().nonnegative().default(0),
+    frontMm: z.number().nonnegative().optional(),
+    backMm: z.number().nonnegative().optional(),
+    leftMm: z.number().nonnegative().optional(),
+    rightMm: z.number().nonnegative().optional(),
+  }).default({
+    enabled: false,
+    frontCm: 0,
+    backCm: 0,
+    leftCm: 0,
+    rightCm: 0,
   }),
   lightGrooves: z.object({
     topInner: z.object({
@@ -72,6 +116,64 @@ export const unitAddonsSchema = z.object({
     left: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
     right: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
   }),
+  bodyPanelProcesses: z.object({
+    top: z.object({
+      frontEdgeABS: z.enum(["none", "one_long", "two_long"]).default("none"),
+      lightGroove: lightGrooveSwitchSchema.default({ enabled: false, offsetFromFrontMm: 50 }),
+      slidingDoorTrackGroove: slidingDoorTrackGrooveOptionSchema.default({ enabled: false, trackShape: "ㄇ" }),
+      bookcaseGuideWheelHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+    }).default({
+      frontEdgeABS: "none",
+      lightGroove: { enabled: false, offsetFromFrontMm: 50 },
+      slidingDoorTrackGroove: { enabled: false, trackShape: "ㄇ" },
+      bookcaseGuideWheelHole: { enabled: false, quantity: 1 },
+    }),
+    bottom: z.object({
+      frontEdgeABS: z.enum(["none", "one_long", "two_long"]).default("none"),
+      slidingDoorTrackGroove: slidingDoorTrackGrooveOptionSchema.default({ enabled: false, trackShape: "ㄇ" }),
+      smallAdjustableFootHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+      lightStWheelHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+      heavyStWheelHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+      bookcaseGuideWheelHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+    }).default({
+      frontEdgeABS: "none",
+      slidingDoorTrackGroove: { enabled: false, trackShape: "ㄇ" },
+      smallAdjustableFootHole: { enabled: false, quantity: 1 },
+      lightStWheelHole: { enabled: false, quantity: 1 },
+      heavyStWheelHole: { enabled: false, quantity: 1 },
+      bookcaseGuideWheelHole: { enabled: false, quantity: 1 },
+    }),
+    left: z.object({
+      frontEdgeABS: z.enum(["none", "one_long", "two_long"]).default("none"),
+      lightGroove: lightGrooveSwitchSchema.default({ enabled: false, offsetFromFrontMm: 50 }),
+      sideSealBending: sideSealBendingOptionSchema.default({ enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false }),
+      hiddenReturnSlideRail: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+      specialUGlassPivot: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+      tRailBedSet: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+    }).default({
+      frontEdgeABS: "none",
+      lightGroove: { enabled: false, offsetFromFrontMm: 50 },
+      sideSealBending: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
+      hiddenReturnSlideRail: { enabled: false, quantity: 1 },
+      specialUGlassPivot: { enabled: false, quantity: 1 },
+      tRailBedSet: { enabled: false, quantity: 1 },
+    }),
+    right: z.object({
+      frontEdgeABS: z.enum(["none", "one_long", "two_long"]).default("none"),
+      lightGroove: lightGrooveSwitchSchema.default({ enabled: false, offsetFromFrontMm: 50 }),
+      sideSealBending: sideSealBendingOptionSchema.default({ enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false }),
+      hiddenReturnSlideRail: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+      specialUGlassPivot: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+      tRailBedSet: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+    }).default({
+      frontEdgeABS: "none",
+      lightGroove: { enabled: false, offsetFromFrontMm: 50 },
+      sideSealBending: { enabled: false, depthMm: 80, isDrawerCabinet: false, drawerDividerDepthCm: 55, visibleEdgeBand: false },
+      hiddenReturnSlideRail: { enabled: false, quantity: 1 },
+      specialUGlassPivot: { enabled: false, quantity: 1 },
+      tRailBedSet: { enabled: false, quantity: 1 },
+    }),
+  }).optional(),
 });
 
 export const middleDividerAddonsSchema = z.object({
@@ -81,6 +183,7 @@ export const middleDividerAddonsSchema = z.object({
     side: z.enum(["none", "left", "right"]).default("none"),
     offsetFromFrontMm: z.number().nonnegative().default(50),
   }).default({ side: "none", offsetFromFrontMm: 50 }),
+  hiddenReturnSlideRail: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
 });
 
 export const specialProcessSchema = z.object({
@@ -177,6 +280,7 @@ export const middleDividerSchema = z.object({
   addons: middleDividerAddonsSchema.default({
     doubleDrillHoles: false,
     nonStandardHoles: false,
+    hiddenReturnSlideRail: { enabled: false, quantity: 1 },
   }),
   specialProcesses: z.array(specialProcessSchema).default([]),
 });
@@ -195,6 +299,13 @@ export const shelfSchemaWithLightGroove = shelfSchema.extend({
     side: z.enum(["none", "top", "bottom"]).default("none"),
     offsetFromFrontMm: z.number().nonnegative().default(50),
   }).default({ side: "none", offsetFromFrontMm: 50 }),
+  hardwareProcesses: z.object({
+    hiddenShelfScrewHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+    heavyHiddenShelfScrewHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+  }).default({
+    hiddenShelfScrewHole: { enabled: false, quantity: 1 },
+    heavyHiddenShelfScrewHole: { enabled: false, quantity: 1 },
+  }),
   specialProcesses: z.array(specialProcessSchema).default([]),
 });
 
@@ -223,6 +334,7 @@ export const drawerSchema = z.object({
   quantity: z.number().int().positive("數量必須大於 0"),
   grooveSpec: z.enum(["12", "8.5", "9"]).default("8.5"),
   includeRailInQuote: z.boolean().default(true),
+  bodyKdProcessing: z.boolean().default(false),
   railMaterialRef: materialRefSchema,
   wallMaterialRef: materialRefSchema,
   bottomMaterialRef: materialRefSchema,
@@ -267,7 +379,11 @@ export const cabinetUnitInputSchema = z.object({
   heightCm: z.number().positive("高度必須大於 0").max(300, "高度不超過 300cm"),
   quantity: z.number().int().positive("數量必須大於 0").max(20),
   hasBackPanel: z.boolean(),
+  bodyPanelJoinMode: z.enum(["SIDE_COVERS_TOP", "TOP_COVERS_SIDES"]).default("SIDE_COVERS_TOP").optional(),
   panelMaterialRef: materialRefSchema,
+  topPanelMaterialRef: materialRefSchema.optional(),
+  sidePanelMaterialRef: materialRefSchema.optional(),
+  bottomPanelMaterialRef: materialRefSchema.optional(),
   backPanelMaterialRef: materialRefSchema,
   addons: unitAddonsSchema,
   middleDividers: z.array(middleDividerSchema),

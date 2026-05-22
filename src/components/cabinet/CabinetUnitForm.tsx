@@ -293,6 +293,8 @@ function LTurnCabinetPreview({
   const outerDepthMm = Math.max(cabinetDepthCm * 10, 1);
   const cutoutWidth = Math.min(Math.max(widthMm, 0), outerWidthMm);
   const cutoutDepth = Math.min(Math.max(heightMm, 0), outerDepthMm);
+  const cutoutWidthCm = cutoutWidth / 10;
+  const cutoutDepthCm = cutoutDepth / 10;
   const viewWidth = 280;
   const viewHeight = 180;
   const padding = 18;
@@ -469,7 +471,7 @@ function LTurnCabinetPreview({
                 dominantBaseline="middle"
                 className={cutoutTextClass}
               >
-                缺口 W {Math.round(widthMm)}mm
+                缺口 W {cutoutWidthCm.toFixed(1)}cm
               </text>
               <text
                 x={cutout.x + cutout.width / 2}
@@ -478,7 +480,7 @@ function LTurnCabinetPreview({
                 dominantBaseline="middle"
                 className={cutoutTextClass}
               >
-                缺口 H {Math.round(heightMm)}mm
+                缺口 H {cutoutDepthCm.toFixed(1)}cm
               </text>
             </>
           )}
@@ -487,10 +489,79 @@ function LTurnCabinetPreview({
       <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
         <span>總寬 {Math.round(outerWidthMm)}mm</span>
         <span>總深 {Math.round(outerDepthMm)}mm</span>
-        <span>缺口寬 {Math.round(widthMm)}mm</span>
-        <span>缺口高 {Math.round(heightMm)}mm</span>
+        <span>缺口寬 {cutoutWidthCm.toFixed(1)}cm</span>
+        <span>缺口高 {cutoutDepthCm.toFixed(1)}cm</span>
         <span>剩餘寬 {Math.round(remainingWidthMm)}mm</span>
         <span>剩餘深 {Math.round(remainingDepthMm)}mm</span>
+      </div>
+    </div>
+  );
+}
+
+function BodyPanelJoinPreview({
+  mode,
+  result,
+}: {
+  mode: NonNullable<CabinetUnitInput["bodyPanelJoinMode"]>;
+  result: CabinetUnitResult;
+}) {
+  const leftPanel = result.panels.find((panel) => panel.id.endsWith("-left"));
+  const topPanel = result.panels.find((panel) => panel.id.endsWith("-top"));
+  const bottomPanel = result.panels.find((panel) => panel.id.endsWith("-bottom"));
+  const kickPlatePanel = result.panels.find((panel) => panel.id.includes("kickplate"));
+  const isTopCover = mode === "TOP_COVERS_SIDES";
+  const viewWidth = 320;
+  const viewHeight = 230;
+  const frame = { x: 58, y: 26, width: 204, height: 168 };
+  const sideWidth = 28;
+  const topHeight = 24;
+  const bottomHeight = 22;
+  const kickHeight = kickPlatePanel ? 24 : 0;
+  const contentTop = frame.y + topHeight;
+  const bottomY = frame.y + frame.height - bottomHeight - kickHeight;
+  const sideBottom = kickPlatePanel ? bottomY + bottomHeight + kickHeight : bottomY + bottomHeight;
+  const innerX = frame.x + sideWidth;
+  const innerWidth = frame.width - sideWidth * 2;
+  const sideY = isTopCover ? frame.y + topHeight : frame.y;
+  const sideHeight = sideBottom - sideY;
+  const topRect = isTopCover
+    ? { x: frame.x, y: frame.y, width: frame.width, height: topHeight }
+    : { x: innerX, y: frame.y, width: innerWidth, height: topHeight };
+  const bottomRect = { x: innerX, y: bottomY, width: innerWidth, height: bottomHeight };
+  const kickRect = { x: innerX, y: bottomY + bottomHeight, width: innerWidth, height: kickHeight };
+  const formatCm = (value: number) => Number.isInteger(value) ? value.toString() : value.toFixed(1);
+  const label = (name: string, panel?: { widthCm: number; heightCm: number }) =>
+    panel ? `${name} ${formatCm(panel.widthCm)}x${formatCm(panel.heightCm)}cm` : `${name} -`;
+  const dimensionTextClass = "fill-slate-600 text-[9px]";
+
+  return (
+    <div className="rounded-md border bg-background p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-xs font-semibold">桶身結合 2D 預覽</span>
+        <span className="text-[10px] text-muted-foreground">{isTopCover ? "頂蓋側" : "側包頂"}</span>
+      </div>
+      <svg viewBox={`0 0 ${viewWidth} ${viewHeight}`} className="h-auto w-full rounded bg-slate-50" role="img" aria-label="桶身結合 2D 預覽">
+        <rect x={frame.x} y={sideY} width={sideWidth} height={sideHeight} fill="#bfdbfe" stroke="#2563eb" strokeWidth="2" />
+        <rect x={frame.x + frame.width - sideWidth} y={sideY} width={sideWidth} height={sideHeight} fill="#bfdbfe" stroke="#2563eb" strokeWidth="2" />
+        <rect x={topRect.x} y={topRect.y} width={topRect.width} height={topRect.height} fill="#fed7aa" stroke="#ea580c" strokeWidth="2" />
+        <rect x={bottomRect.x} y={bottomRect.y} width={bottomRect.width} height={bottomRect.height} fill="#dbeafe" stroke="#2563eb" strokeWidth="2" />
+        {kickPlatePanel && (
+          <rect x={kickRect.x} y={kickRect.y} width={kickRect.width} height={kickRect.height} fill="#dcfce7" stroke="#16a34a" strokeWidth="2" />
+        )}
+        <rect x={innerX} y={contentTop} width={innerWidth} height={Math.max(bottomY - contentTop, 0)} fill="#64748b" opacity="0.12" stroke="#94a3b8" strokeWidth="1" />
+        <text x={viewWidth / 2} y={viewHeight - 18} textAnchor="middle" className={dimensionTextClass}>
+          {label("頂", topPanel)} / {label("側", leftPanel)} / {label("底", bottomPanel)}
+        </text>
+        {kickPlatePanel && (
+          <text x={viewWidth / 2} y={viewHeight - 6} textAnchor="middle" className={dimensionTextClass}>
+            {label("踢", kickPlatePanel)}
+          </text>
+        )}
+      </svg>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+        <span><span className="inline-block h-2 w-2 rounded-sm bg-orange-300" /> 頂板</span>
+        <span><span className="inline-block h-2 w-2 rounded-sm bg-blue-200" /> 側板 / 底板</span>
+        {kickPlatePanel && <span><span className="inline-block h-2 w-2 rounded-sm bg-green-200" /> 踢腳板</span>}
       </div>
     </div>
   );
@@ -505,6 +576,10 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
   const update = (patch: Partial<CabinetUnitInput>) => onChange({ ...unit, ...patch });
 
   const result = calculateCabinetUnit(unit);
+  const bodyPanelJoinMode = unit.bodyPanelJoinMode ?? "SIDE_COVERS_TOP";
+  const topPanelMaterialRef = unit.topPanelMaterialRef ?? unit.panelMaterialRef;
+  const sidePanelMaterialRef = unit.sidePanelMaterialRef ?? unit.panelMaterialRef;
+  const bottomPanelMaterialRef = unit.bottomPanelMaterialRef ?? unit.panelMaterialRef;
   const printTitle = [estimateLabel?.trim(), unit.name].filter(Boolean).join(" - ");
   const pdfDocumentTitle = [projectInfo?.name?.trim(), printTitle].filter(Boolean).join(" - ");
   const projectClientLabel = [projectInfo?.clientName, projectInfo?.clientTitle].filter(Boolean).join("");
@@ -524,11 +599,26 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
   const lTurnCabinetRequiresShaping =
     lTurnCabinet.enabled &&
     lTurnCabinet.widthMm + lTurnCabinet.heightMm > UNIT_CONFIG.L_TURN_CABINET_MAX_DIMENSION_SUM_MM;
+  const lTurnCabinetWidthCm = lTurnCabinet.widthMm / 10;
+  const lTurnCabinetHeightCm = lTurnCabinet.heightMm / 10;
+  const topPanelOverhang = {
+    ...DEFAULT_UNIT_ADDONS.topPanelOverhang!,
+    ...unit.addons.topPanelOverhang,
+  };
   const updateLTurnCabinet = (patch: Partial<typeof lTurnCabinet>) => update({
     addons: {
       ...unit.addons,
       lTurnCabinet: {
         ...lTurnCabinet,
+        ...patch,
+      },
+    },
+  });
+  const updateTopPanelOverhang = (patch: Partial<typeof topPanelOverhang>) => update({
+    addons: {
+      ...unit.addons,
+      topPanelOverhang: {
+        ...topPanelOverhang,
         ...patch,
       },
     },
@@ -851,6 +941,56 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
               onChange={(e) => update({ quantity: Number(e.target.value) })}
             />
           </div>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">桶身結合方式</Label>
+            <Select
+              value={bodyPanelJoinMode}
+              onValueChange={(bodyPanelJoinMode) =>
+                update({ bodyPanelJoinMode: bodyPanelJoinMode as NonNullable<CabinetUnitInput["bodyPanelJoinMode"]> })
+              }
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SIDE_COVERS_TOP">側包頂</SelectItem>
+                <SelectItem value="TOP_COVERS_SIDES">頂蓋側</SelectItem>
+              </SelectContent>
+            </Select>
+            <BodyPanelJoinPreview mode={bodyPanelJoinMode} result={result} />
+            {bodyPanelJoinMode === "TOP_COVERS_SIDES" && (
+              <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Label className="text-xs font-medium">頂板凸出</Label>
+                  <Switch
+                    checked={topPanelOverhang.enabled}
+                    onCheckedChange={(enabled) => updateTopPanelOverhang({ enabled })}
+                  />
+                </div>
+                {topPanelOverhang.enabled && (
+                  <div className="grid gap-3 sm:grid-cols-4">
+                    {([
+                      ["frontCm", "前凸(cm)"],
+                      ["backCm", "後凸(cm)"],
+                      ["leftCm", "左凸(cm)"],
+                      ["rightCm", "右凸(cm)"],
+                    ] as const).map(([field, label]) => (
+                      <div key={field}>
+                        <Label className="text-xs text-muted-foreground">{label}</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          className="mt-1 h-8 text-xs"
+                          value={topPanelOverhang[field]}
+                          onChange={(event) => updateTopPanelOverhang({ [field]: Number(event.target.value) })}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </section>
 
         {/* 板材選料 */}
@@ -897,23 +1037,25 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <Label className="text-xs text-muted-foreground">寬度 W(mm)</Label>
+                  <Label className="text-xs text-muted-foreground">寬度 W(cm)</Label>
                   <Input
                     type="number"
                     min={0}
+                    step={0.1}
                     className="mt-1 h-8 text-xs"
-                    value={lTurnCabinet.widthMm}
-                    onChange={(event) => updateLTurnCabinet({ widthMm: Number(event.target.value) })}
+                    value={lTurnCabinetWidthCm}
+                    onChange={(event) => updateLTurnCabinet({ widthMm: Number(event.target.value) * 10 })}
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">高度 H(mm)</Label>
+                  <Label className="text-xs text-muted-foreground">高度 H(cm)</Label>
                   <Input
                     type="number"
                     min={0}
+                    step={0.1}
                     className="mt-1 h-8 text-xs"
-                    value={lTurnCabinet.heightMm}
-                    onChange={(event) => updateLTurnCabinet({ heightMm: Number(event.target.value) })}
+                    value={lTurnCabinetHeightCm}
+                    onChange={(event) => updateLTurnCabinet({ heightMm: Number(event.target.value) * 10 })}
                   />
                 </div>
               </div>
@@ -942,14 +1084,36 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
 
         <section className="space-y-3">
           <h3 className="font-semibold text-sm border-b pb-1">板材選料</h3>
-          <div>
-            <Label className="text-xs text-muted-foreground">桶身板材（側板 / 頂板 / 底板）</Label>
-            <div className="mt-1">
-              <MaterialDropdown
-                value={unit.panelMaterialRef}
-                onChange={(ref) => update({ panelMaterialRef: ref })}
-                categoryFilter="BOARD_BODY"
-              />
+          <div className="grid gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">頂板材料</Label>
+              <div className="mt-1">
+                <MaterialDropdown
+                  value={topPanelMaterialRef}
+                  onChange={(ref) => update({ topPanelMaterialRef: ref })}
+                  categoryFilter="BOARD_BODY"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">側板材料</Label>
+              <div className="mt-1">
+                <MaterialDropdown
+                  value={sidePanelMaterialRef}
+                  onChange={(ref) => update({ sidePanelMaterialRef: ref, panelMaterialRef: ref })}
+                  categoryFilter="BOARD_BODY"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">底板材料</Label>
+              <div className="mt-1">
+                <MaterialDropdown
+                  value={bottomPanelMaterialRef}
+                  onChange={(ref) => update({ bottomPanelMaterialRef: ref })}
+                  categoryFilter="BOARD_BODY"
+                />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -995,7 +1159,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
           cabinetDepthCm={unit.depthCm}
           cabinetHeightCm={unit.heightCm}
           hasBackPanel={unit.hasBackPanel}
-          panelMaterialRef={unit.panelMaterialRef}
+          panelMaterialRef={sidePanelMaterialRef}
           kickPlateHeightCm={unit.kickPlate?.heightCm ?? 0}
           collapseCommand={leftCollapseCommand}
           onMiddleDividersChange={(v) => update({ middleDividers: v })}

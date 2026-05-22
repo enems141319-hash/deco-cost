@@ -32,7 +32,11 @@ function emptyUnit(): CabinetUnitInput {
     heightCm: 240,
     quantity: 1,
     hasBackPanel: true,
+    bodyPanelJoinMode: "SIDE_COVERS_TOP",
     panelMaterialRef: null,
+    topPanelMaterialRef: null,
+    sidePanelMaterialRef: null,
+    bottomPanelMaterialRef: null,
     backPanelMaterialRef: null,
     addons: DEFAULT_UNIT_ADDONS,
     middleDividers: [],
@@ -46,14 +50,125 @@ function emptyUnit(): CabinetUnitInput {
 }
 
 function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
+  const legacyBodyMaterial = unit.panelMaterialRef ?? null;
+  const sidePanelMaterialRef = unit.sidePanelMaterialRef ?? legacyBodyMaterial;
+  const bodyPanelProcesses = {
+    top: {
+      frontEdgeABS: unit.addons?.bodyPanelProcesses?.top?.frontEdgeABS
+        ?? unit.addons?.frontEdgeABS
+        ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top.frontEdgeABS,
+      lightGroove: unit.addons?.bodyPanelProcesses?.top?.lightGroove
+        ?? unit.addons?.lightGrooves?.topInner
+        ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top.lightGroove,
+      slidingDoorTrackGroove: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top.slidingDoorTrackGroove,
+        ...(unit.addons?.bodyPanelProcesses?.top?.slidingDoorTrackGroove ?? unit.addons?.slidingDoorTrackGrooves?.top),
+      },
+      bookcaseGuideWheelHole: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top.bookcaseGuideWheelHole,
+        ...unit.addons?.bodyPanelProcesses?.top?.bookcaseGuideWheelHole,
+      },
+    },
+    bottom: {
+      frontEdgeABS: unit.addons?.bodyPanelProcesses?.bottom?.frontEdgeABS
+        ?? unit.addons?.frontEdgeABS
+        ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom.frontEdgeABS,
+      slidingDoorTrackGroove: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom.slidingDoorTrackGroove,
+        ...(unit.addons?.bodyPanelProcesses?.bottom?.slidingDoorTrackGroove ?? unit.addons?.slidingDoorTrackGrooves?.bottom),
+      },
+      smallAdjustableFootHole: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom.smallAdjustableFootHole,
+        ...unit.addons?.bodyPanelProcesses?.bottom?.smallAdjustableFootHole,
+      },
+      lightStWheelHole: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom.lightStWheelHole,
+        ...unit.addons?.bodyPanelProcesses?.bottom?.lightStWheelHole,
+      },
+      heavyStWheelHole: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom.heavyStWheelHole,
+        ...unit.addons?.bodyPanelProcesses?.bottom?.heavyStWheelHole,
+      },
+      bookcaseGuideWheelHole: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom.bookcaseGuideWheelHole,
+        ...unit.addons?.bodyPanelProcesses?.bottom?.bookcaseGuideWheelHole,
+      },
+    },
+    left: {
+      frontEdgeABS: unit.addons?.bodyPanelProcesses?.left?.frontEdgeABS
+        ?? unit.addons?.frontEdgeABS
+        ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left.frontEdgeABS,
+      lightGroove: unit.addons?.bodyPanelProcesses?.left?.lightGroove
+        ?? unit.addons?.lightGrooves?.sideInner
+        ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left.lightGroove,
+      sideSealBending: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left.sideSealBending,
+        ...(unit.addons?.bodyPanelProcesses?.left?.sideSealBending ?? unit.addons?.sideSealBending?.left),
+      },
+      hiddenReturnSlideRail: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left.hiddenReturnSlideRail,
+        ...unit.addons?.bodyPanelProcesses?.left?.hiddenReturnSlideRail,
+      },
+      specialUGlassPivot: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left.specialUGlassPivot,
+        ...unit.addons?.bodyPanelProcesses?.left?.specialUGlassPivot,
+      },
+      tRailBedSet: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left.tRailBedSet,
+        ...unit.addons?.bodyPanelProcesses?.left?.tRailBedSet,
+      },
+    },
+    right: {
+      frontEdgeABS: unit.addons?.bodyPanelProcesses?.right?.frontEdgeABS
+        ?? unit.addons?.frontEdgeABS
+        ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right.frontEdgeABS,
+      lightGroove: unit.addons?.bodyPanelProcesses?.right?.lightGroove
+        ?? unit.addons?.lightGrooves?.sideInner
+        ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right.lightGroove,
+      sideSealBending: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right.sideSealBending,
+        ...(unit.addons?.bodyPanelProcesses?.right?.sideSealBending ?? unit.addons?.sideSealBending?.right),
+      },
+      hiddenReturnSlideRail: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right.hiddenReturnSlideRail,
+        ...unit.addons?.bodyPanelProcesses?.right?.hiddenReturnSlideRail,
+      },
+      specialUGlassPivot: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right.specialUGlassPivot,
+        ...unit.addons?.bodyPanelProcesses?.right?.specialUGlassPivot,
+      },
+      tRailBedSet: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right.tRailBedSet,
+        ...unit.addons?.bodyPanelProcesses?.right?.tRailBedSet,
+      },
+    },
+  };
+
   return {
     ...unit,
+    bodyPanelJoinMode: unit.bodyPanelJoinMode ?? "SIDE_COVERS_TOP",
+    topPanelMaterialRef: unit.topPanelMaterialRef ?? legacyBodyMaterial,
+    sidePanelMaterialRef,
+    bottomPanelMaterialRef: unit.bottomPanelMaterialRef ?? legacyBodyMaterial,
+    panelMaterialRef: legacyBodyMaterial,
     addons: {
       ...DEFAULT_UNIT_ADDONS,
       ...unit.addons,
       lTurnCabinet: {
         ...DEFAULT_UNIT_ADDONS.lTurnCabinet!,
         ...unit.addons?.lTurnCabinet,
+      },
+      sidePanelInset: {
+        ...DEFAULT_UNIT_ADDONS.sidePanelInset!,
+        ...unit.addons?.sidePanelInset,
+      },
+      topPanelOverhang: {
+        ...DEFAULT_UNIT_ADDONS.topPanelOverhang!,
+        ...unit.addons?.topPanelOverhang,
+        frontCm: unit.addons?.topPanelOverhang?.frontCm ?? ((unit.addons?.topPanelOverhang?.frontMm ?? 0) / 10),
+        backCm: unit.addons?.topPanelOverhang?.backCm ?? ((unit.addons?.topPanelOverhang?.backMm ?? 0) / 10),
+        leftCm: unit.addons?.topPanelOverhang?.leftCm ?? ((unit.addons?.topPanelOverhang?.leftMm ?? 0) / 10),
+        rightCm: unit.addons?.topPanelOverhang?.rightCm ?? ((unit.addons?.topPanelOverhang?.rightMm ?? 0) / 10),
       },
       lightGrooves: {
         topInner: unit.addons?.lightGrooves?.topInner ?? DEFAULT_UNIT_ADDONS.lightGrooves!.topInner,
@@ -79,6 +194,7 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
           ...unit.addons?.sideSealBending?.right,
         },
       },
+      bodyPanelProcesses,
     },
     middleDividers: (unit.middleDividers ?? []).map((divider) => ({
       ...divider,
@@ -91,6 +207,10 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
           side: divider.addons?.lightGroove?.side ?? DEFAULT_MIDDLE_DIVIDER_ADDONS.lightGroove!.side,
           offsetFromFrontMm: divider.addons?.lightGroove?.offsetFromFrontMm ?? DEFAULT_MIDDLE_DIVIDER_ADDONS.lightGroove!.offsetFromFrontMm,
         },
+        hiddenReturnSlideRail: {
+          ...DEFAULT_MIDDLE_DIVIDER_ADDONS.hiddenReturnSlideRail!,
+          ...divider.addons?.hiddenReturnSlideRail,
+        },
       },
       specialProcesses: divider.specialProcesses ?? [],
     })),
@@ -98,6 +218,18 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
       ...shelf,
       fullDepth: shelf.fullDepth ?? false,
       lightGroove: shelf.lightGroove ?? { side: "none", offsetFromFrontMm: 50 },
+      hardwareProcesses: {
+        hiddenShelfScrewHole: {
+          enabled: false,
+          quantity: 1,
+          ...shelf.hardwareProcesses?.hiddenShelfScrewHole,
+        },
+        heavyHiddenShelfScrewHole: {
+          enabled: false,
+          quantity: 1,
+          ...shelf.hardwareProcesses?.heavyHiddenShelfScrewHole,
+        },
+      },
       specialProcesses: shelf.specialProcesses ?? [],
     })),
     sideTopBottomSealPanels: (unit.sideTopBottomSealPanels ?? []).map((panel) => ({
@@ -109,8 +241,9 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
       heightCm: drawer.heightCm ?? 16,
       railLengthCm: drawer.railLengthCm ?? drawer.depthCm,
       includeRailInQuote: drawer.includeRailInQuote ?? true,
+      bodyKdProcessing: drawer.bodyKdProcessing ?? false,
       grooveSpec: drawer.grooveSpec ?? "8.5",
-      wallMaterialRef: drawer.wallMaterialRef ?? unit.panelMaterialRef ?? null,
+      wallMaterialRef: drawer.wallMaterialRef ?? sidePanelMaterialRef ?? null,
       bottomMaterialRef: drawer.bottomMaterialRef ?? unit.backPanelMaterialRef ?? null,
       frontMoldProcessing: drawer.frontMoldProcessing ?? false,
       frontMoldRadius: drawer.frontMoldRadius ?? (drawer.frontMoldProcessing ? "R80" : "none"),
