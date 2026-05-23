@@ -1,4 +1,4 @@
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import type { MaterialCaiTotal, MaterialSummaryRow } from "@/lib/calculations/material-summary";
 
 function formatQuantity(quantity: number | null): string {
@@ -10,58 +10,75 @@ function rowClassName(row: MaterialSummaryRow, index: number, rows: MaterialSumm
   const previous = rows[index - 1];
   const startsNewItem = index > 0 && row.kind !== "process" && previous?.kind !== "process";
   return [
-    row.kind === "process" ? "border-b bg-muted/10" : "border-b border-muted/50",
-    startsNewItem ? "border-t-2 border-t-slate-200" : "",
+    row.kind === "process" ? "border-b border-slate-100 bg-background" : "border-b border-slate-200 bg-muted/10",
+    startsNewItem ? "border-t-2 border-t-slate-300" : "border-t border-slate-200",
   ].filter(Boolean).join(" ");
 }
 
-export function MaterialDetailTable({ rows }: { rows: MaterialSummaryRow[] }) {
+function materialDisplayIndex(rows: MaterialSummaryRow[], rowIndex: number, sectionNumber?: number): string {
+  const itemNumber = rows.slice(0, rowIndex + 1).filter((row) => row.kind !== "process").length;
+  return sectionNumber ? `${sectionNumber}-${itemNumber}` : `${itemNumber}`;
+}
+
+function isMissingMaterialLabel(material: string): boolean {
+  return material.includes("未選");
+}
+
+export function MaterialDetailTable({ rows, sectionNumber }: { rows: MaterialSummaryRow[]; sectionNumber?: number }) {
   return (
     <div className="max-w-full overflow-x-auto rounded-md border">
-      <table className="w-full min-w-[1040px] table-fixed text-xs">
+      <table className="cabinet-board-table w-full min-w-[780px] table-fixed text-sm">
         <colgroup>
-          <col className="w-[260px]" />
-          <col className="w-[150px]" />
-          <col className="w-[64px]" />
-          <col className="w-[122px]" />
-          <col className="w-[112px]" />
-          <col className="w-[240px]" />
-          <col className="w-[88px]" />
-          <col className="w-[98px]" />
+          <col className="cabinet-name-col w-[38%]" />
+          <col className="cabinet-size-col w-[130px]" />
+          <col className="cabinet-qty-col w-[64px]" />
+          <col className="cabinet-area-col w-[92px]" />
+          <col className="cabinet-price-col w-[104px]" />
+          <col className="cabinet-subtotal-col w-[104px]" />
         </colgroup>
-        <thead className="bg-muted/40 text-muted-foreground">
+        <thead className="bg-muted/40">
           <tr className="border-b">
-            <th className="px-3 py-2 text-left font-medium">材料 / 規格</th>
-            <th className="px-3 py-2 text-left font-medium">部件 / 品項</th>
-            <th className="px-3 py-2 text-right font-medium">數量</th>
-            <th className="px-3 py-2 text-right font-medium">尺寸</th>
-            <th className="px-3 py-2 text-right font-medium">才數</th>
-            <th className="px-3 py-2 text-left font-medium">加工 / 備註</th>
-            <th className="px-3 py-2 text-right font-medium">單價</th>
-            <th className="px-3 py-2 text-right font-medium">小計</th>
+            <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">名稱 / 材料</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">尺寸</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">數量</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">才數</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">單價</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">小計</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, index) => (
-            <tr key={row.id} className={rowClassName(row, index, rows)}>
-              <td className="px-3 py-2 align-top text-muted-foreground">
-                <div className="line-clamp-2">{row.material}</div>
-              </td>
-              <td className="px-3 py-2 align-top font-medium">{row.itemName}</td>
-              <td className="px-3 py-2 text-right align-top tabular-nums">{formatQuantity(row.quantity)}</td>
-              <td className="px-3 py-2 text-right align-top tabular-nums text-muted-foreground">{row.size}</td>
-              <td className="px-3 py-2 text-right align-top tabular-nums text-muted-foreground">{row.caiLabel}</td>
-              <td className="px-3 py-2 align-top text-muted-foreground">
-                <div className="line-clamp-2">{row.note}</div>
-              </td>
-              <td className="px-3 py-2 text-right align-top tabular-nums text-muted-foreground">
-                {row.unitPrice !== null ? formatCurrency(row.unitPrice) : "-"}
-              </td>
-              <td className="px-3 py-2 text-right align-top font-semibold tabular-nums">
-                {row.subtotal !== null ? formatCurrency(row.subtotal) : "-"}
-              </td>
-            </tr>
-          ))}
+          {rows.map((row, index) => {
+            const isProcess = row.kind === "process";
+            return (
+              <tr key={row.id} className={rowClassName(row, index, rows)}>
+                <td className={`px-3 py-2 align-top ${isProcess ? "pl-7" : ""}`}>
+                  {isProcess ? (
+                    <>
+                      <div className="cabinet-process-label text-xs font-medium text-muted-foreground">- {row.itemName}</div>
+                      <div className="cabinet-secondary-text break-words text-xs text-muted-foreground">{row.sourceItemName ?? row.note}</div>
+                    </>
+                  ) : (
+                    <div className="cabinet-board-name-cell min-w-0 space-y-1">
+                      <div className="flex min-w-0 flex-wrap items-baseline gap-1.5">
+                        <span className="cabinet-board-index shrink-0 text-sm font-semibold text-blue-700">{materialDisplayIndex(rows, index, sectionNumber)}</span>
+                        <span className="cabinet-board-title min-w-0 break-words text-sm font-semibold text-slate-950">{row.itemName}</span>
+                      </div>
+                      <div className={cn("cabinet-board-material break-words text-sm font-medium text-slate-800", isMissingMaterialLabel(row.material) && "text-destructive")}>{row.material}</div>
+                    </div>
+                  )}
+                </td>
+                <td className="px-3 py-2 text-right align-top tabular-nums whitespace-nowrap text-muted-foreground">{isProcess ? "-" : row.size}</td>
+                <td className="px-3 py-2 text-right align-top tabular-nums whitespace-nowrap">{formatQuantity(row.quantity)}</td>
+                <td className="px-3 py-2 text-right align-top tabular-nums whitespace-nowrap text-muted-foreground">{row.caiLabel}</td>
+                <td className="px-3 py-2 text-right align-top tabular-nums whitespace-nowrap text-muted-foreground">
+                  {row.unitPrice !== null ? formatCurrency(row.unitPrice) : "-"}
+                </td>
+                <td className="px-3 py-2 text-right align-top font-semibold tabular-nums whitespace-nowrap">
+                  {row.subtotal !== null ? formatCurrency(row.subtotal) : "-"}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -156,15 +173,80 @@ export function ProcessingTotalsTable({ rows }: { rows: MaterialSummaryRow[] }) 
   );
 }
 
+function rowSubtotal(row: MaterialSummaryRow): number {
+  return row.subtotal ?? 0;
+}
+
+function isBackingMaterialRow(row: MaterialSummaryRow): boolean {
+  return row.kind !== "process" && (
+    row.category.includes("背板") ||
+    row.itemName.includes("背板") ||
+    row.material.includes("背板")
+  );
+}
+
+function materialRowsTotal(rows: MaterialSummaryRow[], backing: boolean): number {
+  return rows
+    .filter((row) => (row.kind === "material" || row.kind === "accessory") && isBackingMaterialRow(row) === backing)
+    .reduce((sum, row) => sum + rowSubtotal(row), 0);
+}
+
+function rowsSubtotal(rows: MaterialSummaryRow[]): number {
+  return rows.reduce((sum, row) => sum + rowSubtotal(row), 0);
+}
+
+export function SummaryCostBreakdown({
+  rows,
+  hardwareRows,
+  processRows,
+  total,
+}: {
+  rows: MaterialSummaryRow[];
+  hardwareRows: MaterialSummaryRow[];
+  processRows: MaterialSummaryRow[];
+  total: number;
+}) {
+  const bodyMaterialTotal = materialRowsTotal(rows, false);
+  const backingMaterialTotal = materialRowsTotal(rows, true);
+  const hardwareTotal = rowsSubtotal(hardwareRows);
+  const processingTotal = rowsSubtotal(processRows);
+
+  return (
+    <div className="rounded-md border bg-background px-3 py-3">
+      <div className="space-y-1 border-y py-2 text-sm">
+        {[
+          ["櫃身板材", bodyMaterialTotal],
+          ["背板", backingMaterialTotal],
+          ["五金", hardwareTotal],
+          ["加工費", processingTotal],
+        ].map(([label, value]) => (
+          <div key={label} className="flex items-baseline justify-between gap-4 text-muted-foreground">
+            <span>{label}</span>
+            <span className="tabular-nums">{formatCurrency(value as number)}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex items-baseline justify-between gap-4 text-base font-bold">
+        <span>總計</span>
+        <span className="text-xl tabular-nums text-blue-600">{formatCurrency(total)}</span>
+      </div>
+    </div>
+  );
+}
+
 export function SummaryTotalsBlock({
+  rows,
   materialCaiTotals,
   hardwareRows,
   processRows,
+  total,
   layout = "grid",
 }: {
+  rows: MaterialSummaryRow[];
   materialCaiTotals: MaterialCaiTotal[];
   hardwareRows: MaterialSummaryRow[];
   processRows: MaterialSummaryRow[];
+  total: number;
   layout?: "grid" | "stacked";
 }) {
   return (
@@ -180,8 +262,8 @@ export function SummaryTotalsBlock({
         </div>
       </div>
       <div className="min-w-0 space-y-1">
-        <p className="text-xs font-medium text-muted-foreground">加工總表</p>
-        <ProcessingTotalsTable rows={processRows} />
+        <p className="text-xs font-medium text-muted-foreground">總計</p>
+        <SummaryCostBreakdown rows={rows} hardwareRows={hardwareRows} processRows={processRows} total={total} />
       </div>
     </div>
   );

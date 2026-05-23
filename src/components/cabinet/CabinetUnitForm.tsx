@@ -1214,7 +1214,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
           <h3 className="text-sm font-semibold">即時計算結果</h3>
           <Button type="button" variant="outline" size="sm" onClick={printResult}>
             <Printer className="h-4 w-4" />
-            匯出PDF
+            匯出單桶PDF
           </Button>
         </div>
         <div ref={resultPrintRef} className="cabinet-print-area">

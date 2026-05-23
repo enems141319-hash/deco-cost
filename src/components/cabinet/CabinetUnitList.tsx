@@ -454,7 +454,7 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
 
       <Separator />
 
-      <MaterialSummaryPanel units={units} />
+      <MaterialSummaryPanel units={units} estimateLabel={estimateLabel} projectInfo={projectInfo} />
 
       {/* 總計 + 儲存 */}
       <div className="flex items-center justify-between">

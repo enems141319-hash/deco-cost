@@ -198,7 +198,7 @@ function BoardNameCell({ row, displayIndex }: { row: BoardRow; displayIndex: str
         <span className="cabinet-board-title min-w-0 break-words text-sm font-semibold text-slate-950">{row.name}</span>
       </div>
       <div className="cabinet-board-material break-words text-sm font-medium text-slate-800">
-        {row.materialRef?.materialName ?? <span className="text-orange-600">未選材料</span>}
+        {row.materialRef?.materialName ?? <span className="text-destructive">未選材料</span>}
       </div>
     </div>
   );

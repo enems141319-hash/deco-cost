@@ -79,10 +79,11 @@ function mergeProcessRows(rows: MaterialSummaryRow[]): MaterialSummaryRow[] {
 }
 
 function combinedProjectSummary(summaries: CabinetProjectMaterialSummary[]) {
+  const rows = summaries.flatMap((summary) => summary.unitSummaries.flatMap((unit) => unit.rows));
   const materialCaiTotals = mergeMaterialCaiTotals(summaries.flatMap((summary) => summary.materialCaiTotals));
   const hardwareRows = mergeHardwareRows(summaries.flatMap((summary) => summary.hardwareRows));
   const processRows = mergeProcessRows(summaries.flatMap((summary) => summary.processRows));
-  return { materialCaiTotals, hardwareRows, processRows };
+  return { rows, materialCaiTotals, hardwareRows, processRows };
 }
 
 export function ProjectCostBreakdown({ items, grandTotal }: Props) {
@@ -122,9 +123,11 @@ export function ProjectCostBreakdown({ items, grandTotal }: Props) {
         </div>
       </div>
       <SummaryTotalsBlock
+        rows={projectSummary.rows}
         materialCaiTotals={projectSummary.materialCaiTotals}
         hardwareRows={projectSummary.hardwareRows}
         processRows={projectSummary.processRows}
+        total={grandTotal}
         layout="stacked"
       />
     </div>

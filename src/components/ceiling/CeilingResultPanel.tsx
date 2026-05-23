@@ -55,7 +55,7 @@ export function CeilingResultPanel({ result }: Props) {
                 {item.materialRef ? formatCurrency(item.unitCost) : "—"}
               </td>
               <td className="text-right py-1 font-medium">
-                {item.subtotal > 0 ? formatCurrency(item.subtotal) : <span className="text-orange-500">未選材料</span>}
+                {item.subtotal > 0 ? formatCurrency(item.subtotal) : <span className="text-destructive">未選材料</span>}
               </td>
             </tr>
           ))}

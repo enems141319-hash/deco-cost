@@ -50,6 +50,18 @@ const CATEGORY_LABELS: Record<string, string> = {
   OTHER: "其他",
 };
 
+const BOARD_MATERIAL_CATEGORIES = new Set([
+  "BOARD_BODY",
+  "BOARD_BACKING",
+  "BOARD_DOOR",
+  "LOUVER_DOOR",
+  "CEILING_BOARD",
+]);
+
+function isBoardMaterialCategory(categoryFilter: string | undefined): boolean {
+  return categoryFilter !== undefined && BOARD_MATERIAL_CATEGORIES.has(categoryFilter);
+}
+
 function toMaterialRef(material: MaterialOption): MaterialRef {
   return {
     materialId: material.id,
@@ -103,6 +115,7 @@ export function MaterialDropdown({
   const [brandFilter, setBrandFilter] = useState<string>("__all__");
   const [typeFilter, setTypeFilter] = useState<string>("__all__");
   const [prefixFilter, setPrefixFilter] = useState<string>("__all__");
+  const missingRequiredBoardMaterial = !value && isBoardMaterialCategory(categoryFilter);
 
   useEffect(() => {
     let cancelled = false;
@@ -215,7 +228,8 @@ export function MaterialDropdown({
         disabled={disabled || loading}
         className={cn(
           "h-8 w-full justify-between gap-2 px-3 text-left text-xs font-normal",
-          !value && "text-muted-foreground"
+          !value && "text-muted-foreground",
+          missingRequiredBoardMaterial && "border-destructive/60 text-destructive hover:text-destructive"
         )}
         onClick={() => setOpen(true)}
       >
