@@ -15,7 +15,7 @@ function rowClassName(row: MaterialSummaryRow, index: number, rows: MaterialSumm
   ].filter(Boolean).join(" ");
 }
 
-function materialDisplayIndex(rows: MaterialSummaryRow[], rowIndex: number, sectionNumber?: number): string {
+function materialDisplayIndex(rows: MaterialSummaryRow[], rowIndex: number, sectionNumber?: number | string): string {
   const itemNumber = rows.slice(0, rowIndex + 1).filter((row) => row.kind !== "process").length;
   return sectionNumber ? `${sectionNumber}-${itemNumber}` : `${itemNumber}`;
 }
@@ -24,7 +24,7 @@ function isMissingMaterialLabel(material: string): boolean {
   return material.includes("未選");
 }
 
-export function MaterialDetailTable({ rows, sectionNumber }: { rows: MaterialSummaryRow[]; sectionNumber?: number }) {
+export function MaterialDetailTable({ rows, sectionNumber }: { rows: MaterialSummaryRow[]; sectionNumber?: number | string }) {
   return (
     <div className="max-w-full overflow-x-auto rounded-md border">
       <table className="cabinet-board-table w-full min-w-[780px] table-fixed text-sm">
@@ -49,13 +49,16 @@ export function MaterialDetailTable({ rows, sectionNumber }: { rows: MaterialSum
         <tbody>
           {rows.map((row, index) => {
             const isProcess = row.kind === "process";
+            const processSecondaryText = materialProcessDetailSecondaryText(row);
             return (
               <tr key={row.id} className={rowClassName(row, index, rows)}>
                 <td className={`px-3 py-2 align-top ${isProcess ? "pl-7" : ""}`}>
                   {isProcess ? (
                     <>
                       <div className="cabinet-process-label text-xs font-medium text-muted-foreground">- {row.itemName}</div>
-                      <div className="cabinet-secondary-text break-words text-xs text-muted-foreground">{row.sourceItemName ?? row.note}</div>
+                      {processSecondaryText && (
+                        <div className="cabinet-secondary-text break-words text-xs text-muted-foreground">{processSecondaryText}</div>
+                      )}
                     </>
                   ) : (
                     <div className="cabinet-board-name-cell min-w-0 space-y-1">
@@ -83,6 +86,12 @@ export function MaterialDetailTable({ rows, sectionNumber }: { rows: MaterialSum
       </table>
     </div>
   );
+}
+
+export function materialProcessDetailSecondaryText(row: MaterialSummaryRow): string | null {
+  if (row.kind !== "process") return null;
+  if (!row.note || row.note === "-" || row.note === row.itemName) return null;
+  return row.note;
 }
 
 export function MaterialCaiTotalsTable({ rows }: { rows: MaterialCaiTotal[] }) {

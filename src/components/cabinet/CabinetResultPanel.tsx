@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 interface Props {
   result: CabinetUnitResult;
   highlightedBoardId?: string | null;
+  forceAllExpanded?: boolean;
 }
 
 type BoardRow = PanelResult | DoorResult;
@@ -50,14 +51,17 @@ function ResultSection({
   sectionNumber,
   title,
   command,
+  forceExpanded = false,
   children,
 }: {
   sectionNumber: number;
   title: string;
   command?: ResultCollapseCommand;
+  forceExpanded?: boolean;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(true);
+  const bodyVisible = shouldRenderResultSectionBody(open, forceExpanded);
 
   useEffect(() => {
     if (!command) return;
@@ -72,11 +76,15 @@ function ResultSection({
         onClick={() => setOpen((next) => !next)}
       >
         <span>{sectionNumber}.{title}</span>
-        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${bodyVisible ? "rotate-180" : ""}`} />
       </button>
-      {open && <div className="cabinet-result-section-body px-3 pb-3 pt-3">{children}</div>}
+      {bodyVisible && <div className="cabinet-result-section-body px-3 pb-3 pt-3">{children}</div>}
     </section>
   );
+}
+
+export function shouldRenderResultSectionBody(open: boolean, forceExpanded: boolean): boolean {
+  return forceExpanded || open;
 }
 
 function unitPrice(row: BoardRow): number {
@@ -212,6 +220,7 @@ function BoardTable({
   highlightedBoardId = null,
   showPanelProcesses = true,
   collapseCommand,
+  forceExpanded = false,
 }: {
   sectionNumber: number;
   title: string;
@@ -220,12 +229,13 @@ function BoardTable({
   highlightedBoardId?: string | null;
   showPanelProcesses?: boolean;
   collapseCommand?: ResultCollapseCommand;
+  forceExpanded?: boolean;
 }) {
   if (rows.length === 0) return null;
   const activeHighlightedIds = highlightedIds(highlightedBoardId);
 
   return (
-    <ResultSection sectionNumber={sectionNumber} title={title} command={collapseCommand}>
+    <ResultSection sectionNumber={sectionNumber} title={title} command={collapseCommand} forceExpanded={forceExpanded}>
       <div className={tableShellClass}>
         <table className="cabinet-board-table w-full min-w-[700px] table-fixed text-sm">
           <colgroup>
@@ -344,16 +354,18 @@ function HardwareTable({
   title,
   rows,
   collapseCommand,
+  forceExpanded = false,
 }: {
   sectionNumber: number;
   title: string;
   rows: HardwareResult[];
   collapseCommand?: ResultCollapseCommand;
+  forceExpanded?: boolean;
 }) {
   if (rows.length === 0) return null;
 
   return (
-    <ResultSection sectionNumber={sectionNumber} title={title} command={collapseCommand}>
+    <ResultSection sectionNumber={sectionNumber} title={title} command={collapseCommand} forceExpanded={forceExpanded}>
       <div className={tableShellClass}>
         <table className="cabinet-hardware-table w-full min-w-[520px] table-fixed text-sm">
           <colgroup>
@@ -471,7 +483,7 @@ function SummaryCards({ result, printMode = false }: { result: CabinetUnitResult
   );
 }
 
-export function CabinetResultPanel({ result, highlightedBoardId = null }: Props) {
+export function CabinetResultPanel({ result, highlightedBoardId = null, forceAllExpanded = false }: Props) {
   const { summary } = result;
   const [resultCollapseCommand, setResultCollapseCommand] = useState<ResultCollapseCommand>({ action: "expand", version: 0 });
   const drawerPanels = result.internalParts.filter(isDrawerPanel);
@@ -516,28 +528,28 @@ export function CabinetResultPanel({ result, highlightedBoardId = null }: Props)
       </div>
 
       <div className="space-y-5">
-        <BoardTable sectionNumber={bodyPanelsSection} title="桶身板材" rows={result.panels} highlightedBoardId={highlightedBoardId} collapseCommand={resultCollapseCommand} />
-        <HardwareTable sectionNumber={bodyProcessSection} title="桶身加工" rows={standaloneProcessRows} collapseCommand={resultCollapseCommand} />
-        <BoardTable sectionNumber={internalPartsSection} title="內部構件（中立板 / 櫃內層板）" rows={internalParts} collapseCommand={resultCollapseCommand} />
+        <BoardTable sectionNumber={bodyPanelsSection} title="桶身板材" rows={result.panels} highlightedBoardId={highlightedBoardId} collapseCommand={resultCollapseCommand} forceExpanded={forceAllExpanded} />
+        <HardwareTable sectionNumber={bodyProcessSection} title="桶身加工" rows={standaloneProcessRows} collapseCommand={resultCollapseCommand} forceExpanded={forceAllExpanded} />
+        <BoardTable sectionNumber={internalPartsSection} title="內部構件（中立板 / 櫃內層板）" rows={internalParts} collapseCommand={resultCollapseCommand} forceExpanded={forceAllExpanded} />
 
         {(drawerPanels.length > 0 || drawerHardware.length > 0) && (
           <div className="space-y-3">
-            <BoardTable sectionNumber={drawerPanelsSection} title="抽屜板材" rows={drawerPanels} collapseCommand={resultCollapseCommand} />
-            <HardwareTable sectionNumber={drawerHardwareSection} title="抽屜五金" rows={drawerHardware} collapseCommand={resultCollapseCommand} />
+            <BoardTable sectionNumber={drawerPanelsSection} title="抽屜板材" rows={drawerPanels} collapseCommand={resultCollapseCommand} forceExpanded={forceAllExpanded} />
+            <HardwareTable sectionNumber={drawerHardwareSection} title="抽屜五金" rows={drawerHardware} collapseCommand={resultCollapseCommand} forceExpanded={forceAllExpanded} />
           </div>
         )}
 
         {result.doors.length > 0 && (
           <div className="space-y-3">
-            <BoardTable sectionNumber={doorsSection} title="門片" rows={result.doors} processRowsByRowId={doorAttachedRowsByDoorId} collapseCommand={resultCollapseCommand} />
-            <HardwareTable sectionNumber={doorHardwareSection} title="門片五金" rows={doorHardware} collapseCommand={resultCollapseCommand} />
+            <BoardTable sectionNumber={doorsSection} title="門片" rows={result.doors} processRowsByRowId={doorAttachedRowsByDoorId} collapseCommand={resultCollapseCommand} forceExpanded={forceAllExpanded} />
+            <HardwareTable sectionNumber={doorHardwareSection} title="門片五金" rows={doorHardware} collapseCommand={resultCollapseCommand} forceExpanded={forceAllExpanded} />
           </div>
         )}
 
-        <HardwareTable sectionNumber={otherHardwareSection} title="五金 / 另料" rows={otherHardware} collapseCommand={resultCollapseCommand} />
+        <HardwareTable sectionNumber={otherHardwareSection} title="五金 / 另料" rows={otherHardware} collapseCommand={resultCollapseCommand} forceExpanded={forceAllExpanded} />
 
         {result.accessories.length > 0 && (
-          <ResultSection sectionNumber={accessoriesSection} title="配件" command={resultCollapseCommand}>
+          <ResultSection sectionNumber={accessoriesSection} title="配件" command={resultCollapseCommand} forceExpanded={forceAllExpanded}>
             <div className={tableShellClass}>
               <table className="w-full min-w-[480px] table-fixed text-sm">
                 <colgroup>

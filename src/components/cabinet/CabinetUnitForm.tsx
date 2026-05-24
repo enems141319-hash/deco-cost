@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { Archive, Box, ChevronDown, DoorOpen, Printer, Wrench, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -573,6 +574,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
   const [inputWidthPct, setInputWidthPct] = useState(MIN_INPUT_WIDTH_PCT);
   const [highlightedBoardId, setHighlightedBoardId] = useState<string | null>(null);
   const [leftCollapseCommand, setLeftCollapseCommand] = useState<CollapseCommand>({ action: "collapse", version: 0 });
+  const [forceResultPrintExpanded, setForceResultPrintExpanded] = useState(false);
   const update = (patch: Partial<CabinetUnitInput>) => onChange({ ...unit, ...patch });
 
   const result = calculateCabinetUnit(unit);
@@ -656,7 +658,15 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
     const printWindow = window.open("", "_blank", "width=1100,height=800");
     if (!printWindow) return;
 
+    flushSync(() => {
+      setForceResultPrintExpanded(true);
+    });
+
     const clonedTarget = target.cloneNode(true) as HTMLElement;
+    flushSync(() => {
+      setForceResultPrintExpanded(false);
+    });
+
     clonedTarget.setAttribute("data-cabinet-print-target", "true");
     clonedTarget.querySelectorAll(".cabinet-print-hidden").forEach((element) => element.remove());
 
@@ -1223,7 +1233,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
               <section className="grid grid-cols-3 gap-x-4 gap-y-2 text-[12px] leading-snug">
                 {projectInfoRows.map((row) => (
                   <div key={row.label} className="min-w-0">
-                    <p className="text-[10px] font-semibold tracking-[0.16em] text-muted-foreground">{row.label}</p>
+                    <p className="text-[10px] font-semibold tracking-[0.16em] text-blue-700">{row.label}</p>
                     <p className="mt-0.5 break-words text-foreground">{row.value}</p>
                   </div>
                 ))}
@@ -1234,7 +1244,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
               櫃體尺寸：{unit.widthCm} x {unit.depthCm} x {unit.heightCm} cm / 數量 {unit.quantity}
             </p>
           </div>
-          <CabinetResultPanel result={result} highlightedBoardId={highlightedBoardId} />
+          <CabinetResultPanel result={result} highlightedBoardId={highlightedBoardId} forceAllExpanded={forceResultPrintExpanded} />
         </div>
       </div>
     </div>

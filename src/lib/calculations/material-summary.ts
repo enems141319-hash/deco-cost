@@ -424,7 +424,9 @@ export function buildCabinetUnitMaterialSummary(
     rows.push(doorMaterialRow(door));
     const doorInput = input?.doors.find((item) => item.id === door.id);
     rows.push(...doorAddonRows(door, doorInput));
-    rows.push(...(hardwareByDoorId.get(door.id) ?? []));
+    const doorRelatedRows = hardwareByDoorId.get(door.id) ?? [];
+    rows.push(...doorRelatedRows.filter((row) => row.kind === "process"));
+    rows.push(...doorRelatedRows.filter((row) => row.kind === "hardware"));
   }
 
   rows.push(...looseProcessRows);

@@ -39,6 +39,8 @@ const NAV_ITEMS = [
   { href: "/materials", label: "材料管理", icon: Package },
 ];
 
+export const SIDEBAR_ICON_CLASS = "text-blue-600";
+
 export function DashboardShell({ user, projects = [], children }: DashboardShellProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -71,7 +73,7 @@ export function DashboardShell({ user, projects = [], children }: DashboardShell
             onClick={() => setCollapsed((value) => !value)}
             aria-label={isCollapsed ? "展開側欄" : "收合側欄"}
           >
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {isCollapsed ? <ChevronRight className={cn("h-4 w-4", SIDEBAR_ICON_CLASS)} /> : <ChevronLeft className={cn("h-4 w-4", SIDEBAR_ICON_CLASS)} />}
           </Button>
         </div>
 
@@ -91,9 +93,9 @@ export function DashboardShell({ user, projects = [], children }: DashboardShell
                   )}
                   title={isCollapsed ? label : undefined}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon className={cn("h-4 w-4 shrink-0", SIDEBAR_ICON_CLASS)} />
                   {!isCollapsed && <span className="truncate">{label}</span>}
-                  {!isCollapsed && <ChevronRight className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-50" />}
+                  {!isCollapsed && <ChevronRight className={cn("ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-50", SIDEBAR_ICON_CLASS)} />}
                 </Link>
                 {isProjectsNav && !isCollapsed && projects.length > 0 && (
                   <div className="mt-1 space-y-0.5 border-l border-border/80 pl-3 ml-4">
@@ -139,7 +141,7 @@ export function DashboardShell({ user, projects = [], children }: DashboardShell
                 type="submit"
                 title={isCollapsed ? "登出" : undefined}
               >
-                <LogOut className="h-3.5 w-3.5" />
+                <LogOut className={cn("h-3.5 w-3.5", SIDEBAR_ICON_CLASS)} />
                 {!isCollapsed && <span>登出</span>}
               </Button>
             </form>

@@ -371,7 +371,7 @@ export function MaterialSummaryPanel({ units, estimateLabel, projectInfo }: Prop
               <section className="grid grid-cols-3 gap-x-4 gap-y-2 text-[12px] leading-snug">
                 {projectInfoRows.map((row) => (
                   <div key={row.label} className="min-w-0">
-                    <p className="text-[10px] font-semibold tracking-[0.16em] text-muted-foreground">{row.label}</p>
+                    <p className="text-[10px] font-semibold tracking-[0.16em] text-blue-700">{row.label}</p>
                     <p className="mt-0.5 break-words text-foreground">{row.value}</p>
                   </div>
                 ))}

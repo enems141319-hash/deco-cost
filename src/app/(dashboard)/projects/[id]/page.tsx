@@ -9,7 +9,7 @@ import { requireCurrentUserId } from "@/lib/current-user";
 import { displayEstimateLabel } from "@/lib/estimate-label";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Plus, Layers, Grid3X3, Trash2 } from "lucide-react";
@@ -59,6 +59,24 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
 
   const grandTotal = project.items.reduce((acc, i) => acc + Number(i.totalCost), 0);
+  const materialBreakdownItems = project.items.map((item) => ({
+    id: item.id,
+    label: item.label,
+    moduleType: item.moduleType,
+    inputData: item.inputData,
+    resultData: item.resultData,
+    totalCost: Number(item.totalCost),
+  }));
+  const projectPrintInfo = {
+    name: project.name,
+    address: project.address,
+    clientName: project.clientName,
+    clientTitle: project.clientTitle,
+    clientPhone: project.clientPhone,
+    clientLineId: project.clientLineId,
+    designerName: project.designerName,
+    designerPhone: project.designerPhone,
+  };
   const clientLabel = [project.clientName, project.clientTitle].filter(Boolean).join("");
   const contactRows = [
     project.address ? `專案地址：${project.address}` : null,
@@ -194,14 +212,7 @@ export default async function ProjectDetailPage({
       {project.items.length > 0 && (
         <>
           <Separator />
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">本專案材料統整</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProjectCostBreakdown items={project.items} grandTotal={grandTotal} />
-            </CardContent>
-          </Card>
+          <ProjectCostBreakdown items={materialBreakdownItems} grandTotal={grandTotal} projectInfo={projectPrintInfo} />
         </>
       )}
     </div>
