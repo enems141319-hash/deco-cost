@@ -206,7 +206,7 @@ export function InternalPartsForm({
         )}
         {middleDividers.map((d, i) => (
           <div key={d.id} className="border rounded p-2 space-y-2 bg-muted/20">
-            <div className="grid grid-cols-4 gap-2 items-end">
+            <div className="grid grid-cols-2 gap-2 items-end sm:grid-cols-4">
               <div>
                 <Label className="text-[10px] text-muted-foreground">寬(cm)</Label>
                 <Input type="number" min={1} className="h-8 text-xs" value={d.fullWidth ? computedFullDepthCm : d.widthCm}
@@ -363,7 +363,7 @@ export function InternalPartsForm({
         )}
         {shelves.map((s, i) => (
           <div key={s.id} className="border rounded p-2 space-y-2 bg-muted/20">
-            <div className="grid grid-cols-4 gap-2 items-end">
+            <div className="grid grid-cols-2 gap-2 items-end sm:grid-cols-4">
               <div>
                 <Label className="text-[10px] text-muted-foreground">寬(cm)</Label>
                 <Input type="number" min={1} className="h-8 text-xs" value={s.widthCm}
@@ -497,7 +497,7 @@ export function InternalPartsForm({
                 onChange={(e) => updateSideTopBottomSealPanel(i, { name: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-4 gap-2 items-end">
+            <div className="grid grid-cols-2 gap-2 items-end sm:grid-cols-4">
               <div>
                 <Label className="text-[10px] text-muted-foreground">寬(cm)</Label>
                 <Input type="number" min={1} className="h-8 text-xs" value={panel.widthCm}

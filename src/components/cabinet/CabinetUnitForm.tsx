@@ -894,11 +894,11 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
   return (
     <div
       ref={containerRef}
-      className="grid grid-cols-1 gap-6 xl:grid-cols-[var(--input-width)_10px_minmax(0,1fr)] xl:gap-0"
+      className="grid grid-cols-1 gap-5 sm:gap-6 xl:grid-cols-[var(--input-width)_10px_minmax(0,1fr)] xl:gap-0"
       style={{ "--input-width": `${inputWidthPct}%` } as React.CSSProperties}
     >
       {/* 左側輸入區 */}
-      <div className="min-w-0 space-y-5 xl:pr-5">
+      <div className="min-w-0 space-y-4 sm:space-y-5 xl:pr-5">
         <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"
@@ -929,7 +929,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
               placeholder="例如：主臥衣櫃"
             />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {(["widthCm", "depthCm", "heightCm"] as const).map((field) => (
               <div key={field}>
                 <Label className="text-xs text-muted-foreground">
@@ -978,7 +978,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
                   />
                 </div>
                 {topPanelOverhang.enabled && (
-                  <div className="grid gap-3 sm:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {([
                       ["frontCm", "前凸(cm)"],
                       ["backCm", "後凸(cm)"],
@@ -1220,7 +1220,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
       </button>
 
       <div className="min-w-0 xl:pl-5">
-        <div className="cabinet-print-hidden mb-4 flex items-center justify-between gap-3 border-b pb-2">
+        <div className="cabinet-print-hidden mb-4 flex flex-col items-start justify-between gap-3 border-b pb-2 sm:flex-row sm:items-center">
           <h3 className="text-sm font-semibold">即時計算結果</h3>
           <Button type="button" variant="outline" size="sm" onClick={printResult}>
             <Printer className="h-4 w-4" />

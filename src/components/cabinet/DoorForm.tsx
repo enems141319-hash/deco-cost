@@ -425,7 +425,7 @@ export function DoorForm({ doors, onChange }: Props) {
               </Button>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div>
                 <Label className="text-[10px] text-muted-foreground">寬(cm)</Label>
                 <Input type="number" min={1} className="h-8 text-xs" value={door.widthCm} onChange={(event) => update(i, { widthCm: Number(event.target.value) })} />

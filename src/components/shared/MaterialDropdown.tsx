@@ -242,10 +242,10 @@ export function MaterialDropdown({
       {open && (
         <div className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-black/35 p-4" onMouseDown={() => setOpen(false)}>
           <div
-            className="grid h-[calc(100dvh-2rem)] max-h-[760px] w-full max-w-5xl grid-cols-[220px_minmax(0,1fr)] overflow-hidden rounded-md border bg-background shadow-xl"
+            className="grid h-[calc(100dvh-2rem)] max-h-[760px] w-full max-w-5xl grid-cols-1 overflow-hidden rounded-md border bg-background shadow-xl md:grid-cols-[220px_minmax(0,1fr)]"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <aside className="flex min-h-0 flex-col border-r bg-muted/20">
+            <aside className="flex min-h-0 max-h-56 flex-col border-b bg-muted/20 md:max-h-none md:border-b-0 md:border-r">
               <div className="border-b px-4 py-3">
                 <p className="text-sm font-semibold">{categoryFilter ? CATEGORY_LABELS[categoryFilter] ?? categoryFilter : "材料索引"}</p>
                 <p className="text-xs text-muted-foreground">{scopedMaterials.length} 筆品項</p>
@@ -371,7 +371,7 @@ export function MaterialDropdown({
                           type="button"
                           key={material.id}
                           className={cn(
-                            "grid w-full grid-cols-[1fr_auto] gap-4 px-4 py-3 text-left hover:bg-muted/40",
+                            "grid w-full grid-cols-1 gap-2 px-4 py-3 text-left hover:bg-muted/40 sm:grid-cols-[1fr_auto] sm:gap-4",
                             active && "bg-primary/5"
                           )}
                           onClick={() => choose(material)}

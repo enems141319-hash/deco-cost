@@ -396,12 +396,12 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
           <div key={unit.id} className="border rounded-lg overflow-hidden">
             {/* Header */}
             <div
-              className="flex items-center gap-2 px-4 py-3 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+              className="flex flex-wrap items-start gap-2 px-4 py-3 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => setExpandedId(isExpanded ? "" : unit.id)}
             >
-              {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-              <span className="font-medium flex-1">{unit.name}</span>
-              <Badge variant="outline" className="text-xs">
+              {isExpanded ? <ChevronUp className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />}
+              <span className="min-w-[12rem] flex-1 break-words text-base font-semibold leading-6 sm:min-w-0 sm:text-sm sm:font-medium">{unit.name}</span>
+              <Badge variant="outline" className="max-w-full whitespace-normal break-words px-3 py-1 text-xs leading-5">
                 {unit.widthCm} × {unit.depthCm} × {unit.heightCm} cm
               </Badge>
               <Badge variant="secondary" className="text-xs">×{unit.quantity}</Badge>

@@ -58,7 +58,7 @@ export default async function CabinetEstimatePage({
   }
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="space-y-5 px-4 py-5 sm:p-6">
       <div>
         <Link
           href={`/projects/${projectId}`}
@@ -67,7 +67,7 @@ export default async function CabinetEstimatePage({
           <ArrowLeft className="h-3.5 w-3.5" />
           返回 {project.name}
         </Link>
-        <h1 className="text-xl font-bold">系統櫃估價</h1>
+        <h1 className="text-lg font-bold sm:text-xl">系統櫃估價</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           新增桶身 → 設定尺寸與板材 → 即時查看成本
         </p>

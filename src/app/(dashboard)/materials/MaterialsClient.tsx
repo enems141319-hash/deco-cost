@@ -202,13 +202,13 @@ export function MaterialsClient({ materials }: Props) {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-8rem)] grid-cols-[220px_minmax(420px,1fr)_420px] overflow-hidden rounded border bg-background">
-      <aside className="border-r bg-muted/20">
+    <div className="grid min-h-[calc(100vh-8rem)] grid-cols-1 overflow-hidden rounded border bg-background xl:grid-cols-[220px_minmax(0,1fr)_420px]">
+      <aside className="border-b bg-muted/20 xl:border-b-0 xl:border-r">
         <div className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">分類</h2>
           <p className="text-xs text-muted-foreground">{materials.length} 筆材料</p>
         </div>
-        <div className="space-y-1 p-2">
+        <div className="max-h-72 space-y-1 overflow-y-auto p-2 xl:max-h-none">
           {groups.map((group, index) => {
             const active = group.filter.id === selectedFilter.id;
             const showSection = index === 0 || groups[index - 1]?.filter.section !== group.filter.section;
@@ -243,8 +243,8 @@ export function MaterialsClient({ materials }: Props) {
         </div>
       </aside>
 
-      <section className="border-r">
-        <div className="flex items-center gap-2 border-b px-4 py-3">
+      <section className="min-w-0 border-b xl:border-b-0 xl:border-r">
+        <div className="flex flex-col gap-2 border-b px-4 py-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -256,6 +256,7 @@ export function MaterialsClient({ materials }: Props) {
           </div>
           <Button
             size="sm"
+            className="w-full sm:w-auto"
             onClick={() => {
               setAdding(true);
               setSelectedId(null);
@@ -266,8 +267,67 @@ export function MaterialsClient({ materials }: Props) {
           </Button>
         </div>
 
-        <div className="overflow-auto">
-          <table className="w-full text-sm">
+        <div className="divide-y md:hidden">
+          {visibleMaterials.map((material) => (
+            <button
+              key={material.id}
+              type="button"
+              className={cn(
+                "block w-full px-4 py-3 text-left hover:bg-muted/30",
+                selectedId === material.id && !adding ? "bg-primary/5" : "",
+                !material.isActive ? "opacity-60" : "",
+              )}
+              onClick={() => {
+                setSelectedId(material.id);
+                setAdding(false);
+              }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="break-words text-sm font-semibold">{materialMainLabel(material)}</p>
+                  {material.colorCode && material.name !== material.colorCode && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{material.name}</p>
+                  )}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {[showBrandColumn ? material.brand : null, material.surfaceTreatment, materialDetailLabel(material)]
+                      .filter(Boolean)
+                      .join(" / ")}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-semibold text-primary">{formatCurrency(material.price)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {material.minCai !== null && material.minCai !== undefined ? `${material.minCai}才` : "-"}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
+                <Button
+                  variant={material.isActive ? "outline" : "default"}
+                  size="sm"
+                  className="h-8 min-w-[72px] whitespace-nowrap px-2"
+                  title={material.isActive ? "停用" : "啟用"}
+                  onClick={() => handleToggle(material)}
+                >
+                  {material.isActive ? <PowerOff className="mr-1 h-4 w-4" /> : <Power className="mr-1 h-4 w-4" />}
+                  {material.isActive ? "停用" : "啟用"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive"
+                  title="刪除"
+                  onClick={() => handleDelete(material)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="hidden overflow-auto md:block">
+          <table className="min-w-[760px] w-full text-sm">
             <thead className="sticky top-0 bg-muted/40 text-xs text-muted-foreground">
               <tr>
                 {showBrandColumn && <th className="px-4 py-2 text-left font-medium">品牌</th>}
@@ -336,7 +396,7 @@ export function MaterialsClient({ materials }: Props) {
         </div>
       </section>
 
-      <aside className="overflow-auto">
+      <aside className="min-w-0 overflow-auto">
         <div className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">{adding ? "新增品項" : selectedMaterial ? "編輯品項" : "品項"}</h2>
           {actionError && <p className="mt-1 text-xs text-destructive">{actionError}</p>}

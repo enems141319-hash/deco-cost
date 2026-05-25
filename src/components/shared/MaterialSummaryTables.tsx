@@ -26,7 +26,56 @@ function isMissingMaterialLabel(material: string): boolean {
 
 export function MaterialDetailTable({ rows, sectionNumber }: { rows: MaterialSummaryRow[]; sectionNumber?: number | string }) {
   return (
-    <div className="max-w-full overflow-x-auto rounded-md border">
+    <>
+    <div className="space-y-2 sm:hidden">
+      {rows.map((row, index) => {
+        const isProcess = row.kind === "process";
+        const processSecondaryText = materialProcessDetailSecondaryText(row);
+        return (
+          <div
+            key={row.id}
+            className={cn(
+              "rounded-md border bg-background px-3 py-3",
+              isProcess && "ml-4 border-slate-200 bg-muted/20",
+            )}
+          >
+            {isProcess ? (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">- {row.itemName}</p>
+                {processSecondaryText && (
+                  <p className="mt-0.5 break-words text-xs text-muted-foreground">{processSecondaryText}</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div>
+                  <div className="flex min-w-0 flex-wrap items-baseline gap-1.5">
+                    <span className="shrink-0 text-sm font-semibold text-blue-700">{materialDisplayIndex(rows, index, sectionNumber)}</span>
+                    <span className="min-w-0 break-words text-sm font-semibold text-slate-950">{row.itemName}</span>
+                  </div>
+                  <p className={cn("mt-1 break-words text-sm font-medium text-slate-800", isMissingMaterialLabel(row.material) && "text-destructive")}>
+                    {row.material}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                  <span className="text-muted-foreground">尺寸</span>
+                  <span className="text-right tabular-nums">{row.size}</span>
+                  <span className="text-muted-foreground">數量</span>
+                  <span className="text-right tabular-nums">{formatQuantity(row.quantity)}</span>
+                  <span className="text-muted-foreground">才數</span>
+                  <span className="text-right tabular-nums">{row.caiLabel}</span>
+                  <span className="text-muted-foreground">單價</span>
+                  <span className="text-right tabular-nums">{row.unitPrice !== null ? formatCurrency(row.unitPrice) : "-"}</span>
+                  <span className="font-medium text-muted-foreground">小計</span>
+                  <span className="text-right font-semibold tabular-nums">{row.subtotal !== null ? formatCurrency(row.subtotal) : "-"}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+    <div className="hidden max-w-full overflow-x-auto rounded-md border sm:block">
       <table className="cabinet-board-table w-full min-w-[780px] table-fixed text-sm">
         <colgroup>
           <col className="cabinet-name-col w-[38%]" />
@@ -85,6 +134,7 @@ export function MaterialDetailTable({ rows, sectionNumber }: { rows: MaterialSum
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 

@@ -13,7 +13,7 @@ export function CeilingResultPanel({ result }: Props) {
   return (
     <div className="space-y-4">
       {/* 摘要卡片 */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Card className="bg-muted/30">
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">坪數</p>

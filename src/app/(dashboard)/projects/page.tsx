@@ -28,10 +28,10 @@ export default async function ProjectsPage() {
   });
 
   return (
-    <div className="p-6 space-y-5 max-w-4xl">
+    <div className="max-w-4xl space-y-5 px-4 py-5 sm:p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">我的專案</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">我的專案</h1>
           <p className="text-muted-foreground text-sm mt-1">{projects.length} 個專案</p>
         </div>
         <Button asChild>
@@ -60,7 +60,7 @@ export default async function ProjectsPage() {
 
             return (
               <Card key={project.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="py-4 px-5 flex items-center gap-4">
+                <CardContent className="flex flex-col items-start gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-5">
                   <FolderOpen className="h-5 w-5 text-muted-foreground shrink-0" />
 
                   <div className="flex-1 min-w-0">
@@ -82,13 +82,13 @@ export default async function ProjectsPage() {
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0">
+                  <div className="shrink-0 sm:text-right">
                     <p className="font-bold text-primary">{formatCurrency(total)}</p>
                     <p className="text-xs text-muted-foreground">{project._count.items} 項估價</p>
                   </div>
 
-                  <div className="flex gap-1">
-                    <Button asChild variant="outline" size="sm">
+                  <div className="flex w-full gap-1 sm:w-auto">
+                    <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none">
                       <Link href={`/projects/${project.id}`}>開啟</Link>
                     </Button>
                     <form action={deleteProject.bind(null, project.id)}>

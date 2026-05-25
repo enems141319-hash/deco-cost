@@ -27,7 +27,7 @@ export default async function CeilingEstimatePage({
   if (!project) notFound();
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="space-y-5 px-4 py-5 sm:p-6">
       <div>
         <Link
           href={`/projects/${projectId}`}
@@ -36,7 +36,7 @@ export default async function CeilingEstimatePage({
           <ArrowLeft className="h-3.5 w-3.5" />
           返回 {project.name}
         </Link>
-        <h1 className="text-xl font-bold">天花板估價</h1>
+        <h1 className="text-lg font-bold sm:text-xl">天花板估價</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           輸入坪數與周長 → 自動計算角材與板材用量
         </p>

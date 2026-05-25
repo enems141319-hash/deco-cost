@@ -31,9 +31,9 @@ export default async function MaterialsPage() {
   }));
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4 px-4 py-5 sm:p-6">
       <div>
-        <h1 className="text-2xl font-bold">材料管理</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">材料管理</h1>
         <p className="text-sm text-muted-foreground">
           品牌、色號、板料類型與五金價格
         </p>

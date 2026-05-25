@@ -95,7 +95,7 @@ export function MaterialForm({ materialId, defaultValues, onSuccess }: Props) {
         </Select>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="brand">品牌</Label>
           <Input id="brand" name="brand" defaultValue={defaultValues?.brand ?? ""} placeholder="例：EGGER" />
@@ -106,7 +106,7 @@ export function MaterialForm({ materialId, defaultValues, onSuccess }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="surfaceTreatment">表面處理</Label>
           <Input id="surfaceTreatment" name="surfaceTreatment" defaultValue={defaultValues?.surfaceTreatment ?? ""} placeholder="例：ST10" />
@@ -117,7 +117,7 @@ export function MaterialForm({ materialId, defaultValues, onSuccess }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="name">名稱 *</Label>
           <Input
@@ -136,7 +136,7 @@ export function MaterialForm({ materialId, defaultValues, onSuccess }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-1.5">
           <Label htmlFor="unit">單位 *</Label>
           <Input

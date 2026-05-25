@@ -50,9 +50,9 @@ export function CeilingForm({ projectId }: Props) {
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 gap-5 sm:gap-6 xl:grid-cols-2">
       {/* 左：輸入 */}
-      <div className="space-y-5">
+      <div className="min-w-0 space-y-4 sm:space-y-5">
         <section className="space-y-3">
           <h3 className="font-semibold text-sm border-b pb-1">天花板資訊</h3>
           <div>
@@ -73,7 +73,7 @@ export function CeilingForm({ projectId }: Props) {
           </div>
 
           {input.autoPerimeter ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label className="text-xs text-muted-foreground">房間長(m)</Label>
                 <Input
@@ -137,8 +137,8 @@ export function CeilingForm({ projectId }: Props) {
           </div>
         </section>
 
-        <div className="flex items-center gap-3 pt-2">
-          <Button onClick={handleSave} disabled={saving || !result}>
+        <div className="flex flex-col items-start gap-3 pt-2 sm:flex-row sm:items-center">
+          <Button onClick={handleSave} disabled={saving || !result} className="w-full sm:w-auto">
             {saving ? "儲存中…" : "儲存估價"}
           </Button>
           {saveMsg && (
@@ -150,7 +150,7 @@ export function CeilingForm({ projectId }: Props) {
       </div>
 
       {/* 右：即時結果 */}
-      <div className="xl:border-l xl:pl-6">
+      <div className="min-w-0 xl:border-l xl:pl-6">
         <h3 className="font-semibold text-sm border-b pb-1 mb-4">即時計算結果</h3>
         {result ? (
           <CeilingResultPanel result={result} />

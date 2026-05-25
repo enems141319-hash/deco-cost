@@ -37,9 +37,9 @@ export default async function DashboardPage() {
     .reduce((acc, item) => acc + Number(item.totalCost), 0);
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
+    <div className="max-w-5xl space-y-5 px-4 py-5 sm:space-y-6 sm:p-6">
       <div>
-        <h1 className="text-2xl font-bold">總覽</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">總覽</h1>
         <p className="text-muted-foreground text-sm mt-1">
           歡迎回來，{session?.user?.name}
         </p>
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{totalProjects}</p>
+            <p className="text-2xl font-bold sm:text-3xl">{totalProjects}</p>
           </CardContent>
         </Card>
 
@@ -67,7 +67,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-primary">{formatCurrency(totalEstimateValue)}</p>
+            <p className="break-words text-2xl font-bold text-primary sm:text-3xl">{formatCurrency(totalEstimateValue)}</p>
             <p className="text-xs text-muted-foreground mt-1">最近 5 個專案</p>
           </CardContent>
         </Card>
@@ -80,7 +80,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{materialCount}</p>
+            <p className="text-2xl font-bold sm:text-3xl">{materialCount}</p>
             <Link href="/materials" className="text-xs text-primary hover:underline mt-1 block">
               管理材料 →
             </Link>

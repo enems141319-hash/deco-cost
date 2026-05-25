@@ -88,7 +88,7 @@ export default async function ProjectDetailPage({
   ].filter((row): row is string => Boolean(row));
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
+    <div className="max-w-4xl space-y-5 px-4 py-5 sm:space-y-6 sm:p-6">
       {/* Header */}
       <div>
         <Link
@@ -98,9 +98,9 @@ export default async function ProjectDetailPage({
           <ArrowLeft className="h-3.5 w-3.5" />
           返回專案列表
         </Link>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{project.name}</h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="break-words text-xl font-bold sm:text-2xl">{project.name}</h1>
             {contactRows.length > 0 && (
               <div className="mt-2 grid gap-x-5 gap-y-1 text-sm text-muted-foreground sm:grid-cols-2">
                 {contactRows.map((row) => (
@@ -112,22 +112,22 @@ export default async function ProjectDetailPage({
               <p className="text-muted-foreground text-sm mt-1 max-w-lg">{project.notes}</p>
             )}
           </div>
-          <div className="text-right shrink-0">
+          <div className="shrink-0 sm:text-right">
             <p className="text-xs text-muted-foreground">專案總計</p>
-            <p className="text-2xl font-bold text-primary">{formatCurrency(grandTotal)}</p>
+            <p className="text-xl font-bold text-primary sm:text-2xl">{formatCurrency(grandTotal)}</p>
           </div>
         </div>
       </div>
 
       {/* 新增估價按鈕 */}
-      <div className="flex gap-3">
-        <Button asChild>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button asChild className="w-full sm:w-auto">
           <Link href={`/projects/${id}/cabinet`}>
             <Grid3X3 className="h-4 w-4 mr-2" />
             新增系統櫃估價
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" className="w-full sm:w-auto">
           <Link href={`/projects/${id}/ceiling`}>
             <Layers className="h-4 w-4 mr-2" />
             新增天花板估價
@@ -161,7 +161,7 @@ export default async function ProjectDetailPage({
 
             return (
               <Card key={item.id}>
-                <CardContent className="py-4 px-5 flex items-center gap-4">
+                <CardContent className="flex flex-col items-start gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-5">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant={moduleInfo.color} className="text-xs">
@@ -179,12 +179,12 @@ export default async function ProjectDetailPage({
                     </p>
                   </div>
 
-                  <p className="font-bold text-primary shrink-0">
+                  <p className="shrink-0 font-bold text-primary sm:text-right">
                     {formatCurrency(Number(item.totalCost))}
                   </p>
 
-                  <div className="flex gap-1 shrink-0">
-                    <Button asChild variant="outline" size="sm">
+                  <div className="flex w-full shrink-0 gap-1 sm:w-auto">
+                    <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none">
                       <Link
                         href={`/projects/${id}/${modulePath(item.moduleType)}?itemId=${item.id}`}
                       >

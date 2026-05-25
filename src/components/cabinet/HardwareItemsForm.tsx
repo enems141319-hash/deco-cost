@@ -41,7 +41,7 @@ export function HardwareItemsForm({ items, onChange }: Props) {
 
       {items.map((item, i) => (
         <div key={item.id} className="space-y-2 rounded border bg-muted/20 p-3">
-          <div className="grid grid-cols-[1fr_88px_auto] gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_88px_auto]">
             <Input
               className="h-8 text-xs"
               value={item.name}

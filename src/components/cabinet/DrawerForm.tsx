@@ -167,7 +167,7 @@ export function DrawerForm({ drawers, onChange }: Props) {
               </Button>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div>
                 <Label className="text-[10px] text-muted-foreground">寬(cm)</Label>
                 <Input type="number" min={1} className="h-8 text-xs" value={drawer.widthCm} onChange={(event) => update(i, { widthCm: Number(event.target.value) })} />
@@ -192,7 +192,7 @@ export function DrawerForm({ drawers, onChange }: Props) {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div>
                 <Label className="text-[10px] text-muted-foreground">18mm牆板材料</Label>
                 <MaterialDropdown value={drawer.wallMaterialRef} onChange={(ref) => update(i, { wallMaterialRef: ref })} categoryFilter="BOARD_BODY" />
