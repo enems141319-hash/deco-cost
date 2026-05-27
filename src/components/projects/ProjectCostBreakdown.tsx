@@ -183,14 +183,42 @@ export const PROJECT_MATERIAL_SUMMARY_PRINT_CSS = `
         overflow-wrap: normal !important;
       }
 
-      [data-cabinet-print-target="true"] td:nth-child(2),
-      [data-cabinet-print-target="true"] td:nth-child(3),
-      [data-cabinet-print-target="true"] td:nth-child(4),
-      [data-cabinet-print-target="true"] td:nth-child(5),
-      [data-cabinet-print-target="true"] td:nth-child(6) {
+      [data-cabinet-print-target="true"] .cabinet-board-table td:nth-child(2),
+      [data-cabinet-print-target="true"] .cabinet-board-table td:nth-child(3),
+      [data-cabinet-print-target="true"] .cabinet-board-table td:nth-child(4),
+      [data-cabinet-print-target="true"] .cabinet-board-table td:nth-child(5),
+      [data-cabinet-print-target="true"] .cabinet-board-table td:nth-child(6) {
         font-size: 10pt !important;
         line-height: 1.22 !important;
         white-space: nowrap !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-hardware-summary-table .hardware-item-col {
+        width: 28mm !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-hardware-summary-table .hardware-qty-col {
+        width: 13mm !important;
+      }
+
+      [data-cabinet-print-target="true"] .cabinet-hardware-summary-table .hardware-price-col,
+      [data-cabinet-print-target="true"] .cabinet-hardware-summary-table .hardware-subtotal-col {
+        width: 22mm !important;
+      }
+
+      [data-cabinet-print-target="true"] .hardware-item-cell,
+      [data-cabinet-print-target="true"] .hardware-material-cell {
+        white-space: normal !important;
+        word-break: normal !important;
+        overflow-wrap: anywhere !important;
+        font-size: 9pt !important;
+        line-height: 1.22 !important;
+      }
+
+      [data-cabinet-print-target="true"] .hardware-number-cell {
+        white-space: nowrap !important;
+        font-size: 9.5pt !important;
+        line-height: 1.22 !important;
       }
 
       [data-cabinet-print-target="true"] .cabinet-secondary-text,

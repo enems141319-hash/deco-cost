@@ -148,7 +148,11 @@ export function MaterialCaiTotalsTable({ rows }: { rows: MaterialCaiTotal[] }) {
   if (rows.length === 0) return <p className="text-xs text-muted-foreground">沒有板材才數</p>;
   return (
     <div className="max-w-full overflow-x-auto rounded-md border">
-      <table className="w-full min-w-[360px] text-xs">
+      <table className="w-full min-w-[360px] table-fixed text-xs">
+        <colgroup>
+          <col />
+          <col className="w-[96px]" />
+        </colgroup>
         <thead className="bg-muted/30 text-muted-foreground">
           <tr className="border-b">
             <th className="px-3 py-2 text-left font-medium">材料 / 規格</th>
@@ -158,8 +162,8 @@ export function MaterialCaiTotalsTable({ rows }: { rows: MaterialCaiTotal[] }) {
         <tbody>
           {rows.map((row) => (
             <tr key={row.materialId} className="border-b border-muted/40">
-              <td className="px-3 py-2 text-muted-foreground">{row.materialName}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{formatNumber(row.cai, 2)}才</td>
+              <td className="break-words px-3 py-2 text-muted-foreground">{row.materialName}</td>
+              <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">{formatNumber(row.cai, 2)}才</td>
             </tr>
           ))}
         </tbody>
@@ -172,7 +176,14 @@ export function HardwareTotalsTable({ rows }: { rows: MaterialSummaryRow[] }) {
   if (rows.length === 0) return <p className="text-xs text-muted-foreground">沒有五金配件</p>;
   return (
     <div className="max-w-full overflow-x-auto rounded-md border">
-      <table className="w-full min-w-[520px] text-xs">
+      <table className="cabinet-hardware-summary-table w-full min-w-[640px] table-fixed text-xs">
+        <colgroup>
+          <col className="hardware-item-col w-[140px]" />
+          <col className="hardware-material-col" />
+          <col className="hardware-qty-col w-[72px]" />
+          <col className="hardware-price-col w-[92px]" />
+          <col className="hardware-subtotal-col w-[92px]" />
+        </colgroup>
         <thead className="bg-muted/30 text-muted-foreground">
           <tr className="border-b">
             <th className="px-3 py-2 text-left font-medium">五金 / 品項</th>
@@ -185,13 +196,13 @@ export function HardwareTotalsTable({ rows }: { rows: MaterialSummaryRow[] }) {
         <tbody>
           {rows.map((row) => (
             <tr key={row.id} className="border-b border-muted/40">
-              <td className="px-3 py-2 font-medium">{row.itemName}</td>
-              <td className="px-3 py-2 text-muted-foreground">{row.material}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{formatQuantity(row.quantity)}</td>
-              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+              <td className="hardware-item-cell break-words px-3 py-2 align-top font-medium leading-snug">{row.itemName}</td>
+              <td className="hardware-material-cell break-words px-3 py-2 align-top leading-snug text-muted-foreground">{row.material}</td>
+              <td className="hardware-number-cell whitespace-nowrap px-3 py-2 text-right align-top tabular-nums">{formatQuantity(row.quantity)}</td>
+              <td className="hardware-number-cell whitespace-nowrap px-3 py-2 text-right align-top tabular-nums text-muted-foreground">
                 {row.unitPrice !== null ? formatCurrency(row.unitPrice) : "-"}
               </td>
-              <td className="px-3 py-2 text-right font-semibold tabular-nums">
+              <td className="hardware-number-cell whitespace-nowrap px-3 py-2 text-right align-top font-semibold tabular-nums">
                 {row.subtotal !== null ? formatCurrency(row.subtotal) : "-"}
               </td>
             </tr>
@@ -206,7 +217,13 @@ export function ProcessingTotalsTable({ rows }: { rows: MaterialSummaryRow[] }) 
   if (rows.length === 0) return <p className="text-xs text-muted-foreground">沒有加工項目</p>;
   return (
     <div className="max-w-full overflow-x-auto rounded-md border">
-      <table className="w-full min-w-[520px] text-xs">
+      <table className="w-full min-w-[640px] table-fixed text-xs">
+        <colgroup>
+          <col className="w-[150px]" />
+          <col />
+          <col />
+          <col className="w-[92px]" />
+        </colgroup>
         <thead className="bg-muted/30 text-muted-foreground">
             <tr className="border-b">
               <th className="px-3 py-2 text-left font-medium">部件 / 品項</th>
@@ -218,10 +235,10 @@ export function ProcessingTotalsTable({ rows }: { rows: MaterialSummaryRow[] }) 
         <tbody>
           {rows.map((row) => (
             <tr key={row.id} className="border-b border-muted/40">
-              <td className="px-3 py-2 font-medium">{row.sourceItemName ?? row.itemName}</td>
-              <td className="px-3 py-2 text-muted-foreground">{row.sourceMaterial ?? row.material}</td>
-              <td className="px-3 py-2 text-muted-foreground">{row.note}</td>
-              <td className="px-3 py-2 text-right font-semibold tabular-nums">
+              <td className="break-words px-3 py-2 align-top font-medium leading-snug">{row.sourceItemName ?? row.itemName}</td>
+              <td className="break-words px-3 py-2 align-top leading-snug text-muted-foreground">{row.sourceMaterial ?? row.material}</td>
+              <td className="break-words px-3 py-2 align-top leading-snug text-muted-foreground">{row.note}</td>
+              <td className="whitespace-nowrap px-3 py-2 text-right align-top font-semibold tabular-nums">
                 {row.subtotal !== null ? formatCurrency(row.subtotal) : "-"}
               </td>
             </tr>
