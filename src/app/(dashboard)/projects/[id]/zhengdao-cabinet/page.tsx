@@ -1,19 +1,17 @@
-// src/app/(dashboard)/projects/[id]/cabinet/page.tsx
-
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MaterialVendor } from "@prisma/client";
+import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireCurrentUserId } from "@/lib/current-user";
-import { ArrowLeft } from "lucide-react";
 import { CabinetUnitList } from "@/components/cabinet/CabinetUnitList";
 import type { CabinetUnitInput } from "@/types";
-import { MaterialVendor } from "@prisma/client";
 
-export const metadata: Metadata = { title: "系統櫃估價" };
+export const metadata: Metadata = { title: "正道系統櫃估價" };
 
-export default async function CabinetEstimatePage({
+export default async function ZhengdaoCabinetEstimatePage({
   params,
   searchParams,
 }: {
@@ -25,7 +23,6 @@ export default async function CabinetEstimatePage({
   const session = await auth();
   const userId = await requireCurrentUserId(session);
 
-  // 驗證專案所有權
   const project = await prisma.estimateProject.findFirst({
     where: { id: projectId, userId },
     select: {
@@ -42,20 +39,22 @@ export default async function CabinetEstimatePage({
   });
   if (!project) notFound();
 
-  // 若帶了 itemId，載入既有估價
   let initialUnits: CabinetUnitInput[] | undefined;
   let initialLabel: string | null = null;
   let estimateItemId: string | undefined;
   if (itemId) {
     const item = await prisma.estimateItem.findFirst({
-      where: { id: itemId, projectId, moduleType: "CABINET", vendor: MaterialVendor.WEIHO },
+      where: {
+        id: itemId,
+        projectId,
+        moduleType: "CABINET",
+        vendor: MaterialVendor.ZHENGDAO,
+      },
     });
     if (!item) notFound();
-    if (item) {
-      initialUnits = item.inputData as unknown as CabinetUnitInput[];
-      initialLabel = item.label;
-      estimateItemId = item.id;
-    }
+    initialUnits = item.inputData as unknown as CabinetUnitInput[];
+    initialLabel = item.label;
+    estimateItemId = item.id;
   }
 
   return (
@@ -63,14 +62,14 @@ export default async function CabinetEstimatePage({
       <div>
         <Link
           href={`/projects/${projectId}`}
-          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-2"
+          className="mb-2 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           返回 {project.name}
         </Link>
-        <h1 className="text-lg font-bold sm:text-xl">系統櫃估價</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          新增桶身 → 設定尺寸與板材 → 即時查看成本
+        <h1 className="text-lg font-bold sm:text-xl">正道系統櫃估價</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          操作方式與原系統櫃相同，材料、五金及價格僅使用正道資料庫。
         </p>
       </div>
 
@@ -79,8 +78,8 @@ export default async function CabinetEstimatePage({
         itemId={estimateItemId}
         initialLabel={initialLabel}
         initialUnits={initialUnits}
-      projectInfo={project}
-      vendor="WEIHO"
+        projectInfo={project}
+        vendor="ZHENGDAO"
       />
     </div>
   );

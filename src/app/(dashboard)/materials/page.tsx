@@ -4,18 +4,29 @@ import { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { MaterialsClient, type MaterialData } from "./MaterialsClient";
+import Link from "next/link";
+import { MaterialVendor } from "@prisma/client";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "材料管理" };
 
-export default async function MaterialsPage() {
+export default async function MaterialsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ vendor?: string }>;
+}) {
   await auth();
+  const { vendor: requestedVendor } = await searchParams;
+  const vendor = requestedVendor === "ZHENGDAO" ? MaterialVendor.ZHENGDAO : MaterialVendor.WEIHO;
 
   const materials = await prisma.material.findMany({
+    where: { vendor },
     orderBy: [{ category: "asc" }, { brand: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
   });
 
   const serialized: MaterialData[] = materials.map((material) => ({
     id: material.id,
+    vendor: material.vendor,
     category: material.category,
     brand: material.brand,
     colorCode: material.colorCode,
@@ -38,7 +49,15 @@ export default async function MaterialsPage() {
           品牌、色號、板料類型與五金價格
         </p>
       </div>
-      <MaterialsClient materials={serialized} />
+      <div className="flex gap-2">
+        <Button asChild variant={vendor === MaterialVendor.WEIHO ? "default" : "outline"}>
+          <Link href="/materials?vendor=WEIHO">葳禾材料庫</Link>
+        </Button>
+        <Button asChild variant={vendor === MaterialVendor.ZHENGDAO ? "default" : "outline"}>
+          <Link href="/materials?vendor=ZHENGDAO">正道材料庫</Link>
+        </Button>
+      </div>
+      <MaterialsClient materials={serialized} vendor={vendor} />
     </div>
   );
 }

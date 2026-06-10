@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Plus, Layers, Grid3X3, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Layers, Trash2 } from "lucide-react";
 import { deleteEstimateItem } from "@/lib/actions/estimates";
 import { ProjectCostBreakdown } from "@/components/projects/ProjectCostBreakdown";
+import { CabinetVendorDialog } from "@/components/projects/CabinetVendorDialog";
 import type { CabinetProjectResult } from "@/types";
 import type { CeilingResult } from "@/types";
 
@@ -63,6 +64,7 @@ export default async function ProjectDetailPage({
     id: item.id,
     label: item.label,
     moduleType: item.moduleType,
+    vendor: item.vendor,
     inputData: item.inputData,
     resultData: item.resultData,
     totalCost: Number(item.totalCost),
@@ -121,12 +123,7 @@ export default async function ProjectDetailPage({
 
       {/* 新增估價按鈕 */}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button asChild className="w-full sm:w-auto">
-          <Link href={`/projects/${id}/cabinet`}>
-            <Grid3X3 className="h-4 w-4 mr-2" />
-            新增系統櫃估價
-          </Link>
-        </Button>
+        <CabinetVendorDialog projectId={id} />
         <Button asChild variant="outline" className="w-full sm:w-auto">
           <Link href={`/projects/${id}/ceiling`}>
             <Layers className="h-4 w-4 mr-2" />
@@ -167,6 +164,11 @@ export default async function ProjectDetailPage({
                       <Badge variant={moduleInfo.color} className="text-xs">
                         {moduleInfo.label}
                       </Badge>
+                      {item.moduleType === "CABINET" && (
+                        <Badge variant="outline" className="text-xs">
+                          {item.vendor === "ZHENGDAO" ? "正道" : "葳禾"}
+                        </Badge>
+                      )}
                       <span className="font-medium text-sm">
                         {displayEstimateLabel(item.label, moduleInfo.label)}
                       </span>
@@ -186,7 +188,7 @@ export default async function ProjectDetailPage({
                   <div className="flex w-full shrink-0 gap-1 sm:w-auto">
                     <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none">
                       <Link
-                        href={`/projects/${id}/${modulePath(item.moduleType)}?itemId=${item.id}`}
+                        href={`/projects/${id}/${item.moduleType === "CABINET" && item.vendor === "ZHENGDAO" ? "zhengdao-cabinet" : modulePath(item.moduleType)}?itemId=${item.id}`}
                       >
                         編輯
                       </Link>

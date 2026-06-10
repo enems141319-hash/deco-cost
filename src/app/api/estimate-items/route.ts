@@ -9,6 +9,7 @@ import { ceilingProjectInputSchema } from "@/lib/validations/ceiling";
 import { calculateCabinetProject } from "@/lib/calculations/cabinet";
 import { calculateCeilingMaterial } from "@/lib/calculations/ceiling";
 import type { CabinetUnitInput } from "@/types";
+import { MaterialVendor } from "@prisma/client";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
       data: {
         projectId,
         moduleType: "CABINET",
+        vendor: parsed.data.vendor === "ZHENGDAO" ? MaterialVendor.ZHENGDAO : MaterialVendor.WEIHO,
         label: estimateLabelOrDefault(parsed.data.label, "系統櫃"),
         sortOrder,
         inputData: parsed.data.units as object[],

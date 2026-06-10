@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { materialApiErrorMessage } from "@/components/shared/material-api-error";
 import { cn, formatCurrency } from "@/lib/utils";
 import type { MaterialRef } from "@/types";
+import { materialApiUrl, useCabinetVendor } from "@/components/cabinet/CabinetVendorContext";
 
 interface MaterialOption {
   id: string;
@@ -107,6 +108,7 @@ export function MaterialDropdown({
   placeholder = "選擇材料",
   disabled,
 }: Props) {
+  const vendor = useCabinetVendor();
   const [materials, setMaterials] = useState<MaterialOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -121,9 +123,7 @@ export function MaterialDropdown({
     let cancelled = false;
     setLoading(true);
     setLoadError(null);
-    const url = categoryFilter
-      ? `/api/materials?category=${categoryFilter}`
-      : "/api/materials";
+    const url = materialApiUrl(vendor, categoryFilter);
 
     fetch(url, { credentials: "same-origin" })
       .then(async (r) => {
@@ -154,7 +154,7 @@ export function MaterialDropdown({
     return () => {
       cancelled = true;
     };
-  }, [categoryFilter]);
+  }, [categoryFilter, vendor]);
 
   useEffect(() => {
     setBrandFilter("__all__");

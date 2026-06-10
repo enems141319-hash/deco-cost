@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireCurrentUserId } from "@/lib/current-user";
 import { z } from "zod";
-import { MaterialCategory } from "@prisma/client";
+import { MaterialCategory, MaterialVendor } from "@prisma/client";
 
 async function requireUserId(): Promise<string> {
   const session = await auth();
@@ -16,6 +16,7 @@ async function requireUserId(): Promise<string> {
 
 const materialSchema = z.object({
   category: z.nativeEnum(MaterialCategory),
+  vendor: z.nativeEnum(MaterialVendor).default(MaterialVendor.WEIHO),
   brand: z.string().max(80).optional(),
   colorCode: z.string().max(50).optional(),
   surfaceTreatment: z.string().max(50).optional(),
@@ -70,6 +71,7 @@ export async function createMaterial(formData: FormData) {
 
   const parsed = materialSchema.safeParse({
     category: formData.get("category"),
+    vendor: formData.get("vendor") || MaterialVendor.WEIHO,
     brand: optionalString(formData, "brand"),
     colorCode: optionalString(formData, "colorCode"),
     surfaceTreatment: optionalString(formData, "surfaceTreatment"),
@@ -96,6 +98,7 @@ export async function updateMaterial(materialId: string, formData: FormData) {
 
   const parsed = materialSchema.partial().safeParse({
     category: formData.get("category") || undefined,
+    vendor: formData.get("vendor") || undefined,
     brand: optionalString(formData, "brand"),
     colorCode: optionalString(formData, "colorCode"),
     surfaceTreatment: optionalString(formData, "surfaceTreatment"),

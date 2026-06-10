@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
+import { VendorBoardMaterialDropdown } from "@/components/shared/VendorBoardMaterialDropdown";
 import { DRAWER_FRONT_MOLD_PROCESSING_PRICES, PROFILE_HANDLE_PROCESSING_RULES } from "@/lib/config/units";
 import { cn, generateId } from "@/lib/utils";
 import type { DrawerInput, ProfileHandleStyle } from "@/types";
@@ -195,7 +196,7 @@ export function DrawerForm({ drawers, onChange }: Props) {
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div>
                 <Label className="text-[10px] text-muted-foreground">18mm牆板材料</Label>
-                <MaterialDropdown value={drawer.wallMaterialRef} onChange={(ref) => update(i, { wallMaterialRef: ref })} categoryFilter="BOARD_BODY" />
+                <VendorBoardMaterialDropdown value={drawer.wallMaterialRef} onChange={(ref) => update(i, { wallMaterialRef: ref })} category="BOARD_BODY" />
               </div>
               <div>
                 <Label className="text-[10px] text-muted-foreground">底板溝規格</Label>
@@ -212,7 +213,7 @@ export function DrawerForm({ drawers, onChange }: Props) {
               </div>
               <div>
                 <Label className="text-[10px] text-muted-foreground">8mm底板材料</Label>
-                <MaterialDropdown value={drawer.bottomMaterialRef} onChange={(ref) => update(i, { bottomMaterialRef: ref })} categoryFilter="BOARD_BACKING" />
+                <VendorBoardMaterialDropdown value={drawer.bottomMaterialRef} onChange={(ref) => update(i, { bottomMaterialRef: ref })} category="BOARD_BACKING" />
               </div>
             </div>
 

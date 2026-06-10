@@ -24,6 +24,7 @@ interface EstimateItemForBreakdown {
   id: string;
   label: string | null;
   moduleType: string;
+  vendor?: string;
   inputData: unknown;
   resultData: unknown;
   totalCost: number;

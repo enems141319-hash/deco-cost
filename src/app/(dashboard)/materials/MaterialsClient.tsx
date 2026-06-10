@@ -11,6 +11,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 
 export interface MaterialData {
   id: string;
+  vendor: "WEIHO" | "ZHENGDAO";
   category: string;
   brand?: string | null;
   colorCode?: string | null;
@@ -27,6 +28,7 @@ export interface MaterialData {
 
 interface Props {
   materials: MaterialData[];
+  vendor: "WEIHO" | "ZHENGDAO";
 }
 
 interface FilterKey {
@@ -140,7 +142,7 @@ function buildGroups(materials: MaterialData[]) {
   return result;
 }
 
-export function MaterialsClient({ materials }: Props) {
+export function MaterialsClient({ materials, vendor }: Props) {
   const router = useRouter();
   const groups = useMemo(() => buildGroups(materials), [materials]);
   const firstFilter = groups[0]?.filter ?? {
@@ -404,6 +406,7 @@ export function MaterialsClient({ materials }: Props) {
         <div className="p-4">
           {adding || selectedMaterial ? (
             <MaterialForm
+              vendor={vendor}
               key={selectedMaterial?.id ?? `new-${selectedFilter.id}`}
               materialId={selectedMaterial?.id}
               defaultValues={selectedMaterial ?? {

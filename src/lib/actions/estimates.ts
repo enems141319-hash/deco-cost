@@ -12,6 +12,7 @@ import { ceilingProjectInputSchema } from "@/lib/validations/ceiling";
 import { calculateCabinetProject } from "@/lib/calculations/cabinet";
 import { calculateCeilingMaterial } from "@/lib/calculations/ceiling";
 import type { CabinetUnitInput } from "@/types";
+import { MaterialVendor } from "@prisma/client";
 
 async function requireUserId(): Promise<string> {
   const session = await auth();
@@ -37,7 +38,7 @@ export async function saveCabinetEstimate(rawData: unknown) {
     return { success: false, errors: parsed.error.flatten() };
   }
 
-  const { projectId, label, units } = parsed.data;
+  const { projectId, label, units, vendor } = parsed.data;
   const owned = await verifyProjectOwnership(projectId, userId);
   if (!owned) {
     console.error("[saveCabinetEstimate] 專案所有權驗證失敗 projectId:", projectId, "userId:", userId);
@@ -59,6 +60,7 @@ export async function saveCabinetEstimate(rawData: unknown) {
     data: {
       projectId,
       moduleType: "CABINET",
+      vendor: vendor === "ZHENGDAO" ? MaterialVendor.ZHENGDAO : MaterialVendor.WEIHO,
       label: estimateLabelOrDefault(label, "系統櫃"),
       sortOrder,
       inputData: units as object[],
@@ -81,11 +83,16 @@ export async function updateCabinetEstimate(itemId: string, rawData: unknown) {
     return { success: false, errors: parsed.error.flatten() };
   }
 
-  const { projectId, label, units } = parsed.data;
+  const { projectId, label, units, vendor } = parsed.data;
   const owned = await verifyProjectOwnership(projectId, userId);
   if (!owned) return { success: false, errors: { _: ["無此專案"] } };
   const item = await prisma.estimateItem.findFirst({
-    where: { id: itemId, projectId, moduleType: "CABINET" },
+    where: {
+      id: itemId,
+      projectId,
+      moduleType: "CABINET",
+      vendor: vendor === "ZHENGDAO" ? MaterialVendor.ZHENGDAO : MaterialVendor.WEIHO,
+    },
     select: { id: true },
   });
   if (!item) return { success: false, errors: { _: ["無此估價項目"] } };
@@ -95,6 +102,7 @@ export async function updateCabinetEstimate(itemId: string, rawData: unknown) {
   await prisma.estimateItem.update({
     where: { id: itemId },
     data: {
+      vendor: vendor === "ZHENGDAO" ? MaterialVendor.ZHENGDAO : MaterialVendor.WEIHO,
       label: estimateLabelOrDefault(label, "系統櫃"),
       inputData: units as object[],
       resultData: result as unknown as object,

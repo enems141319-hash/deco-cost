@@ -14,6 +14,8 @@ import { formatCurrency, generateId } from "@/lib/utils";
 import { calculateCabinetUnit } from "@/lib/calculations/cabinet";
 import { saveCabinetEstimate, updateCabinetEstimate } from "@/lib/actions/estimates";
 import { DEFAULT_DOOR_ADDONS, DEFAULT_MIDDLE_DIVIDER_ADDONS, DEFAULT_UNIT_ADDONS, type CabinetUnitInput } from "@/types";
+import type { CabinetVendor } from "@/types/vendor";
+import { CabinetVendorProvider } from "./CabinetVendorContext";
 
 interface Props {
   projectId: string;
@@ -21,11 +23,13 @@ interface Props {
   initialLabel?: string | null;
   initialUnits?: CabinetUnitInput[];
   projectInfo?: CabinetPrintProjectInfo;
+  vendor?: CabinetVendor;
 }
 
-function emptyUnit(): CabinetUnitInput {
+function emptyUnit(vendor: CabinetVendor = "WEIHO"): CabinetUnitInput {
   return {
     id: generateId(),
+    vendor,
     name: "新桶身",
     widthCm: 90,
     depthCm: 60,
@@ -276,11 +280,11 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
   };
 }
 
-export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits, projectInfo }: Props) {
+export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits, projectInfo, vendor = "WEIHO" }: Props) {
   const [currentItemId, setCurrentItemId] = useState<string | undefined>(itemId);
   const [estimateLabel, setEstimateLabel] = useState(initialLabel ?? "");
   const [units, setUnits] = useState<CabinetUnitInput[]>(
-    initialUnits?.map(normalizeUnit) ?? [emptyUnit()]
+    initialUnits?.map((unit) => ({ ...normalizeUnit(unit), vendor })) ?? [emptyUnit(vendor)]
   );
   const [expandedId, setExpandedId] = useState<string>(units[0]?.id ?? "");
   const [saving, setSaving] = useState(false);
@@ -316,7 +320,7 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
     setSaving(true);
     setSaveMsg(null);
     try {
-      const payload = { projectId, label: estimateLabel, units };
+      const payload = { projectId, label: estimateLabel, units, vendor };
       const result = currentItemId
         ? await updateCabinetEstimate(currentItemId, payload)
         : await saveCabinetEstimate(payload);
@@ -341,7 +345,16 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
   };
 
   return (
+    <CabinetVendorProvider vendor={vendor}>
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <Badge variant={vendor === "ZHENGDAO" ? "default" : "secondary"}>
+          {vendor === "ZHENGDAO" ? "正道系統櫃" : "葳禾系統櫃"}
+        </Badge>
+        {vendor === "ZHENGDAO" && (
+          <span className="text-muted-foreground">材料與五金選單僅顯示正道資料庫</span>
+        )}
+      </div>
       <div className="fixed right-4 top-16 z-30 flex flex-col items-end gap-2 lg:right-6">
         <Button
           type="button"
@@ -429,6 +442,7 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
               <div className="p-4">
                 <CabinetUnitForm
                   unit={unit}
+                  vendor={vendor}
                   estimateLabel={estimateLabel}
                   projectInfo={projectInfo}
                   onChange={(updated) => updateUnit(unit.id, updated)}
@@ -443,7 +457,7 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
       <Button
         type="button" variant="outline" className="w-full border-dashed"
         onClick={() => {
-          const u = emptyUnit();
+          const u = emptyUnit(vendor);
           markChanged();
           setUnits((prev) => [...prev, u]);
           setExpandedId(u.id);
@@ -471,5 +485,6 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
         )}
       </div>
     </div>
+    </CabinetVendorProvider>
   );
 }

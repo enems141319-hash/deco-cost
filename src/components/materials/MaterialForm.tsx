@@ -28,6 +28,7 @@ const CATEGORIES = [
 ];
 
 interface Props {
+  vendor: "WEIHO" | "ZHENGDAO";
   materialId?: string;
   defaultValues?: {
     category?: string;
@@ -45,7 +46,7 @@ interface Props {
   onSuccess?: () => void;
 }
 
-export function MaterialForm({ materialId, defaultValues, onSuccess }: Props) {
+export function MaterialForm({ materialId, defaultValues, onSuccess, vendor }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState(defaultValues?.category ?? "BOARD_BODY");
@@ -56,6 +57,7 @@ export function MaterialForm({ materialId, defaultValues, onSuccess }: Props) {
     setLoading(true);
     setError(null);
     formData.set("category", category);
+    formData.set("vendor", vendor);
 
     try {
       const result = isEdit

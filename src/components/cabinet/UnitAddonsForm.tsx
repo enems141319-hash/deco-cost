@@ -12,11 +12,13 @@ import {
   type SlidingDoorTrackShape,
   type UnitAddons,
   type UnitBodyPanelProcesses,
+  type CabinetVendor,
 } from "@/types";
 
 interface Props {
   value: UnitAddons;
   onChange: (value: UnitAddons) => void;
+  vendor?: CabinetVendor;
 }
 
 type BodyPanelKey = keyof UnitBodyPanelProcesses;
@@ -91,7 +93,7 @@ function normalizedBodyPanelProcesses(value: UnitAddons): UnitBodyPanelProcesses
   };
 }
 
-export function UnitAddonsForm({ value, onChange }: Props) {
+export function UnitAddonsForm({ value, onChange, vendor = "WEIHO" }: Props) {
   const bodyPanelProcesses = normalizedBodyPanelProcesses(value);
   const update = (patch: Partial<UnitAddons>) => onChange({ ...value, ...patch });
   const updateBodyPanelProcesses = (patch: Partial<UnitBodyPanelProcesses>) => {
@@ -398,6 +400,10 @@ export function UnitAddonsForm({ value, onChange }: Props) {
       </div>
     </div>
   );
+
+  if (vendor === "ZHENGDAO") {
+    return null;
+  }
 
   return (
     <section className="space-y-3">

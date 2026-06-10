@@ -35,6 +35,11 @@ enum ModuleType {
   PAINT     // 預留：油漆
 }
 
+enum MaterialVendor {
+  WEIHO
+  ZHENGDAO
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -68,10 +73,17 @@ model Material {
   sortOrder        Int              @default(0)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  vendor           MaterialVendor   @default(WEIHO)
+  vendorCode       String?
+  catalogVersion   String?
+  notes            String?
+  pricingMeta      Json?
 
   @@index([category])
   @@index([brand])
   @@index([isActive])
+  @@index([vendor])
+  @@index([vendor, category])
   @@map("materials")
 }
 
@@ -108,10 +120,12 @@ model EstimateItem {
   totalCost  Decimal    @db.Decimal(12, 2)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
+  vendor     MaterialVendor @default(WEIHO)
 
   project EstimateProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([moduleType])
+  @@index([moduleType, vendor])
   @@map("estimate_items")
 }

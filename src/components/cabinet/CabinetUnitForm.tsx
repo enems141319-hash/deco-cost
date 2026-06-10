@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
+import { ZhengdaoBoardMaterialPicker } from "@/components/shared/ZhengdaoBoardMaterialPicker";
 import { DoorForm } from "./DoorForm";
 import { DrawerForm } from "./DrawerForm";
 import { HardwareItemsForm } from "./HardwareItemsForm";
@@ -21,6 +22,7 @@ import { UnitAddonsForm } from "./UnitAddonsForm";
 import { calculateCabinetUnit } from "@/lib/calculations/cabinet";
 import { DEFAULT_UNIT_ADDONS, type CabinetUnitInput, type CabinetUnitResult, type LTurnCabinetPosition } from "@/types";
 import { UNIT_CONFIG } from "@/lib/config/units";
+import type { CabinetVendor } from "@/types/vendor";
 
 interface Props {
   unit: CabinetUnitInput;
@@ -28,6 +30,7 @@ interface Props {
   projectInfo?: CabinetPrintProjectInfo;
   onChange: (unit: CabinetUnitInput) => void;
   onResult?: (result: CabinetUnitResult) => void;
+  vendor?: CabinetVendor;
 }
 
 const MIN_INPUT_WIDTH_PCT = 30;
@@ -568,7 +571,7 @@ function BodyPanelJoinPreview({
   );
 }
 
-export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, onResult }: Props) {
+export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, onResult, vendor = "WEIHO" }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const resultPrintRef = useRef<HTMLDivElement | null>(null);
   const [inputWidthPct, setInputWidthPct] = useState(MIN_INPUT_WIDTH_PCT);
@@ -1093,36 +1096,78 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
         </section>
 
         <section className="space-y-3">
-          <h3 className="font-semibold text-sm border-b pb-1">板材選料</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-1">
+            <h3 className="font-semibold text-sm">板材選料</h3>
+            {vendor === "ZHENGDAO" && sidePanelMaterialRef && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => update({
+                  panelMaterialRef: sidePanelMaterialRef,
+                  topPanelMaterialRef: sidePanelMaterialRef,
+                  sidePanelMaterialRef,
+                  bottomPanelMaterialRef: sidePanelMaterialRef,
+                })}
+              >
+                將側板材料套用至全部桶身板
+              </Button>
+            )}
+          </div>
           <div className="grid gap-3">
             <div>
               <Label className="text-xs text-muted-foreground">頂板材料</Label>
               <div className="mt-1">
-                <MaterialDropdown
-                  value={topPanelMaterialRef}
-                  onChange={(ref) => update({ topPanelMaterialRef: ref })}
-                  categoryFilter="BOARD_BODY"
-                />
+                {vendor === "ZHENGDAO" ? (
+                  <ZhengdaoBoardMaterialPicker
+                    value={topPanelMaterialRef}
+                    onChange={(ref) => update({ topPanelMaterialRef: ref })}
+                    category="BOARD_BODY"
+                  />
+                ) : (
+                  <MaterialDropdown
+                    value={topPanelMaterialRef}
+                    onChange={(ref) => update({ topPanelMaterialRef: ref })}
+                    categoryFilter="BOARD_BODY"
+                  />
+                )}
               </div>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">側板材料</Label>
               <div className="mt-1">
-                <MaterialDropdown
-                  value={sidePanelMaterialRef}
-                  onChange={(ref) => update({ sidePanelMaterialRef: ref, panelMaterialRef: ref })}
-                  categoryFilter="BOARD_BODY"
-                />
+                {vendor === "ZHENGDAO" ? (
+                  <ZhengdaoBoardMaterialPicker
+                    value={sidePanelMaterialRef}
+                    onChange={(ref) => update({ sidePanelMaterialRef: ref, panelMaterialRef: ref })}
+                    category="BOARD_BODY"
+                  />
+                ) : (
+                  <MaterialDropdown
+                    value={sidePanelMaterialRef}
+                    onChange={(ref) => update({ sidePanelMaterialRef: ref, panelMaterialRef: ref })}
+                    categoryFilter="BOARD_BODY"
+                  />
+                )}
               </div>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">底板材料</Label>
               <div className="mt-1">
-                <MaterialDropdown
-                  value={bottomPanelMaterialRef}
-                  onChange={(ref) => update({ bottomPanelMaterialRef: ref })}
-                  categoryFilter="BOARD_BODY"
-                />
+                {vendor === "ZHENGDAO" ? (
+                  <ZhengdaoBoardMaterialPicker
+                    value={bottomPanelMaterialRef}
+                    onChange={(ref) => update({ bottomPanelMaterialRef: ref })}
+                    category="BOARD_BODY"
+                  />
+                ) : (
+                  <MaterialDropdown
+                    value={bottomPanelMaterialRef}
+                    onChange={(ref) => update({ bottomPanelMaterialRef: ref })}
+                    categoryFilter="BOARD_BODY"
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -1137,11 +1182,19 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
             <div>
               <Label className="text-xs text-muted-foreground">背板材料</Label>
               <div className="mt-1">
-                <MaterialDropdown
-                  value={unit.backPanelMaterialRef}
-                  onChange={(ref) => update({ backPanelMaterialRef: ref })}
-                  categoryFilter="BOARD_BACKING"
-                />
+                {vendor === "ZHENGDAO" ? (
+                  <ZhengdaoBoardMaterialPicker
+                    value={unit.backPanelMaterialRef}
+                    onChange={(ref) => update({ backPanelMaterialRef: ref })}
+                    category="BOARD_BACKING"
+                  />
+                ) : (
+                  <MaterialDropdown
+                    value={unit.backPanelMaterialRef}
+                    onChange={(ref) => update({ backPanelMaterialRef: ref })}
+                    categoryFilter="BOARD_BACKING"
+                  />
+                )}
               </div>
             </div>
           )}
@@ -1149,6 +1202,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
 
         <UnitAddonsForm
           value={unit.addons}
+          vendor={vendor}
           onChange={(addons) => update({ addons })}
         />
 

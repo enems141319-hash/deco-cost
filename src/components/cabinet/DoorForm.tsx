@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
+import { materialApiUrl, useCabinetVendor } from "./CabinetVendorContext";
 import { PROFILE_HANDLE_PROCESSING_RULES } from "@/lib/config/units";
 import { cn, generateId } from "@/lib/utils";
 import { DEFAULT_DOOR_ADDONS, type DoorInput, type DoorType, type MaterialRef, type ProfileHandleStyle } from "@/types";
@@ -172,6 +173,7 @@ function LouverDoorMaterialSelect({
   value: MaterialRef | null;
   onChange: (ref: MaterialRef | null) => void;
 }) {
+  const vendor = useCabinetVendor();
   const [materials, setMaterials] = useState<MaterialOption[]>([]);
   const [loading, setLoading] = useState(true);
   const selected = materials.find((material) => material.id === value?.materialId) ?? null;
@@ -180,7 +182,7 @@ function LouverDoorMaterialSelect({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetch("/api/materials?category=LOUVER_DOOR", { credentials: "same-origin" })
+    fetch(materialApiUrl(vendor, "LOUVER_DOOR"), { credentials: "same-origin" })
       .then(async (response) => {
         const data: unknown = await response.json().catch(() => null);
         if (!response.ok || !Array.isArray(data)) throw new Error("格柵門材料載入失敗");
@@ -202,7 +204,7 @@ function LouverDoorMaterialSelect({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [vendor]);
 
   useEffect(() => {
     if (selected) {

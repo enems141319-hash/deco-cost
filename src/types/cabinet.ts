@@ -384,6 +384,7 @@ export interface DrawerInput {
 
 export interface CabinetUnitInput {
   id: string;
+  vendor?: "WEIHO" | "ZHENGDAO";
   name: string;
   widthCm: number;
   depthCm: number;

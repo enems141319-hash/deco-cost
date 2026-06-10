@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
+import { VendorBoardMaterialDropdown } from "@/components/shared/VendorBoardMaterialDropdown";
+import { useCabinetVendor } from "./CabinetVendorContext";
 import { generateId } from "@/lib/utils";
 import { DEFAULT_MIDDLE_DIVIDER_ADDONS, type MaterialRef, type MiddleDividerInput, type ProcessingQuantitySwitch, type ShelfInput, type SideTopBottomSealPanelInput } from "@/types";
 import { SpecialProcessesForm } from "./SpecialProcessesForm";
@@ -101,6 +102,7 @@ export function InternalPartsForm({
   onSideTopBottomSealPanelsChange,
   collapseCommand,
 }: Props) {
+  const vendor = useCabinetVendor();
   const defaultDividerAddons = {
     ...DEFAULT_MIDDLE_DIVIDER_ADDONS,
     lightGroove: DEFAULT_MIDDLE_DIVIDER_ADDONS.lightGroove ?? { side: "none", offsetFromFrontMm: 50 },
@@ -244,7 +246,9 @@ export function InternalPartsForm({
                 />
               </label>
             </div>
-            <MaterialDropdown value={d.materialRef} onChange={(ref) => updateDivider(i, { materialRef: ref })} categoryFilter="BOARD_BODY" />
+            <VendorBoardMaterialDropdown value={d.materialRef} onChange={(ref) => updateDivider(i, { materialRef: ref })} category="BOARD_BODY" />
+            {vendor !== "ZHENGDAO" && (
+              <>
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="flex items-center justify-between rounded border bg-background px-3 py-2">
                 <Label className="text-xs">雙排孔（+5 元/才）</Label>
@@ -346,6 +350,8 @@ export function InternalPartsForm({
               boardWidthCm={d.fullWidth ? computedFullDepthCm : d.widthCm}
               boardHeightCm={d.fullHeight ? computedFullHeightCm : d.heightCm}
             />
+              </>
+            )}
           </div>
         ))}
       </CollapsibleGroup>
@@ -391,7 +397,9 @@ export function InternalPartsForm({
                 onCheckedChange={(fullDepth) => updateShelf(i, { fullDepth })}
               />
             </label>
-            <MaterialDropdown value={s.materialRef} onChange={(ref) => updateShelf(i, { materialRef: ref })} categoryFilter="BOARD_BODY" />
+            <VendorBoardMaterialDropdown value={s.materialRef} onChange={(ref) => updateShelf(i, { materialRef: ref })} category="BOARD_BODY" />
+            {vendor !== "ZHENGDAO" && (
+              <>
             <div className="grid gap-2 sm:grid-cols-2">
               {renderQuantityProcess(
                 "隱藏式層板螺絲孔（限25mm）",
@@ -472,6 +480,8 @@ export function InternalPartsForm({
               boardWidthCm={s.widthCm}
               boardHeightCm={s.fullDepth ? computedFullDepthCm : s.depthCm}
             />
+              </>
+            )}
           </div>
         ))}
       </CollapsibleGroup>
@@ -517,10 +527,10 @@ export function InternalPartsForm({
                 <Trash2 className="h-3 w-3" />
               </Button>
             </div>
-            <MaterialDropdown
+            <VendorBoardMaterialDropdown
               value={panel.materialRef}
               onChange={(ref) => updateSideTopBottomSealPanel(i, { materialRef: ref })}
-              categoryFilter="BOARD_BODY"
+              category="BOARD_BODY"
             />
           </div>
         ))}

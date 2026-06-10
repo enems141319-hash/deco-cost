@@ -373,6 +373,7 @@ export const drawerSchema = z.object({
 
 export const cabinetUnitInputSchema = z.object({
   id: z.string().min(1),
+  vendor: z.enum(["WEIHO", "ZHENGDAO"]).optional(),
   name: z.string().min(1, "桶身名稱不能為空"),
   widthCm: z.number().positive("寬度必須大於 0").max(500, "寬度不超過 500cm"),
   depthCm: z.number().positive("深度必須大於 0").max(200, "深度不超過 200cm"),
@@ -398,6 +399,7 @@ export const cabinetUnitInputSchema = z.object({
 export const cabinetProjectInputSchema = z.object({
   projectId: z.string().min(1),
   label: z.string().optional(),
+  vendor: z.enum(["WEIHO", "ZHENGDAO"]).default("WEIHO"),
   units: z.array(cabinetUnitInputSchema).min(1, "至少需要一個桶身"),
 });
 
