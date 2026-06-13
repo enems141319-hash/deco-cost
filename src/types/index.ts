@@ -1,4 +1,5 @@
 export * from "./cabinet";
 export * from "./ceiling";
 export * from "./zhengdao";
+export * from "./zhengdao-door";
 export * from "./vendor";

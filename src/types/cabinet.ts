@@ -311,6 +311,7 @@ export interface DoorInput {
   useAluminumHandle?: boolean;
   aluminumHandleMaterialRef?: MaterialRef | null;
   hardwareItems?: DoorHardwareItemInput[];
+  zhengdaoDoorSelection?: import("./zhengdao-door").ZhengdaoDoorSelection;
 }
 
 export interface DoorHardwareItemInput {

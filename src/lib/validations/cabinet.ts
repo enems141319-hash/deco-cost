@@ -270,6 +270,12 @@ export const doorInputSchema = z.object({
   useAluminumHandle: z.boolean().optional(),
   aluminumHandleMaterialRef: materialRefSchema.optional(),
   hardwareItems: z.array(doorHardwareItemSchema).default([]),
+  zhengdaoDoorSelection: z.object({
+    mode: z.enum(["FLAT", "FINISHED", "SHAPED", "ALUMINUM_FRAME"]),
+    baseCode: z.string().optional(),
+    optionCode: z.string().optional(),
+    frameColor: z.enum(["ALUMINUM", "WHITE", "BLACK"]).optional(),
+  }).optional(),
 });
 
 export const hardwareItemSchema = z.object({

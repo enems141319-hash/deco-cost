@@ -15,6 +15,7 @@ import { calculateCabinetUnit } from "@/lib/calculations/cabinet";
 import { saveCabinetEstimate, updateCabinetEstimate } from "@/lib/actions/estimates";
 import { DEFAULT_DOOR_ADDONS, DEFAULT_MIDDLE_DIVIDER_ADDONS, DEFAULT_UNIT_ADDONS, type CabinetUnitInput } from "@/types";
 import type { CabinetVendor } from "@/types/vendor";
+import { createBlankDoorHardwareItem } from "./door-hardware-selection";
 import { CabinetVendorProvider } from "./CabinetVendorContext";
 
 interface Props {
@@ -278,7 +279,7 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
       wireMeshMaterialRef: door.wireMeshMaterialRef ?? null,
       useAluminumHandle: door.useAluminumHandle ?? Boolean(door.aluminumHandleMaterialRef),
       aluminumHandleMaterialRef: door.aluminumHandleMaterialRef ?? null,
-      hardwareItems: door.hardwareItems ?? [
+      hardwareItems: door.hardwareItems?.length ? door.hardwareItems : [
         ...(door.hingeMaterialRef ? [{
           id: `${door.id}-legacy-hinge`,
           name: "鉸鏈",
@@ -295,6 +296,9 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
           includeHingeHoleDrilling: false,
           category: "HARDWARE_OTHER" as const,
         }] : []),
+        ...(!door.hingeMaterialRef && !door.railMaterialRef
+          ? [createBlankDoorHardwareItem(door.type, `${door.id}-hardware`)]
+          : []),
       ],
     })),
     hardwareItems: unit.hardwareItems ?? [],

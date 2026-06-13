@@ -9,7 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
+import { HardwareMaterialSelect } from "@/components/shared/HardwareMaterialSelect";
+import { ZhengdaoDoorMaterialPicker } from "@/components/shared/ZhengdaoDoorMaterialPicker";
 import { materialApiUrl, useCabinetVendor } from "./CabinetVendorContext";
+import {
+  createBlankDoorHardwareItem,
+  doorHardwareBrandFilter,
+  doorHardwareMaterialPatch,
+} from "./door-hardware-selection";
 import { PROFILE_HANDLE_PROCESSING_RULES } from "@/lib/config/units";
 import { cn, generateId } from "@/lib/utils";
 import { DEFAULT_DOOR_ADDONS, type DoorHardwareItemInput, type DoorInput, type DoorType, type MaterialRef, type ProfileHandleStyle } from "@/types";
@@ -288,7 +295,7 @@ function emptyDoor(): DoorInput {
     wireMeshMaterialRef: null,
     useAluminumHandle: false,
     aluminumHandleMaterialRef: null,
-    hardwareItems: [],
+    hardwareItems: [createBlankDoorHardwareItem("HINGED", generateId())],
   };
 }
 
@@ -359,6 +366,7 @@ function ProfileHandleSearchSelect({
 }
 
 export function DoorForm({ doors, onChange }: Props) {
+  const vendor = useCabinetVendor();
   const update = (index: number, patch: Partial<DoorInput>) => {
     const next = doors.map((door, i) => (i === index ? { ...door, ...patch } : door));
     onChange(next);
@@ -368,14 +376,7 @@ export function DoorForm({ doors, onChange }: Props) {
 
   const addHardwareItem = (doorIndex: number) => {
     const door = doors[doorIndex];
-    const item: DoorHardwareItemInput = {
-      id: generateId(),
-      name: door.type === "HINGED" ? "鉸鏈" : "推拉門五金",
-      quantityPerDoor: 1,
-      materialRef: null,
-      includeHingeHoleDrilling: door.type === "HINGED",
-      category: door.type === "HINGED" ? "HARDWARE_HINGE" : "HARDWARE_OTHER",
-    };
+    const item: DoorHardwareItemInput = createBlankDoorHardwareItem(door.type, generateId());
     update(doorIndex, { hardwareItems: [...(door.hardwareItems ?? []), item] });
   };
 
@@ -482,6 +483,11 @@ export function DoorForm({ doors, onChange }: Props) {
                 <Label className="text-[10px] text-muted-foreground">{addons.louverDoor ? "格柵門材料" : "門片材料"}</Label>
                 {addons.louverDoor ? (
                   <LouverDoorMaterialSelect value={door.materialRef} onChange={(ref) => update(i, { materialRef: ref })} />
+                ) : vendor === "ZHENGDAO" ? (
+                  <ZhengdaoDoorMaterialPicker
+                    value={door.zhengdaoDoorSelection}
+                    onChange={(zhengdaoDoorSelection, materialRef) => update(i, { zhengdaoDoorSelection, materialRef })}
+                  />
                 ) : (
                   <MaterialDropdown value={door.materialRef} onChange={(ref) => update(i, { materialRef: ref })} categoryFilter="BOARD_DOOR" />
                 )}
@@ -613,7 +619,9 @@ export function DoorForm({ doors, onChange }: Props) {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <Label className="text-sm font-semibold">門片五金</Label>
-                    <p className="text-[10px] text-muted-foreground">每片數量會乘上門片數量與櫃體數量。</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      從{vendor === "ZHENGDAO" ? "正道" : "葳禾"}材料庫選擇，每片數量會乘上門片數量與櫃體數量。
+                    </p>
                   </div>
                   <Button type="button" variant="outline" size="sm" onClick={() => addHardwareItem(i)}>
                     <Plus className="mr-1 h-3 w-3" />
@@ -623,13 +631,7 @@ export function DoorForm({ doors, onChange }: Props) {
 
                 {(door.hardwareItems ?? []).map((item, itemIndex) => (
                   <div key={item.id} className="space-y-2 rounded border bg-muted/20 p-2">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        className="h-8 flex-1 text-xs"
-                        value={item.name}
-                        placeholder="五金名稱"
-                        onChange={(event) => updateHardwareItem(i, itemIndex, { name: event.target.value })}
-                      />
+                    <div className="flex justify-end">
                       <Button
                         type="button"
                         variant="ghost"
@@ -643,7 +645,7 @@ export function DoorForm({ doors, onChange }: Props) {
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    <div className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)_100px]">
+                    <div className="grid min-w-0 gap-2 sm:grid-cols-[140px_minmax(0,1fr)]">
                       <Select
                         value={item.category ?? "HARDWARE_HINGE"}
                         onValueChange={(category: "HARDWARE_HINGE" | "HARDWARE_OTHER") => updateHardwareItem(i, itemIndex, {
@@ -656,23 +658,37 @@ export function DoorForm({ doors, onChange }: Props) {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="HARDWARE_HINGE">鉸鏈</SelectItem>
-                          <SelectItem value="HARDWARE_OTHER">推拉門五金</SelectItem>
+                          <SelectItem value="HARDWARE_OTHER">
+                            {vendor === "ZHENGDAO" ? "其他門片五金" : "推拉門五金"}
+                          </SelectItem>
                         </SelectContent>
                       </Select>
-                      <MaterialDropdown
+                      <HardwareMaterialSelect
                         value={item.materialRef}
-                        onChange={(materialRef) => updateHardwareItem(i, itemIndex, { materialRef })}
-                        categoryFilter={item.category ?? "HARDWARE_HINGE"}
-                        fixedBrandFilter={item.category === "HARDWARE_OTHER" ? "推拉門五金" : undefined}
+                        onChange={(materialRef) => updateHardwareItem(
+                          i,
+                          itemIndex,
+                          doorHardwareMaterialPatch(materialRef),
+                        )}
+                        category={item.category ?? "HARDWARE_HINGE"}
+                        fixedBrandFilter={doorHardwareBrandFilter(
+                          vendor,
+                          item.category ?? "HARDWARE_HINGE",
+                        )}
+                        placeholder={
+                          (item.category ?? "HARDWARE_HINGE") === "HARDWARE_HINGE"
+                            ? "選擇鉸鏈"
+                            : "選擇其他門片五金"
+                        }
                       />
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">每片數量</Label>
-                        <Input
-                          type="number" min={0.1} step={0.1} className="h-8 text-xs"
-                          value={item.quantityPerDoor}
-                          onChange={(event) => updateHardwareItem(i, itemIndex, { quantityPerDoor: Number(event.target.value) })}
-                        />
-                      </div>
+                    </div>
+                    <div className="max-w-[180px]">
+                      <Label className="text-[10px] text-muted-foreground">每片數量</Label>
+                      <Input
+                        type="number" min={0.1} step={0.1} className="h-8 text-xs"
+                        value={item.quantityPerDoor}
+                        onChange={(event) => updateHardwareItem(i, itemIndex, { quantityPerDoor: Number(event.target.value) })}
+                      />
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <Label className="text-xs text-muted-foreground">依此品項數量計算鉸鏈孔加工</Label>

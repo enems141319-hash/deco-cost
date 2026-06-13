@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:zhengdao-boards": "tsx prisma/seed-zhengdao-boards.ts",
+    "db:seed:zhengdao-hardware": "tsx prisma/seed-zhengdao-hardware.ts",
     "db:studio": "prisma studio",
     "typecheck": "tsc --noEmit"
   },

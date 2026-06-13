@@ -46,10 +46,10 @@ export default async function MaterialsPage({
       <div>
         <h1 className="text-xl font-bold sm:text-2xl">材料管理</h1>
         <p className="text-sm text-muted-foreground">
-          品牌、色號、板料類型與五金價格
+          葳禾與正道材料、加工及五金分庫管理
         </p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2" aria-label="材料庫切換">
         <Button asChild variant={vendor === MaterialVendor.WEIHO ? "default" : "outline"}>
           <Link href="/materials?vendor=WEIHO">葳禾材料庫</Link>
         </Button>
