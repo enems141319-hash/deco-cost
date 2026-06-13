@@ -244,6 +244,15 @@ export const doorAddonsSchema = z.object({
   }),
 });
 
+export const doorHardwareItemSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1, "門片五金名稱不可空白"),
+  quantityPerDoor: z.number().positive("每片門數量必須大於 0"),
+  materialRef: materialRefSchema,
+  includeHingeHoleDrilling: z.boolean().default(false),
+  category: z.enum(["HARDWARE_HINGE", "HARDWARE_OTHER"]).optional(),
+});
+
 export const doorInputSchema = z.object({
   id: z.string().min(1),
   type: z.enum(["HINGED", "SLIDING"]),
@@ -260,6 +269,7 @@ export const doorInputSchema = z.object({
   wireMeshMaterialRef: materialRefSchema.optional(),
   useAluminumHandle: z.boolean().optional(),
   aluminumHandleMaterialRef: materialRefSchema.optional(),
+  hardwareItems: z.array(doorHardwareItemSchema).default([]),
 });
 
 export const hardwareItemSchema = z.object({
@@ -324,6 +334,14 @@ export const kickPlateSchema = z.object({
   materialRef: materialRefSchema.optional(),
 }).nullable();
 
+export const manualKickPlateSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1, "踢腳板名稱不可空白"),
+  widthCm: z.number().positive("踢腳板寬度必須大於 0"),
+  heightCm: z.number().positive("踢腳板高度必須大於 0"),
+  quantity: z.number().int().positive("踢腳板數量必須大於 0"),
+});
+
 export const drawerSchema = z.object({
   id: z.string().min(1),
   name: z.string(),
@@ -380,6 +398,12 @@ export const cabinetUnitInputSchema = z.object({
   heightCm: z.number().positive("高度必須大於 0").max(300, "高度不超過 300cm"),
   quantity: z.number().int().positive("數量必須大於 0").max(20),
   hasBackPanel: z.boolean(),
+  backPanelMode: z.enum(["AUTO_8MM", "MANUAL_18MM"]).default("AUTO_8MM").optional(),
+  manualBackPanel: z.object({
+    widthCm: z.number().positive("手動背板寬度必須大於 0"),
+    heightCm: z.number().positive("手動背板高度必須大於 0"),
+    quantity: z.number().int().positive("手動背板數量必須大於 0"),
+  }).optional(),
   bodyPanelJoinMode: z.enum(["SIDE_COVERS_TOP", "TOP_COVERS_SIDES"]).default("SIDE_COVERS_TOP").optional(),
   panelMaterialRef: materialRefSchema,
   topPanelMaterialRef: materialRefSchema.optional(),
@@ -394,6 +418,15 @@ export const cabinetUnitInputSchema = z.object({
   doors: z.array(doorInputSchema),
   hardwareItems: z.array(hardwareItemSchema).default([]),
   kickPlate: kickPlateSchema,
+  manualKickPlates: z.array(manualKickPlateSchema).default([]),
+}).superRefine((unit, ctx) => {
+  if (unit.hasBackPanel && unit.backPanelMode === "MANUAL_18MM" && !unit.manualBackPanel) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "18mm 背板必須輸入尺寸與數量",
+      path: ["manualBackPanel"],
+    });
+  }
 });
 
 export const cabinetProjectInputSchema = z.object({

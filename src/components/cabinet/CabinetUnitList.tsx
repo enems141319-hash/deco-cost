@@ -36,6 +36,7 @@ function emptyUnit(vendor: CabinetVendor = "WEIHO"): CabinetUnitInput {
     heightCm: 240,
     quantity: 1,
     hasBackPanel: true,
+    backPanelMode: "AUTO_8MM",
     bodyPanelJoinMode: "SIDE_COVERS_TOP",
     panelMaterialRef: null,
     topPanelMaterialRef: null,
@@ -50,6 +51,7 @@ function emptyUnit(vendor: CabinetVendor = "WEIHO"): CabinetUnitInput {
     doors: [],
     hardwareItems: [],
     kickPlate: null,
+    manualKickPlates: [],
   };
 }
 
@@ -150,6 +152,8 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
 
   return {
     ...unit,
+    backPanelMode: unit.backPanelMode ?? "AUTO_8MM",
+    manualBackPanel: unit.manualBackPanel ?? { widthCm: unit.widthCm, heightCm: unit.heightCm, quantity: 1 },
     bodyPanelJoinMode: unit.bodyPanelJoinMode ?? "SIDE_COVERS_TOP",
     topPanelMaterialRef: unit.topPanelMaterialRef ?? legacyBodyMaterial,
     sidePanelMaterialRef,
@@ -274,9 +278,28 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
       wireMeshMaterialRef: door.wireMeshMaterialRef ?? null,
       useAluminumHandle: door.useAluminumHandle ?? Boolean(door.aluminumHandleMaterialRef),
       aluminumHandleMaterialRef: door.aluminumHandleMaterialRef ?? null,
+      hardwareItems: door.hardwareItems ?? [
+        ...(door.hingeMaterialRef ? [{
+          id: `${door.id}-legacy-hinge`,
+          name: "鉸鏈",
+          quantityPerDoor: 1,
+          materialRef: door.hingeMaterialRef,
+          includeHingeHoleDrilling: true,
+          category: "HARDWARE_HINGE" as const,
+        }] : []),
+        ...(door.railMaterialRef ? [{
+          id: `${door.id}-legacy-sliding-hardware`,
+          name: "推拉門五金",
+          quantityPerDoor: 1,
+          materialRef: door.railMaterialRef,
+          includeHingeHoleDrilling: false,
+          category: "HARDWARE_OTHER" as const,
+        }] : []),
+      ],
     })),
     hardwareItems: unit.hardwareItems ?? [],
     kickPlate: unit.kickPlate ?? null,
+    manualKickPlates: unit.manualKickPlates ?? [],
   };
 }
 

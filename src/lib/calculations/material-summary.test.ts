@@ -68,6 +68,13 @@ const baseUnit: CabinetUnitInput = {
       },
       hingeMaterialRef: hingeMaterial,
       railMaterialRef: null,
+      hardwareItems: [{
+        id: "door-1-hinge",
+        name: "鉸鏈",
+        quantityPerDoor: 2,
+        materialRef: hingeMaterial,
+        includeHingeHoleDrilling: true,
+      }],
     },
   ],
   hardwareItems: [],
@@ -110,7 +117,7 @@ const noHingeQuoteUnit: CabinetUnitInput = {
   doors: baseUnit.doors.map((door) => ({
     ...door,
     id: "door-no-hinge-quote",
-    includeHingeInQuote: false,
+    hardwareItems: [],
   })),
 };
 const noHingeQuoteSummary = buildCabinetUnitMaterialSummary(

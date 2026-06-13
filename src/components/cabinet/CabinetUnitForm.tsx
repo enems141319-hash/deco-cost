@@ -582,6 +582,8 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
 
   const result = calculateCabinetUnit(unit);
   const bodyPanelJoinMode = unit.bodyPanelJoinMode ?? "SIDE_COVERS_TOP";
+  const backPanelMode = unit.backPanelMode ?? "AUTO_8MM";
+  const automaticBackPanel = unit.hasBackPanel && backPanelMode === "AUTO_8MM";
   const topPanelMaterialRef = unit.topPanelMaterialRef ?? unit.panelMaterialRef;
   const sidePanelMaterialRef = unit.sidePanelMaterialRef ?? unit.panelMaterialRef;
   const bottomPanelMaterialRef = unit.bottomPanelMaterialRef ?? unit.panelMaterialRef;
@@ -1179,23 +1181,104 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
             <Label className="text-xs">含背板</Label>
           </div>
           {unit.hasBackPanel && (
-            <div>
-              <Label className="text-xs text-muted-foreground">背板材料</Label>
-              <div className="mt-1">
-                {vendor === "ZHENGDAO" ? (
-                  <ZhengdaoBoardMaterialPicker
-                    value={unit.backPanelMaterialRef}
-                    onChange={(ref) => update({ backPanelMaterialRef: ref })}
-                    category="BOARD_BACKING"
-                  />
-                ) : (
-                  <MaterialDropdown
-                    value={unit.backPanelMaterialRef}
-                    onChange={(ref) => update({ backPanelMaterialRef: ref })}
-                    categoryFilter="BOARD_BACKING"
-                  />
-                )}
+            <div className="space-y-3 rounded border bg-muted/20 p-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">背板方式</Label>
+                <Select
+                  value={backPanelMode}
+                  onValueChange={(mode: "AUTO_8MM" | "MANUAL_18MM") => update({
+                    backPanelMode: mode,
+                    backPanelMaterialRef: null,
+                    manualBackPanel: unit.manualBackPanel ?? {
+                      widthCm: unit.widthCm,
+                      heightCm: unit.heightCm,
+                      quantity: 1,
+                    },
+                  })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AUTO_8MM">8mm 背板（自動計算尺寸＋開槽）</SelectItem>
+                    <SelectItem value="MANUAL_18MM">18mm 背板（手動尺寸、不開槽）</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">
+                  {backPanelMode === "AUTO_8MM" ? "8mm 背板材料" : "18mm 背板材料"}
+                </Label>
+                <div className="mt-1">
+                  {vendor === "ZHENGDAO" ? (
+                    <ZhengdaoBoardMaterialPicker
+                      value={unit.backPanelMaterialRef}
+                      onChange={(ref) => update({ backPanelMaterialRef: ref })}
+                      category={backPanelMode === "AUTO_8MM" ? "BOARD_BACKING" : "BOARD_BODY"}
+                    />
+                  ) : (
+                    <MaterialDropdown
+                      value={unit.backPanelMaterialRef}
+                      onChange={(ref) => update({ backPanelMaterialRef: ref })}
+                      categoryFilter={backPanelMode === "AUTO_8MM" ? "BOARD_BACKING" : "BOARD_BODY"}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {backPanelMode === "MANUAL_18MM" && (
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">寬度 (cm)</Label>
+                    <Input
+                      type="number" min={0.1} step={0.1}
+                      value={unit.manualBackPanel?.widthCm ?? unit.widthCm}
+                      onChange={(event) => update({
+                        manualBackPanel: {
+                          widthCm: Number(event.target.value),
+                          heightCm: unit.manualBackPanel?.heightCm ?? unit.heightCm,
+                          quantity: unit.manualBackPanel?.quantity ?? 1,
+                        },
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">高度 (cm)</Label>
+                    <Input
+                      type="number" min={0.1} step={0.1}
+                      value={unit.manualBackPanel?.heightCm ?? unit.heightCm}
+                      onChange={(event) => update({
+                        manualBackPanel: {
+                          widthCm: unit.manualBackPanel?.widthCm ?? unit.widthCm,
+                          heightCm: Number(event.target.value),
+                          quantity: unit.manualBackPanel?.quantity ?? 1,
+                        },
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">每櫃數量</Label>
+                    <Input
+                      type="number" min={1} step={1}
+                      value={unit.manualBackPanel?.quantity ?? 1}
+                      onChange={(event) => update({
+                        manualBackPanel: {
+                          widthCm: unit.manualBackPanel?.widthCm ?? unit.widthCm,
+                          heightCm: unit.manualBackPanel?.heightCm ?? unit.heightCm,
+                          quantity: Number(event.target.value),
+                        },
+                      })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                {backPanelMode === "AUTO_8MM"
+                  ? "尺寸由系統計算，並自動計入背板溝槽加工。"
+                  : "使用手動輸入尺寸，不產生背板溝槽加工。"}
+              </p>
             </div>
           )}
         </section>
@@ -1210,6 +1293,8 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
         <KickPlateForm
           value={unit.kickPlate}
           onChange={(v) => update({ kickPlate: v })}
+          manualItems={unit.manualKickPlates ?? []}
+          onManualItemsChange={(manualKickPlates) => update({ manualKickPlates })}
         />
         </CollapsibleSection>
 
@@ -1222,7 +1307,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
           sideTopBottomSealPanels={unit.sideTopBottomSealPanels ?? []}
           cabinetDepthCm={unit.depthCm}
           cabinetHeightCm={unit.heightCm}
-          hasBackPanel={unit.hasBackPanel}
+          hasBackPanel={automaticBackPanel}
           panelMaterialRef={sidePanelMaterialRef}
           kickPlateHeightCm={unit.kickPlate?.heightCm ?? 0}
           collapseCommand={leftCollapseCommand}

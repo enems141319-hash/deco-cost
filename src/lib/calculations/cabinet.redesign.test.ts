@@ -274,6 +274,50 @@ assert.equal(kickPlatePanel?.materialRef?.materialId, bodyMaterial.materialId);
 assert.equal(kickPlatePanel?.subtotal, 32);
 assert.equal(kickPlateBodyMaterialResult.summary.accessoriesCost, 0);
 
+const manualKickPlateResult = calculateCabinetUnit({
+  ...baseUnit,
+  quantity: 2,
+  heightCm: 240,
+  hasBackPanel: true,
+  backPanelMaterialRef: bodyMaterial,
+  kickPlate: {
+    heightCm: 8,
+  },
+  manualKickPlates: [
+    {
+      id: "manual-kick-left",
+      name: "左側見光踢腳",
+      widthCm: 58,
+      heightCm: 8,
+      quantity: 1,
+    },
+    {
+      id: "manual-kick-right",
+      name: "右側見光踢腳",
+      widthCm: 60,
+      heightCm: 10,
+      quantity: 2,
+    },
+  ],
+});
+assert.deepEqual(
+  manualKickPlateResult.panels
+    .filter((panel) => panel.id.startsWith("manual-kick-"))
+    .map((panel) => ({
+      id: panel.id,
+      name: panel.name,
+      widthCm: panel.widthCm,
+      heightCm: panel.heightCm,
+      quantity: panel.quantity,
+    })),
+  [
+    { id: "manual-kick-left", name: "左側見光踢腳", widthCm: 58, heightCm: 8, quantity: 2 },
+    { id: "manual-kick-right", name: "右側見光踢腳", widthCm: 60, heightCm: 10, quantity: 4 },
+  ],
+);
+const manualKickPlateBackPanel = manualKickPlateResult.panels.find((panel) => panel.id === "unit-1-back");
+assert.equal(manualKickPlateBackPanel?.heightCm, 229.8);
+
 const lTurnOpenKickPlateResult = calculateCabinetUnit({
   ...baseUnit,
   widthCm: 90,
@@ -417,6 +461,27 @@ assert.equal(
   cabinetWithBackPanel.summary.totalCost,
   cabinetWithBackPanel.summary.panelsCost + 480,
 );
+
+const cabinetWithManualBackPanel = calculateCabinetUnit({
+  ...baseUnit,
+  widthCm: 60,
+  heightCm: 80,
+  quantity: 2,
+  hasBackPanel: true,
+  backPanelMode: "MANUAL_18MM",
+  manualBackPanel: {
+    widthCm: 55,
+    heightCm: 75,
+    quantity: 2,
+  },
+  backPanelMaterialRef: bodyMaterial,
+});
+const manualBackPanel = cabinetWithManualBackPanel.panels.find((panel) => panel.id === "unit-1-back");
+assert.equal(manualBackPanel?.widthCm, 55);
+assert.equal(manualBackPanel?.heightCm, 75);
+assert.equal(manualBackPanel?.quantity, 4);
+assert.equal(cabinetWithManualBackPanel.panels.find((panel) => panel.id === "unit-1-left")?.note, undefined);
+assert.equal(cabinetWithManualBackPanel.summary.addonsBreakdown.backPanelGroove, 0);
 
 const thickCabinetWithBackPanel = calculateCabinetUnit({
   ...baseUnit,
@@ -747,6 +812,13 @@ const doorResult = calculateCabinetUnit({
       },
       hingeMaterialRef: null,
       railMaterialRef: null,
+      hardwareItems: [{
+        id: "door-1-hinge",
+        name: "鉸鏈",
+        quantityPerDoor: 2,
+        materialRef: null,
+        includeHingeHoleDrilling: true,
+      }],
     },
   ],
 });
@@ -755,6 +827,52 @@ assert.equal(doorResult.summary.addonsBreakdown.patternMatch, 60);
 assert.equal(doorResult.summary.addonsBreakdown.temperedGlass, 75);
 assert.equal(doorResult.summary.addonsBreakdown.hingeHoleDrilling, 10);
 assert.equal(doorResult.summary.doorsCost, 445);
+
+const manualDoorHardwareResult = calculateCabinetUnit({
+  ...baseUnit,
+  quantity: 2,
+  doors: [
+    {
+      id: "manual-hardware-door",
+      type: "HINGED",
+      name: "手動五金門片",
+      widthCm: 45,
+      heightCm: 200,
+      quantity: 2,
+      materialRef: doorMaterial,
+      addons: DEFAULT_DOOR_ADDONS,
+      hardwareItems: [
+        {
+          id: "main-hinge",
+          name: "主鉸鏈",
+          quantityPerDoor: 3,
+          materialRef: hingeMaterial,
+          includeHingeHoleDrilling: true,
+        },
+        {
+          id: "hinge-base",
+          name: "鉸鏈底座",
+          quantityPerDoor: 3,
+          materialRef: hingeMaterial,
+          includeHingeHoleDrilling: false,
+        },
+      ],
+    },
+  ],
+});
+assert.deepEqual(
+  manualDoorHardwareResult.hardware.map((item) => ({
+    id: item.id,
+    name: item.name,
+    quantity: item.quantity,
+  })),
+  [
+    { id: "main-hinge", name: "主鉸鏈", quantity: 12 },
+    { id: "hinge-base", name: "鉸鏈底座", quantity: 12 },
+  ],
+);
+assert.equal(manualDoorHardwareResult.doors[0].processes[0]?.quantity, 12);
+assert.equal(manualDoorHardwareResult.summary.addonsBreakdown.hingeHoleDrilling, 60);
 
 const doorWithoutHingeQuoteResult = calculateCabinetUnit({
   ...baseUnit,
@@ -780,7 +898,7 @@ const doorWithoutHingeQuoteResult = calculateCabinetUnit({
 });
 assert.equal(doorWithoutHingeQuoteResult.hardware.some((item) => item.id === "door-no-hinge-quote-hinge"), false);
 assert.equal(doorWithoutHingeQuoteResult.summary.hardwareCost, 0);
-assert.equal(doorWithoutHingeQuoteResult.summary.addonsBreakdown.hingeHoleDrilling, 20);
+assert.equal(doorWithoutHingeQuoteResult.summary.addonsBreakdown.hingeHoleDrilling, 0);
 
 const dividerAddonResult = calculateCabinetUnit({
   ...baseUnit,
@@ -839,6 +957,13 @@ const slidingDoorResult = calculateCabinetUnit({
       },
       hingeMaterialRef: null,
       railMaterialRef: pushDoorHardware,
+      hardwareItems: [{
+        id: "sliding-door-hardware",
+        name: "推拉門五金",
+        quantityPerDoor: 1,
+        materialRef: pushDoorHardware,
+        includeHingeHoleDrilling: false,
+      }],
     },
   ],
 });

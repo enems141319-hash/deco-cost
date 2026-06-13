@@ -12,7 +12,7 @@ import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { materialApiUrl, useCabinetVendor } from "./CabinetVendorContext";
 import { PROFILE_HANDLE_PROCESSING_RULES } from "@/lib/config/units";
 import { cn, generateId } from "@/lib/utils";
-import { DEFAULT_DOOR_ADDONS, type DoorInput, type DoorType, type MaterialRef, type ProfileHandleStyle } from "@/types";
+import { DEFAULT_DOOR_ADDONS, type DoorHardwareItemInput, type DoorInput, type DoorType, type MaterialRef, type ProfileHandleStyle } from "@/types";
 
 interface Props {
   doors: DoorInput[];
@@ -288,6 +288,7 @@ function emptyDoor(): DoorInput {
     wireMeshMaterialRef: null,
     useAluminumHandle: false,
     aluminumHandleMaterialRef: null,
+    hardwareItems: [],
   };
 }
 
@@ -364,6 +365,26 @@ export function DoorForm({ doors, onChange }: Props) {
   };
 
   const remove = (index: number) => onChange(doors.filter((_, i) => i !== index));
+
+  const addHardwareItem = (doorIndex: number) => {
+    const door = doors[doorIndex];
+    const item: DoorHardwareItemInput = {
+      id: generateId(),
+      name: door.type === "HINGED" ? "鉸鏈" : "推拉門五金",
+      quantityPerDoor: 1,
+      materialRef: null,
+      includeHingeHoleDrilling: door.type === "HINGED",
+      category: door.type === "HINGED" ? "HARDWARE_HINGE" : "HARDWARE_OTHER",
+    };
+    update(doorIndex, { hardwareItems: [...(door.hardwareItems ?? []), item] });
+  };
+
+  const updateHardwareItem = (doorIndex: number, itemIndex: number, patch: Partial<DoorHardwareItemInput>) => {
+    const items = doors[doorIndex].hardwareItems ?? [];
+    update(doorIndex, {
+      hardwareItems: items.map((item, index) => index === itemIndex ? { ...item, ...patch } : item),
+    });
+  };
 
   return (
     <div className="space-y-3">
@@ -588,31 +609,81 @@ export function DoorForm({ doors, onChange }: Props) {
                 </div>
               </div>
 
-              {door.type === "HINGED" && (
-                <div className="space-y-2 rounded border bg-background p-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label className="text-sm font-semibold">{"\u8a02\u8cfc\u9278\u93c8"}</Label>
-                    <Switch
-                      checked={door.includeHingeInQuote ?? true}
-                      onCheckedChange={(includeHingeInQuote) => update(i, { includeHingeInQuote })}
-                    />
+              <div className="space-y-2 rounded border bg-background p-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Label className="text-sm font-semibold">門片五金</Label>
+                    <p className="text-[10px] text-muted-foreground">每片數量會乘上門片數量與櫃體數量。</p>
                   </div>
-                  <MaterialDropdown value={door.hingeMaterialRef ?? null} onChange={(ref) => update(i, { hingeMaterialRef: ref })} categoryFilter="HARDWARE_HINGE" />
+                  <Button type="button" variant="outline" size="sm" onClick={() => addHardwareItem(i)}>
+                    <Plus className="mr-1 h-3 w-3" />
+                    新增品項
+                  </Button>
                 </div>
-              )}
 
-              {door.type === "SLIDING" && (
-                <div className="space-y-2 rounded border bg-background p-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label className="text-sm font-semibold">{"\u8a02\u8cfc\u6ed1\u9580\u4e94\u91d1"}</Label>
-                    <Switch
-                      checked={door.includeSlidingHardwareInQuote ?? true}
-                      onCheckedChange={(includeSlidingHardwareInQuote) => update(i, { includeSlidingHardwareInQuote })}
-                    />
+                {(door.hardwareItems ?? []).map((item, itemIndex) => (
+                  <div key={item.id} className="space-y-2 rounded border bg-muted/20 p-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        className="h-8 flex-1 text-xs"
+                        value={item.name}
+                        placeholder="五金名稱"
+                        onChange={(event) => updateHardwareItem(i, itemIndex, { name: event.target.value })}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        title="刪除門片五金"
+                        onClick={() => update(i, {
+                          hardwareItems: (door.hardwareItems ?? []).filter((_, index) => index !== itemIndex),
+                        })}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)_100px]">
+                      <Select
+                        value={item.category ?? "HARDWARE_HINGE"}
+                        onValueChange={(category: "HARDWARE_HINGE" | "HARDWARE_OTHER") => updateHardwareItem(i, itemIndex, {
+                          category,
+                          materialRef: null,
+                        })}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="HARDWARE_HINGE">鉸鏈</SelectItem>
+                          <SelectItem value="HARDWARE_OTHER">推拉門五金</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <MaterialDropdown
+                        value={item.materialRef}
+                        onChange={(materialRef) => updateHardwareItem(i, itemIndex, { materialRef })}
+                        categoryFilter={item.category ?? "HARDWARE_HINGE"}
+                        fixedBrandFilter={item.category === "HARDWARE_OTHER" ? "推拉門五金" : undefined}
+                      />
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">每片數量</Label>
+                        <Input
+                          type="number" min={0.1} step={0.1} className="h-8 text-xs"
+                          value={item.quantityPerDoor}
+                          onChange={(event) => updateHardwareItem(i, itemIndex, { quantityPerDoor: Number(event.target.value) })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <Label className="text-xs text-muted-foreground">依此品項數量計算鉸鏈孔加工</Label>
+                      <Switch
+                        checked={item.includeHingeHoleDrilling}
+                        onCheckedChange={(includeHingeHoleDrilling) => updateHardwareItem(i, itemIndex, { includeHingeHoleDrilling })}
+                      />
+                    </div>
                   </div>
-                  <MaterialDropdown value={door.railMaterialRef ?? null} onChange={(ref) => update(i, { railMaterialRef: ref })} categoryFilter="HARDWARE_OTHER" fixedBrandFilter="推拉門五金" />
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           </div>
         );

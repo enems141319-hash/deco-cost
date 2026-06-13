@@ -284,19 +284,15 @@ function doorAddonRows(row: DoorResult, input: DoorInput | undefined): MaterialS
     }));
   }
 
-  if (input.type === "HINGED") {
-    const hingesPerDoor = Math.max(
-      UNIT_CONFIG.MIN_HINGES_PER_DOOR,
-      Math.ceil(input.heightCm / UNIT_CONFIG.HINGE_SPACING_CM),
-    );
-    const quantity = hingesPerDoor * row.quantity;
+  const hingeHoleProcess = row.processes?.find((process) => process.id === `${row.id}-hinge-hole`);
+  if (hingeHoleProcess) {
     rows.push(processSummaryRow({
       id: `${row.id}:hinge-hole`,
       itemName: "門板鉸鏈孔",
-      quantity,
+      quantity: hingeHoleProcess.quantity ?? 0,
       note: "門板鉸鏈孔",
-      unitPrice: ADDON_PRICES.HINGE_HOLE_DRILLING,
-      subtotal: quantity * ADDON_PRICES.HINGE_HOLE_DRILLING,
+      unitPrice: hingeHoleProcess.unitCost ?? ADDON_PRICES.HINGE_HOLE_DRILLING,
+      subtotal: hingeHoleProcess.cost,
       category: "門片加工",
       sourceMaterial: materialName(row.materialRef),
       sourceItemName: row.name,

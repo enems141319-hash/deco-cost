@@ -310,6 +310,16 @@ export interface DoorInput {
   wireMeshMaterialRef?: MaterialRef | null;
   useAluminumHandle?: boolean;
   aluminumHandleMaterialRef?: MaterialRef | null;
+  hardwareItems?: DoorHardwareItemInput[];
+}
+
+export interface DoorHardwareItemInput {
+  id: string;
+  name: string;
+  quantityPerDoor: number;
+  materialRef: MaterialRef | null;
+  includeHingeHoleDrilling: boolean;
+  category?: "HARDWARE_HINGE" | "HARDWARE_OTHER";
 }
 
 export interface HardwareItemInput {
@@ -358,6 +368,22 @@ export interface KickPlateInput {
   materialRef?: MaterialRef | null;
 }
 
+export interface ManualKickPlateInput {
+  id: string;
+  name: string;
+  widthCm: number;
+  heightCm: number;
+  quantity: number;
+}
+
+export type BackPanelMode = "AUTO_8MM" | "MANUAL_18MM";
+
+export interface ManualBackPanelInput {
+  widthCm: number;
+  heightCm: number;
+  quantity: number;
+}
+
 export interface DrawerInput {
   id: string;
   name: string;
@@ -391,6 +417,8 @@ export interface CabinetUnitInput {
   heightCm: number;
   quantity: number;
   hasBackPanel: boolean;
+  backPanelMode?: BackPanelMode;
+  manualBackPanel?: ManualBackPanelInput;
   bodyPanelJoinMode?: BodyPanelJoinMode;
   panelMaterialRef: MaterialRef | null;
   topPanelMaterialRef?: MaterialRef | null;
@@ -405,6 +433,7 @@ export interface CabinetUnitInput {
   doors: DoorInput[];
   hardwareItems: HardwareItemInput[];
   kickPlate: KickPlateInput | null;
+  manualKickPlates?: ManualKickPlateInput[];
 }
 
 // ─── 輸出型別 ─────────────────────────────────────────────────────────────────
