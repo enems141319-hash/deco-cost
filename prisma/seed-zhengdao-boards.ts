@@ -3,6 +3,10 @@ import { MaterialCategory, MaterialVendor, Prisma, PrismaClient } from "@prisma/
 const prisma = new PrismaClient();
 
 const commonBodyNotes = "桶身前封 ABS 每才 +10 元；前後封 ABS 每才 +20 元。";
+const backingNotes: Record<string, string> = {
+  "PR-9-NONE": "PR 9mm 背板／抽屜底板，無封邊，每才 $480。",
+  "PR-9-ABS": "PR 9mm 背板／抽屜底板，封 ABS，每才 $540。",
+};
 const bodyRows = [
   ["ER928", 18, "NONE", 130, 1],
   ["ER928", 8, "NO_EDGE", 90, 1],
@@ -20,6 +24,7 @@ const bodyRows = [
   ["HWR", 3, "NONE", 120, 2],
   ["HR", 18, "NONE", 410, 2],
   ["HR", 3, "NONE", 170, 2],
+  ["MR", 19, "NONE", 300, 2],
 ] as const;
 
 const backingRows = [
@@ -31,6 +36,10 @@ const backingRows = [
   ["ER", 8, "ABS", 160, 1],
   ["AR", 8, "NO_EDGE", 135, 1],
   ["AR", 8, "ABS", 190, 1],
+  ["MR", 9, "NONE", 260, 2],
+  ["MR", 9, "ABS", 300, 2],
+  ["PR", 9, "NONE", 480, 2],
+  ["PR", 9, "ABS", 540, 2],
 ] as const;
 
 type Row = readonly [series: string, thicknessMm: number, edgeMode: string, price: number, minCai: number];
@@ -59,7 +68,9 @@ function toMaterial(row: Row, category: MaterialCategory): Prisma.MaterialCreate
     price,
     minCai,
     wasteRate: 0,
-    notes: category === MaterialCategory.BOARD_BODY ? commonBodyNotes : null,
+    notes: category === MaterialCategory.BOARD_BODY
+      ? commonBodyNotes
+      : backingNotes[`${series}-${thicknessMm}-${edgeMode}`] ?? null,
     pricingMeta: { series, thicknessMm, edgeMode },
     isActive: true,
   };

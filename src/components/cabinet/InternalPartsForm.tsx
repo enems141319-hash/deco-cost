@@ -247,6 +247,25 @@ export function InternalPartsForm({
               </label>
             </div>
             <VendorBoardMaterialDropdown value={d.materialRef} onChange={(ref) => updateDivider(i, { materialRef: ref })} category="BOARD_BODY" />
+            {vendor === "ZHENGDAO" && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="flex items-center justify-between rounded border bg-background px-3 py-2">
+                  <Label className="text-xs">雙面排孔（每才 +$20，基本 1 才）</Label>
+                  <Switch
+                    checked={(d.addons ?? DEFAULT_MIDDLE_DIVIDER_ADDONS).doubleDrillHoles}
+                    onCheckedChange={(doubleDrillHoles) =>
+                      updateDivider(i, {
+                        addons: {
+                          ...(d.addons ?? DEFAULT_MIDDLE_DIVIDER_ADDONS),
+                          doubleDrillHoles,
+                          nonStandardHoles: false,
+                        },
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
             {vendor !== "ZHENGDAO" && (
               <>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -398,6 +417,38 @@ export function InternalPartsForm({
               />
             </label>
             <VendorBoardMaterialDropdown value={s.materialRef} onChange={(ref) => updateShelf(i, { materialRef: ref })} category="BOARD_BODY" />
+            {vendor === "ZHENGDAO" && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {renderQuantityProcess(
+                  "隱藏式層板螺絲孔（每孔 $100）",
+                  (s.hardwareProcesses ?? defaultShelfHardwareProcesses).hiddenShelfScrewHole,
+                  (patch) =>
+                    updateShelf(i, {
+                      hardwareProcesses: {
+                        ...(s.hardwareProcesses ?? defaultShelfHardwareProcesses),
+                        hiddenShelfScrewHole: {
+                          ...((s.hardwareProcesses ?? defaultShelfHardwareProcesses).hiddenShelfScrewHole),
+                          ...patch,
+                        },
+                      },
+                    }),
+                )}
+                {renderQuantityProcess(
+                  "隱藏式層板支架孔（每孔 $400）",
+                  (s.hardwareProcesses ?? defaultShelfHardwareProcesses).heavyHiddenShelfScrewHole,
+                  (patch) =>
+                    updateShelf(i, {
+                      hardwareProcesses: {
+                        ...(s.hardwareProcesses ?? defaultShelfHardwareProcesses),
+                        heavyHiddenShelfScrewHole: {
+                          ...((s.hardwareProcesses ?? defaultShelfHardwareProcesses).heavyHiddenShelfScrewHole),
+                          ...patch,
+                        },
+                      },
+                    }),
+                )}
+              </div>
+            )}
             {vendor !== "ZHENGDAO" && (
               <>
             <div className="grid gap-2 sm:grid-cols-2">

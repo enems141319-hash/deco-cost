@@ -2,6 +2,13 @@
 // 純函式：零 UI 依賴、零副作用。
 
 import { ADDON_PRICES, DRAWER_FRONT_MOLD_CORNER_PRICING, DRAWER_FRONT_MOLD_PROCESSING_PRICES, PROFILE_HANDLE_BAKED_PAINT_SURCHARGE, PROFILE_HANDLE_PROCESSING_RULES, SIDE_SEAL_BENDING_PRICES, SPECIAL_PROCESSING_PRICES, UNIT_CONFIG } from "../config/units";
+import {
+  ZHENGDAO_2025_BOARD_ADDON_RULES,
+  ZHENGDAO_2025_HIDDEN_SHELF_BRACKET_HOLE_UNIT_PRICE,
+  ZHENGDAO_2025_HIDDEN_SHELF_SCREW_HOLE_UNIT_PRICE,
+  ZHENGDAO_2025_HINGE_HOLE_UNIT_PRICE,
+} from "../config/vendors/zhengdao-2025";
+import { ZHENGDAO_2025_DOOR_PROCESS_RULE_BY_CODE } from "../config/vendors/zhengdao-door-processes";
 import { DEFAULT_DOOR_ADDONS, DEFAULT_UNIT_ADDONS } from "../../types";
 import type {
   AccessoryResult,
@@ -11,6 +18,7 @@ import type {
   CabinetUnitInput,
   CabinetUnitResult,
   CabinetUnitSummary,
+  CabinetVendor,
   DrawerInput,
   DoorResult,
   HardwareItemInput,
@@ -69,6 +77,7 @@ function emptyBreakdown(): AddonsBreakdown {
     patternMatch: 0,
     temperedGlass: 0,
     hingeHoleDrilling: 0,
+    zhengdaoDoorProcessing: 0,
     backPanelGroove: 0,
     lightGroove: 0,
     slidingDoorTrackGroove: 0,
@@ -85,6 +94,11 @@ function calcFrontEdgeAddon(frontEdgeABS: UnitAddons["frontEdgeABS"]): number {
   if (frontEdgeABS === "one_long") return ADDON_PRICES.FRONT_EDGE_ABS_ONE_LONG;
   if (frontEdgeABS === "two_long") return ADDON_PRICES.FRONT_EDGE_ABS_TWO_LONG;
   return 0;
+}
+
+function toZhengdaoAddonAreaMeasure(singleCm2: number, quantity: number, minCai: number): AreaMeasure {
+  const actualTotalCai = singleCm2 * quantity / UNIT_CONFIG.CAI_CM2;
+  return toAreaMeasureFromCai(Math.max(actualTotalCai, minCai));
 }
 
 function frontEdgeABSEdgeCount(frontEdgeABS: UnitAddons["frontEdgeABS"]): number {
@@ -106,7 +120,28 @@ function frontEdgeABSProcess(
   quantity: number,
   materialRef: MaterialRef | null,
   frontEdgeABS: UnitAddons["frontEdgeABS"],
+  vendor: CabinetVendor,
 ): PanelProcessResult | undefined {
+  if (vendor === "ZHENGDAO" && frontEdgeABS !== "none") {
+    const rule = frontEdgeABS === "two_long"
+      ? ZHENGDAO_2025_BOARD_ADDON_RULES.FRONT_BACK_ABS
+      : ZHENGDAO_2025_BOARD_ADDON_RULES.FRONT_ABS;
+    const billableArea = toZhengdaoAddonAreaMeasure(
+      widthCm * heightCm,
+      quantity,
+      rule.minCai ?? 0,
+    );
+
+    return panelProcess(
+      `${panelId}-front-edge-abs`,
+      rule.name,
+      round(billableArea.cai * rule.unitPrice, UNIT_CONFIG.COST_DECIMAL_PLACES),
+      true,
+      billableArea.cai,
+      rule.unitPrice,
+    );
+  }
+
   const edgeCount = frontEdgeABSEdgeCount(frontEdgeABS);
   const unitCost = frontEdgeABSUnitCost(materialRef);
   if (edgeCount <= 0 || unitCost <= 0) return undefined;
@@ -168,20 +203,25 @@ function middleDividerHoleProcesses(
   quantity: number,
   materialRef: MaterialRef | null,
   addons: { doubleDrillHoles: boolean; nonStandardHoles: boolean } | undefined,
+  vendor: CabinetVendor,
 ): PanelProcessResult[] {
   if (!addons?.doubleDrillHoles) return [];
-  const billableArea = toBillableAreaMeasure(widthCm * heightCm, materialRef?.minCai ?? null, quantity);
+  const zhengdaoRule = ZHENGDAO_2025_BOARD_ADDON_RULES.MIDDLE_DIVIDER_DOUBLE_DRILL;
+  const unitCost = vendor === "ZHENGDAO" ? zhengdaoRule.unitPrice : ADDON_PRICES.DOUBLE_DRILL_HOLES;
+  const billableArea = vendor === "ZHENGDAO"
+    ? toZhengdaoAddonAreaMeasure(widthCm * heightCm, quantity, zhengdaoRule.minCai ?? 0)
+    : toBillableAreaMeasure(widthCm * heightCm, materialRef?.minCai ?? null, quantity);
   const rows: PanelProcessResult[] = [
     {
       id: `${id}-double-drill-holes`,
       label: "\u96d9\u6392\u5b54",
       quantity: billableArea.cai,
-      unitCost: ADDON_PRICES.DOUBLE_DRILL_HOLES,
-      cost: round(billableArea.cai * ADDON_PRICES.DOUBLE_DRILL_HOLES, UNIT_CONFIG.COST_DECIMAL_PLACES),
+      unitCost,
+      cost: round(billableArea.cai * unitCost, UNIT_CONFIG.COST_DECIMAL_PLACES),
       includedInSubtotal: true,
     },
   ];
-  if (addons.nonStandardHoles) {
+  if (addons.nonStandardHoles && vendor !== "ZHENGDAO") {
     rows.push({
       id: `${id}-non-standard-holes`,
       label: "\u975e\u6a19\u6e96\u6392\u5b54",
@@ -331,7 +371,9 @@ function lTurnCabinetPanels(input: CabinetUnitInput, unitQty: number): PanelResu
   const backDepthCm = lTurnBackPanelWidth(backDepthOuterCm, UNIT_CONFIG.L_TURN_BACK_PANEL_DEPTH_DEDUCTION_CM);
   const backHeightCm = insetPanelDimension(backPanelOuterHeight(input), sideThicknessCm);
   const backPanelGrooveNote = hasAutomaticBackPanel(input) ? buildBackPanelGrooveNote() : undefined;
-  const backPanelGrooveCostPerLine = hasAutomaticBackPanel(input) ? UNIT_CONFIG.BACK_PANEL_GROOVE_COST_PER_LINE : 0;
+  const backPanelGrooveCostPerLine = hasAutomaticBackPanel(input) && input.vendor !== "ZHENGDAO"
+    ? UNIT_CONFIG.BACK_PANEL_GROOVE_COST_PER_LINE
+    : 0;
 
   const panels: PanelResult[] = [
     buildPanelResult({
@@ -866,6 +908,8 @@ function buildPanelResult(params: {
 
 function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelResult[] {
   const { id, widthCm, depthCm, heightCm, backPanelMaterialRef, hasBackPanel, addons } = input;
+  const vendor = input.vendor ?? "WEIHO";
+  const isZhengdao = vendor === "ZHENGDAO";
   const materials = bodyPanelMaterialRefs(input);
   const frontEdgeAddon = calcFrontEdgeAddon(addons.frontEdgeABS);
   const sideThicknessCm = materialThicknessCm(materials.side);
@@ -899,11 +943,13 @@ function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelRes
   const backPanelHeightCm = insetPanelDimension(backPanelOuterHeight(input), sideThicknessCm);
   const automaticBackPanel = hasAutomaticBackPanel(input);
   const backPanelGrooveNote = automaticBackPanel ? buildBackPanelGrooveNote() : undefined;
-  const backPanelGrooveCostPerLine = automaticBackPanel ? UNIT_CONFIG.BACK_PANEL_GROOVE_COST_PER_LINE : 0;
+  const backPanelGrooveCostPerLine = automaticBackPanel && vendor !== "ZHENGDAO"
+    ? UNIT_CONFIG.BACK_PANEL_GROOVE_COST_PER_LINE
+    : 0;
   const panelProcesses = bodyPanelProcesses(addons);
-  const topLightGroove = panelProcesses.top.lightGroove;
-  const leftLightGroove = panelProcesses.left.lightGroove;
-  const rightLightGroove = panelProcesses.right.lightGroove;
+  const topLightGroove = isZhengdao ? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top.lightGroove : panelProcesses.top.lightGroove;
+  const leftLightGroove = isZhengdao ? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left.lightGroove : panelProcesses.left.lightGroove;
+  const rightLightGroove = isZhengdao ? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right.lightGroove : panelProcesses.right.lightGroove;
   const topLightGrooveCost = topLightGroove.enabled ? calcLightGrooveCost(topWidthCm, unitQty) : 0;
   const leftLightGrooveCost = leftLightGroove.enabled ? calcLightGrooveCost(sidePanelWidthCm, unitQty) : 0;
   const rightLightGrooveCost = rightLightGroove.enabled ? calcLightGrooveCost(sidePanelWidthCm, unitQty) : 0;
@@ -912,17 +958,17 @@ function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelRes
   const rightLightGrooveNote = rightLightGroove.enabled ? lightGrooveNote("側板內側", rightLightGroove.offsetFromFrontMm) : undefined;
   const topSlidingDoorTrackGroove = panelProcesses.top.slidingDoorTrackGroove;
   const bottomSlidingDoorTrackGroove = panelProcesses.bottom.slidingDoorTrackGroove;
-  const topSlidingDoorTrackGrooveProcess = topSlidingDoorTrackGroove.enabled
+  const topSlidingDoorTrackGrooveProcess = !isZhengdao && topSlidingDoorTrackGroove.enabled
     ? slidingDoorTrackGrooveProcess(`${id}-top-sliding-door-track-groove`, unitQty, topSlidingDoorTrackGroove.trackShape)
     : undefined;
-  const bottomSlidingDoorTrackGrooveProcess = bottomSlidingDoorTrackGroove.enabled
+  const bottomSlidingDoorTrackGrooveProcess = !isZhengdao && bottomSlidingDoorTrackGroove.enabled
     ? slidingDoorTrackGrooveProcess(`${id}-bottom-sliding-door-track-groove`, unitQty, bottomSlidingDoorTrackGroove.trackShape)
     : undefined;
   const topSlidingDoorTrackGrooveCost = topSlidingDoorTrackGrooveProcess?.cost ?? 0;
   const bottomSlidingDoorTrackGrooveCost = bottomSlidingDoorTrackGrooveProcess?.cost ?? 0;
   const topSlidingDoorTrackGrooveNote = topSlidingDoorTrackGrooveProcess?.label;
   const bottomSlidingDoorTrackGrooveNote = bottomSlidingDoorTrackGrooveProcess?.label;
-  const lTurnCabinet = addons.lTurnCabinet;
+  const lTurnCabinet = isZhengdao ? undefined : addons.lTurnCabinet;
   const lTurnCabinetTopProcess = lTurnCabinet?.enabled
     ? lTurnCabinetProcess(
         `${id}-l-turn-cabinet`,
@@ -944,31 +990,31 @@ function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelRes
         false,
       )
     : undefined;
-  const leftSideSealProcesses = sideSealBendingProcesses(`${id}-left`, "左側", sidePanelWidthCm, panelProcesses.left.sideSealBending, unitQty);
-  const rightSideSealProcesses = sideSealBendingProcesses(`${id}-right`, "右側", sidePanelWidthCm, panelProcesses.right.sideSealBending, unitQty);
+  const leftSideSealProcesses = isZhengdao ? [] : sideSealBendingProcesses(`${id}-left`, "左側", sidePanelWidthCm, panelProcesses.left.sideSealBending, unitQty);
+  const rightSideSealProcesses = isZhengdao ? [] : sideSealBendingProcesses(`${id}-right`, "右側", sidePanelWidthCm, panelProcesses.right.sideSealBending, unitQty);
   const leftSideSealCost = leftSideSealProcesses.reduce((sum, process) => sum + process.cost, 0);
   const rightSideSealCost = rightSideSealProcesses.reduce((sum, process) => sum + process.cost, 0);
-  const leftFrontEdgeProcess = frontEdgeABSProcess(`${id}-left`, sidePanelWidthCm, depthCm, unitQty, materials.side, panelProcesses.left.frontEdgeABS);
-  const rightFrontEdgeProcess = frontEdgeABSProcess(`${id}-right`, sidePanelWidthCm, depthCm, unitQty, materials.side, panelProcesses.right.frontEdgeABS);
-  const topFrontEdgeProcess = frontEdgeABSProcess(`${id}-top`, topWidthCm, topDepthCm, unitQty, materials.top, panelProcesses.top.frontEdgeABS);
-  const bottomFrontEdgeProcess = frontEdgeABSProcess(`${id}-bottom`, bottomWidthCm, depthCm, unitQty, materials.bottom, panelProcesses.bottom.frontEdgeABS);
-  const leftSidePanelInset = addons.sidePanelInset?.enabled ? sidePanelInsetProcess(`${id}-left`, unitQty) : undefined;
-  const rightSidePanelInset = addons.sidePanelInset?.enabled ? sidePanelInsetProcess(`${id}-right`, unitQty, false) : undefined;
-  const topHardwareProcesses = [
+  const leftFrontEdgeProcess = frontEdgeABSProcess(`${id}-left`, sidePanelWidthCm, depthCm, unitQty, materials.side, panelProcesses.left.frontEdgeABS, vendor);
+  const rightFrontEdgeProcess = frontEdgeABSProcess(`${id}-right`, sidePanelWidthCm, depthCm, unitQty, materials.side, panelProcesses.right.frontEdgeABS, vendor);
+  const topFrontEdgeProcess = frontEdgeABSProcess(`${id}-top`, topWidthCm, topDepthCm, unitQty, materials.top, panelProcesses.top.frontEdgeABS, vendor);
+  const bottomFrontEdgeProcess = frontEdgeABSProcess(`${id}-bottom`, bottomWidthCm, depthCm, unitQty, materials.bottom, panelProcesses.bottom.frontEdgeABS, vendor);
+  const leftSidePanelInset = !isZhengdao && addons.sidePanelInset?.enabled ? sidePanelInsetProcess(`${id}-left`, unitQty) : undefined;
+  const rightSidePanelInset = !isZhengdao && addons.sidePanelInset?.enabled ? sidePanelInsetProcess(`${id}-right`, unitQty, false) : undefined;
+  const topHardwareProcesses = isZhengdao ? [] : [
     quantityProcess(`${id}-top-bookcase-guide-wheel-hole`, "活動書櫃導輪孔", panelProcesses.top.bookcaseGuideWheelHole, unitQty, UNIT_CONFIG.BOOKCASE_GUIDE_WHEEL_HOLE_COST),
   ].filter((process): process is PanelProcessResult => Boolean(process));
-  const bottomHardwareProcesses = [
+  const bottomHardwareProcesses = isZhengdao ? [] : [
     quantityProcess(`${id}-bottom-small-adjustable-foot-hole`, "小調整腳孔", panelProcesses.bottom.smallAdjustableFootHole, unitQty, UNIT_CONFIG.SMALL_ADJUSTABLE_FOOT_HOLE_COST),
     quantityProcess(`${id}-bottom-light-st-wheel-hole`, "輕型 ST 輪孔", panelProcesses.bottom.lightStWheelHole, unitQty, UNIT_CONFIG.LIGHT_ST_WHEEL_HOLE_COST),
     quantityProcess(`${id}-bottom-heavy-st-wheel-hole`, "重型 ST 輪孔", panelProcesses.bottom.heavyStWheelHole, unitQty, UNIT_CONFIG.HEAVY_ST_WHEEL_HOLE_COST),
     quantityProcess(`${id}-bottom-bookcase-guide-wheel-hole`, "活動書櫃導輪孔", panelProcesses.bottom.bookcaseGuideWheelHole, unitQty, UNIT_CONFIG.BOOKCASE_GUIDE_WHEEL_HOLE_COST),
   ].filter((process): process is PanelProcessResult => Boolean(process));
-  const leftHardwareProcesses = [
+  const leftHardwareProcesses = isZhengdao ? [] : [
     quantityProcess(`${id}-left-hidden-return-slide-rail`, "隱藏式回歸滑軌加工", panelProcesses.left.hiddenReturnSlideRail, unitQty, UNIT_CONFIG.HIDDEN_RETURN_SLIDE_RAIL_PROCESS_COST),
     quantityProcess(`${id}-left-special-u-glass-pivot`, "特殊 U 型玻璃抽加工", panelProcesses.left.specialUGlassPivot, unitQty, UNIT_CONFIG.SPECIAL_U_GLASS_PIVOT_PROCESS_COST),
     quantityProcess(`${id}-left-t-rail-bed-set`, "T螺床組加工", panelProcesses.left.tRailBedSet, unitQty, UNIT_CONFIG.T_RAIL_BED_SET_PROCESS_COST),
   ].filter((process): process is PanelProcessResult => Boolean(process));
-  const rightHardwareProcesses = [
+  const rightHardwareProcesses = isZhengdao ? [] : [
     quantityProcess(`${id}-right-hidden-return-slide-rail`, "隱藏式回歸滑軌加工", panelProcesses.right.hiddenReturnSlideRail, unitQty, UNIT_CONFIG.HIDDEN_RETURN_SLIDE_RAIL_PROCESS_COST),
     quantityProcess(`${id}-right-special-u-glass-pivot`, "特殊 U 型玻璃抽加工", panelProcesses.right.specialUGlassPivot, unitQty, UNIT_CONFIG.SPECIAL_U_GLASS_PIVOT_PROCESS_COST),
     quantityProcess(`${id}-right-t-rail-bed-set`, "T螺床組加工", panelProcesses.right.tRailBedSet, unitQty, UNIT_CONFIG.T_RAIL_BED_SET_PROCESS_COST),
@@ -1033,7 +1079,7 @@ function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelRes
     );
   }
 
-  if (addons.lTurnCabinet?.enabled) {
+  if (!isZhengdao && addons.lTurnCabinet?.enabled) {
     const lTurnPanels = lTurnCabinetPanels(input, unitQty);
     const normalPanelIds = new Set([
       `${id}-left`,
@@ -1044,11 +1090,11 @@ function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelRes
     panels.splice(0, panels.length, ...panelsToKeep, ...lTurnPanels);
   }
 
-  if (input.kickPlate && addons.lTurnCabinet?.enabled) {
+  if (input.kickPlate && !isZhengdao && addons.lTurnCabinet?.enabled) {
     panels.push(...lTurnCabinetKickPlatePanels(input, unitQty, frontEdgeAddon));
   }
 
-  if (input.kickPlate && !addons.lTurnCabinet?.enabled) {
+  if (input.kickPlate && (isZhengdao || !addons.lTurnCabinet?.enabled)) {
     panels.push(
       buildPanelResult({
         id: `${id}-kickplate`,
@@ -1099,6 +1145,7 @@ function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelRes
 function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelResult[] {
   const parts: PanelResult[] = [];
   const drawerParts: PanelResult[] = [];
+  const vendor = input.vendor ?? "WEIHO";
   const frontEdgeAddon = calcFrontEdgeAddon(input.addons.frontEdgeABS);
   const autoDrawerDividerHeightCm = internalFullHeightCm(input);
   const autoFullDepthCm = internalFullDepthCm(input);
@@ -1114,7 +1161,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
     ["right", "右側"] as const,
   ]).forEach(([side, sideLabel]) => {
     const option = sideSealBending?.[side];
-    if (!option?.enabled || !option.isDrawerCabinet) return;
+    if (vendor === "ZHENGDAO" || !option?.enabled || !option.isDrawerCabinet) return;
 
     parts.push(buildPanelResult({
       id: `${input.id}-${side}-drawer-divider`,
@@ -1131,7 +1178,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
   for (const d of input.middleDividers) {
     const dividerWidthCm = d.fullWidth ? autoFullDepthCm : d.widthCm;
     const dividerHeightCm = d.fullHeight ? autoDrawerDividerHeightCm : d.heightCm;
-    const dividerLightGroove = d.addons?.lightGroove;
+    const dividerLightGroove = vendor === "ZHENGDAO" ? undefined : d.addons?.lightGroove;
     const dividerLightGrooveCost = dividerLightGroove && dividerLightGroove.side !== "none"
       ? calcLightGrooveCost(dividerHeightCm, d.quantity * unitQty)
       : 0;
@@ -1139,13 +1186,13 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
       ? lightGrooveNote(dividerLightGroove.side === "left" ? "左側" : "右側", dividerLightGroove.offsetFromFrontMm)
       : undefined;
     const dividerQuantity = d.quantity * unitQty;
-    const dividerHoleProcesses = middleDividerHoleProcesses(d.id, dividerWidthCm, dividerHeightCm, dividerQuantity, d.materialRef, d.addons);
+    const dividerHoleProcesses = middleDividerHoleProcesses(d.id, dividerWidthCm, dividerHeightCm, dividerQuantity, d.materialRef, d.addons, vendor);
     const dividerHoleCost = dividerHoleProcesses.reduce((sum, process) => sum + process.cost, 0);
-    const dividerHardwareProcesses = [
+    const dividerHardwareProcesses = vendor === "ZHENGDAO" ? [] : [
       quantityProcess(`${d.id}-hidden-return-slide-rail`, "隱藏式回歸滑軌加工", d.addons?.hiddenReturnSlideRail, dividerQuantity, UNIT_CONFIG.HIDDEN_RETURN_SLIDE_RAIL_PROCESS_COST),
     ].filter((process): process is PanelProcessResult => Boolean(process));
     const dividerHardwareCost = dividerHardwareProcesses.reduce((sum, process) => sum + process.cost, 0);
-    const dividerSpecialProcesses = specialProcesses(d.id, d.materialRef, dividerQuantity, d.specialProcesses);
+    const dividerSpecialProcesses = vendor === "ZHENGDAO" ? [] : specialProcesses(d.id, d.materialRef, dividerQuantity, d.specialProcesses);
     const dividerSpecialCost = dividerSpecialProcesses.reduce((sum, process) => sum + process.cost, 0);
     parts.push(buildPanelResult({
       id: d.id,
@@ -1172,7 +1219,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
 
   for (const s of input.shelves) {
     const shelfDepthCm = s.fullDepth ? autoFullDepthCm : s.depthCm;
-    const shelfLightGroove = s.lightGroove;
+    const shelfLightGroove = vendor === "ZHENGDAO" ? undefined : s.lightGroove;
     const shelfLightGrooveCost = shelfLightGroove && shelfLightGroove.side !== "none"
       ? calcLightGrooveCost(s.widthCm, s.quantity * unitQty)
       : 0;
@@ -1180,11 +1227,23 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
       ? lightGrooveNote(shelfLightGroove.side === "top" ? "上面" : "下面", shelfLightGroove.offsetFromFrontMm)
       : undefined;
     const shelfQuantity = s.quantity * unitQty;
-    const shelfSpecialProcesses = specialProcesses(s.id, s.materialRef, shelfQuantity, s.specialProcesses);
+    const shelfSpecialProcesses = vendor === "ZHENGDAO" ? [] : specialProcesses(s.id, s.materialRef, shelfQuantity, s.specialProcesses);
     const shelfSpecialCost = shelfSpecialProcesses.reduce((sum, process) => sum + process.cost, 0);
     const shelfHardwareProcesses = [
-      quantityProcess(`${s.id}-hidden-shelf-screw-hole`, "隱藏式層板螺絲孔", s.hardwareProcesses?.hiddenShelfScrewHole, shelfQuantity, UNIT_CONFIG.HIDDEN_SHELF_SCREW_HOLE_COST),
-      quantityProcess(`${s.id}-heavy-hidden-shelf-screw-hole`, "重型隱藏式層板螺絲孔", s.hardwareProcesses?.heavyHiddenShelfScrewHole, shelfQuantity, UNIT_CONFIG.HEAVY_HIDDEN_SHELF_SCREW_HOLE_COST),
+      quantityProcess(
+        `${s.id}-hidden-shelf-screw-hole`,
+        "隱藏式層板螺絲孔",
+        s.hardwareProcesses?.hiddenShelfScrewHole,
+        shelfQuantity,
+        vendor === "ZHENGDAO" ? ZHENGDAO_2025_HIDDEN_SHELF_SCREW_HOLE_UNIT_PRICE : UNIT_CONFIG.HIDDEN_SHELF_SCREW_HOLE_COST,
+      ),
+      quantityProcess(
+        `${s.id}-heavy-hidden-shelf-screw-hole`,
+        vendor === "ZHENGDAO" ? "隱藏式層板支架孔" : "重型隱藏式層板螺絲孔",
+        s.hardwareProcesses?.heavyHiddenShelfScrewHole,
+        shelfQuantity,
+        vendor === "ZHENGDAO" ? ZHENGDAO_2025_HIDDEN_SHELF_BRACKET_HOLE_UNIT_PRICE : UNIT_CONFIG.HEAVY_HIDDEN_SHELF_SCREW_HOLE_COST,
+      ),
     ].filter((process): process is PanelProcessResult => Boolean(process));
     const shelfHardwareCost = shelfHardwareProcesses.reduce((sum, process) => sum + process.cost, 0);
     parts.push(buildPanelResult({
@@ -1210,6 +1269,7 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
   }
 
   for (const drawer of input.drawers ?? []) {
+    const isZhengdao = vendor === "ZHENGDAO";
     const drawerLabel = drawer.name.trim() || "\u62bd\u5c5c";
     const quantity = drawer.quantity * unitQty;
     const drawerWallThicknessCm = materialThicknessCm(drawer.wallMaterialRef ?? bodyMaterials.side);
@@ -1217,14 +1277,14 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
     const frontBackWidthCm = drawer.widthCm - 10.2;
     const bottomWidthCm = drawerBottomDimension(drawer.widthCm, drawerWallThicknessCm);
     const bottomDepthCm = drawerBottomDimension(drawer.railLengthCm, drawerWallThicknessCm);
-    const grooveNote = drawerGrooveNote();
+    const grooveNote = isZhengdao ? undefined : drawerGrooveNote();
     const sideGrooveQuantity = quantity * 2;
     const frontBackGrooveQuantity = quantity * 2;
-    const sideGrooveCost = sideGrooveQuantity * UNIT_CONFIG.DRAWER_GROOVE_COST_PER_PANEL;
-    const frontBackGrooveCost = frontBackGrooveQuantity * UNIT_CONFIG.DRAWER_GROOVE_COST_PER_PANEL;
-    const frontProcesses = drawerFrontProcesses(drawer, quantity);
+    const sideGrooveCost = isZhengdao ? 0 : sideGrooveQuantity * UNIT_CONFIG.DRAWER_GROOVE_COST_PER_PANEL;
+    const frontBackGrooveCost = isZhengdao ? 0 : frontBackGrooveQuantity * UNIT_CONFIG.DRAWER_GROOVE_COST_PER_PANEL;
+    const frontProcesses = isZhengdao ? [] : drawerFrontProcesses(drawer, quantity);
     const frontProcessCost = frontProcesses.reduce((sum, process) => sum + process.cost, 0);
-    const bodyKdProcess = drawer.bodyKdProcessing ? drawerBodyKdProcess(drawer.id, quantity) : undefined;
+    const bodyKdProcess = !isZhengdao && drawer.bodyKdProcessing ? drawerBodyKdProcess(drawer.id, quantity) : undefined;
     const bodyKdCost = bodyKdProcess?.cost ?? 0;
 
     drawerParts.push(buildPanelResult({
@@ -1255,14 +1315,14 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
       note: grooveNote,
       processes: [
         ...(bodyKdProcess ? [bodyKdProcess] : []),
-        panelProcess(
+        ...(!isZhengdao ? [panelProcess(
           `${drawer.id}-side-panels-groove`,
-          grooveNote,
+          drawerGrooveNote(),
           sideGrooveCost,
           true,
           sideGrooveQuantity,
           UNIT_CONFIG.DRAWER_GROOVE_COST_PER_PANEL,
-        ),
+        )] : []),
       ],
     }));
 
@@ -1279,14 +1339,14 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
       billableMinCai: null,
       note: grooveNote,
       processes: [
-        panelProcess(
+        ...(!isZhengdao ? [panelProcess(
           `${drawer.id}-front-back-panels-groove`,
-          grooveNote,
+          drawerGrooveNote(),
           frontBackGrooveCost,
           true,
           frontBackGrooveQuantity,
           UNIT_CONFIG.DRAWER_GROOVE_COST_PER_PANEL,
-        ),
+        )] : []),
       ],
     }));
 
@@ -1344,6 +1404,7 @@ function calculateExtraHardware(items: HardwareItemInput[] | undefined, unitQty:
 }
 
 function calculateStandaloneProcessRows(input: CabinetUnitInput, unitQty: number): HardwareResult[] {
+  if (input.vendor === "ZHENGDAO") return [];
   const lTurnCabinet = input.addons.lTurnCabinet;
   if (!lTurnCabinet?.enabled) return [];
   if (lTurnCabinet.widthMm + lTurnCabinet.heightMm > UNIT_CONFIG.L_TURN_CABINET_MAX_DIMENSION_SUM_MM) return [];
@@ -1460,12 +1521,13 @@ function drawerFrontProcesses(drawer: DrawerInput, quantity: number): PanelProce
 function calculateDoors(
   input: CabinetUnitInput,
   unitQty: number
-): { doors: DoorResult[]; hardware: HardwareResult[]; addonsBreakdown: Pick<AddonsBreakdown, "patternMatch" | "temperedGlass" | "hingeHoleDrilling"> } {
+): { doors: DoorResult[]; hardware: HardwareResult[]; addonsBreakdown: Pick<AddonsBreakdown, "patternMatch" | "temperedGlass" | "hingeHoleDrilling" | "zhengdaoDoorProcessing"> } {
   const doors: DoorResult[] = [];
   const hardware: HardwareResult[] = [];
   let patternMatch = 0;
   let temperedGlass = 0;
   let hingeHoleDrilling = 0;
+  let zhengdaoDoorProcessing = 0;
 
   for (const door of input.doors) {
     const doorAddons = {
@@ -1486,23 +1548,51 @@ function calculateDoors(
       .filter((item) => item.includeHingeHoleDrilling)
       .reduce((sum, item) => sum + item.quantityPerDoor * totalQty, 0);
 
-    const patternMultiplier = doorAddons.patternMatch === "grain" ? ADDON_PRICES.PATTERN_MATCH_GRAIN : 1;
+    const isZhengdao = input.vendor === "ZHENGDAO";
+    const zhengdaoPatternRule = door.materialRef?.materialName.trim().toUpperCase().startsWith("MR")
+      ? ZHENGDAO_2025_BOARD_ADDON_RULES.MR_DOOR_HORIZONTAL_GRAIN
+      : ZHENGDAO_2025_BOARD_ADDON_RULES.DOOR_GRAIN_MATCH;
+    const patternMultiplier = !isZhengdao && doorAddons.patternMatch === "grain" ? ADDON_PRICES.PATTERN_MATCH_GRAIN : 1;
     const basePrice = door.materialRef?.pricePerUnit ?? 0;
     const baseCost = door.materialRef?.unit === "才"
       ? round(billableTotalArea.cai * basePrice * patternMultiplier, UNIT_CONFIG.COST_DECIMAL_PLACES)
       : calcPanelSubtotal(billableTotalArea, door.materialRef);
-    const patternCost = door.materialRef?.unit === "才"
-      ? round(billableTotalArea.cai * basePrice * (patternMultiplier - 1), UNIT_CONFIG.COST_DECIMAL_PLACES)
+    const patternCost = door.materialRef?.unit === "才" && doorAddons.patternMatch === "grain"
+      ? isZhengdao
+        ? round(
+            Math.max(totalArea.cai, zhengdaoPatternRule.minCai ?? 0) * zhengdaoPatternRule.unitPrice,
+            UNIT_CONFIG.COST_DECIMAL_PLACES,
+          )
+        : round(billableTotalArea.cai * basePrice * (patternMultiplier - 1), UNIT_CONFIG.COST_DECIMAL_PLACES)
       : 0;
-    const glassCost = door.materialRef?.unit === "才" && doorAddons.temperedGlass
+    const glassCost = !isZhengdao && door.materialRef?.unit === "才" && doorAddons.temperedGlass
       ? round(billableTotalArea.cai * ADDON_PRICES.TEMPERED_GLASS, UNIT_CONFIG.COST_DECIMAL_PLACES)
       : 0;
-    const hingeHoleCost = hingeHoleQuantity * ADDON_PRICES.HINGE_HOLE_DRILLING;
-    const addonsCost = patternCost + glassCost + hingeHoleCost;
+    const hingeHoleUnitCost = isZhengdao ? ZHENGDAO_2025_HINGE_HOLE_UNIT_PRICE : ADDON_PRICES.HINGE_HOLE_DRILLING;
+    const hingeHoleCost = hingeHoleQuantity * hingeHoleUnitCost;
+    const zhengdaoProcesses = isZhengdao
+      ? (door.zhengdaoProcesses ?? []).flatMap((processInput) => {
+          const rule = ZHENGDAO_2025_DOOR_PROCESS_RULE_BY_CODE[processInput.code];
+          if (!rule || processInput.quantityPerDoor <= 0) return [];
+
+          let quantity = processInput.quantityPerDoor * totalQty;
+          if (rule.billingMode === "PER_CAI") {
+            quantity = toBillableAreaMeasure(singleCm2, rule.minCai ?? null, totalQty).cai * processInput.quantityPerDoor;
+          } else if (rule.billingMode === "PER_10MM") {
+            quantity = Math.ceil(Math.max(processInput.lengthMm ?? 0, 0) / 10) * processInput.quantityPerDoor * totalQty;
+          }
+          quantity = round(quantity, UNIT_CONFIG.AREA_DECIMAL_PLACES);
+          const cost = round(quantity * rule.unitPrice, UNIT_CONFIG.COST_DECIMAL_PLACES);
+          return [panelProcess(processInput.id, rule.name, cost, true, quantity, rule.unitPrice)];
+        })
+      : [];
+    const zhengdaoProcessingCost = zhengdaoProcesses.reduce((sum, process) => sum + process.cost, 0);
+    const addonsCost = patternCost + glassCost + hingeHoleCost + zhengdaoProcessingCost;
 
     patternMatch += patternCost;
     temperedGlass += glassCost;
     hingeHoleDrilling += hingeHoleCost;
+    zhengdaoDoorProcessing += zhengdaoProcessingCost;
 
     doors.push({
       id: door.id,
@@ -1516,20 +1606,23 @@ function calculateDoors(
       totalArea,
       billableTotalArea,
       materialRef: door.materialRef,
-      subtotal: baseCost + glassCost + hingeHoleCost,
+      subtotal: baseCost + (isZhengdao ? patternCost : 0) + glassCost + hingeHoleCost + zhengdaoProcessingCost,
       addonsCost,
-      processes: hingeHoleCost > 0
-        ? [
+      processes: [
+        ...(hingeHoleCost > 0
+          ? [
             panelProcess(
               `${door.id}-hinge-hole`,
               "\u9580\u677f\u9278\u93c8\u5b54",
               hingeHoleCost,
               true,
               hingeHoleQuantity,
-              ADDON_PRICES.HINGE_HOLE_DRILLING,
+              hingeHoleUnitCost,
             ),
           ]
-        : [],
+          : []),
+        ...zhengdaoProcesses,
+      ],
     });
 
     for (const item of doorHardwareItems) {
@@ -1546,7 +1639,7 @@ function calculateDoors(
       });
     }
 
-    if (door.wireMeshMaterialRef) {
+    if (!isZhengdao && door.wireMeshMaterialRef) {
       const meshArea = toBillableAreaMeasure(singleCm2, door.wireMeshMaterialRef.minCai ?? null, totalQty);
       hardware.push({
         id: `${door.id}-wire-mesh`,
@@ -1574,7 +1667,7 @@ function calculateDoors(
     if (door.aluminumHandleMaterialRef) {
       hardware.push({
         id: `${door.id}-aluminum-handle`,
-        name: "鋁製把手",
+        name: isZhengdao ? "上嵌式鋁把手" : "鋁製把手",
         description: door.aluminumHandleMaterialRef.materialName,
         quantity: totalQty,
         materialRef: door.aluminumHandleMaterialRef,
@@ -1583,7 +1676,7 @@ function calculateDoors(
       });
     }
 
-    if (doorAddons.profileHandle.style !== "none") {
+    if (!isZhengdao && doorAddons.profileHandle.style !== "none") {
       const fullHeightProfileHandle = doorAddons.profileHandle.style === "SFJA" || doorAddons.profileHandle.style === "SFCA";
       const profileHandleLengthCm = fullHeightProfileHandle
         ? door.heightCm
@@ -1649,7 +1742,7 @@ function calculateDoors(
     }
   }
 
-  return { doors, hardware, addonsBreakdown: { patternMatch, temperedGlass, hingeHoleDrilling } };
+  return { doors, hardware, addonsBreakdown: { patternMatch, temperedGlass, hingeHoleDrilling, zhengdaoDoorProcessing } };
 }
 
 function calculateAccessories(input: CabinetUnitInput, unitQty: number): AccessoryResult[] {
@@ -1664,7 +1757,7 @@ function buildSummary(
   doors: DoorResult[],
   hardware: HardwareResult[],
   accessories: AccessoryResult[],
-  doorAddonsBreakdown: Pick<AddonsBreakdown, "patternMatch" | "temperedGlass" | "hingeHoleDrilling">
+  doorAddonsBreakdown: Pick<AddonsBreakdown, "patternMatch" | "temperedGlass" | "hingeHoleDrilling" | "zhengdaoDoorProcessing">
 ): CabinetUnitSummary {
   const allPanels = [...panels, ...internalParts];
   const totalAreaCm2 = allPanels.reduce((acc, p) => acc + p.totalArea.cm2, 0);
@@ -1765,6 +1858,7 @@ function buildSummary(
     patternMatch: doorAddonsBreakdown.patternMatch,
     temperedGlass: doorAddonsBreakdown.temperedGlass,
     hingeHoleDrilling: doorAddonsBreakdown.hingeHoleDrilling,
+    zhengdaoDoorProcessing: doorAddonsBreakdown.zhengdaoDoorProcessing,
     backPanelGroove,
     lightGroove,
     slidingDoorTrackGroove,

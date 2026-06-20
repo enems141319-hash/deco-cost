@@ -38,8 +38,11 @@ export function filterZhengdaoBoardMaterials(
   materials: ZhengdaoBoardMaterialOption[],
   category: "BOARD_BODY" | "BOARD_BACKING",
 ): ZhengdaoBoardMaterialOption[] {
-  const requiredThickness = category === "BOARD_BODY" ? 18 : 8;
-  return materials.filter((material) => material.pricingMeta?.thicknessMm === requiredThickness);
+  const allowedThicknesses = category === "BOARD_BODY" ? [18, 19] : [8, 9];
+  return materials.filter((material) => {
+    const thicknessMm = material.pricingMeta?.thicknessMm;
+    return thicknessMm !== undefined && allowedThicknesses.includes(thicknessMm);
+  });
 }
 
 export function zhengdaoBoardSeries(material: ZhengdaoBoardMaterialOption): string {
@@ -56,6 +59,14 @@ export function zhengdaoBoardSpecLabel(material: ZhengdaoBoardMaterialOption): s
       ? "無封邊"
       : null;
   return [thickness, edgeLabel].filter(Boolean).join(" / ");
+}
+
+function zhengdaoBoardOptionLabel(material: ZhengdaoBoardMaterialOption): string {
+  const price = `$${material.price}/${material.unit}`;
+  const minCai = material.minCai ? `基本 ${material.minCai} 才` : null;
+  return [zhengdaoBoardSeries(material), zhengdaoBoardSpecLabel(material), price, minCai]
+    .filter(Boolean)
+    .join(" - ");
 }
 
 export function groupZhengdaoBoardMaterials(
@@ -153,13 +164,13 @@ export function ZhengdaoBoardMaterialPicker({
         <SelectContent>
           {selectableMaterials.map((material) => (
             <SelectItem key={material.id} value={material.id}>
-              {zhengdaoBoardSeries(material)}
+              {zhengdaoBoardOptionLabel(material)}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
       <p className="text-[11px] text-muted-foreground">
-        {category === "BOARD_BODY" ? "桶身固定 18mm" : "背板固定 8mm"}
+        {category === "BOARD_BODY" ? "桶身可選 18/19mm" : "背板可選 8/9mm"}
       </p>
     </div>
   );

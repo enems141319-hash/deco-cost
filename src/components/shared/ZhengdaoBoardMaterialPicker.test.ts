@@ -40,6 +40,22 @@ const materials: ZhengdaoBoardMaterialOption[] = [
     pricingMeta: { series: "ER", thicknessMm: 8, edgeMode: "ABS" },
   },
   {
+    id: "mr-19",
+    name: "MR",
+    spec: "19mm",
+    unit: "才",
+    price: 300,
+    minCai: 2,
+    category: "BOARD_BODY",
+    brand: "正道",
+    colorCode: null,
+    surfaceTreatment: null,
+    boardType: "19mm",
+    vendorCode: "ZHENGDAO-BODY-MR-19",
+    notes: null,
+    pricingMeta: { series: "MR", thicknessMm: 19, edgeMode: "NONE" },
+  },
+  {
     id: "mr-9",
     name: "MR",
     spec: "9mm",
@@ -55,20 +71,36 @@ const materials: ZhengdaoBoardMaterialOption[] = [
     notes: null,
     pricingMeta: { series: "MR", thicknessMm: 9, edgeMode: "NONE" },
   },
+  {
+    id: "pr-9-abs",
+    name: "PR",
+    spec: "9mm 對 ABS",
+    unit: "才",
+    price: 540,
+    minCai: 2,
+    category: "BOARD_BACKING",
+    brand: "正道",
+    colorCode: null,
+    surfaceTreatment: null,
+    boardType: "9mm 對 ABS",
+    vendorCode: "ZHENGDAO-BACK-PR-9-ABS",
+    notes: null,
+    pricingMeta: { series: "PR", thicknessMm: 9, edgeMode: "ABS" },
+  },
 ];
 
 const groups = groupZhengdaoBoardMaterials(materials);
-assert.deepEqual(groups.map((group) => group.series), ["ER", "MR"]);
+assert.deepEqual(groups.map((group) => group.series), ["ER", "MR", "PR"]);
 assert.equal(groups[0]?.materials.length, 2);
 assert.equal(zhengdaoBoardSpecLabel(materials[0]), "18mm");
 assert.equal(zhengdaoBoardSpecLabel(materials[1]), "8mm / 對 ABS");
 assert.deepEqual(
   filterZhengdaoBoardMaterials(materials, "BOARD_BODY").map((material) => material.id),
-  ["er-18"],
+  ["er-18", "mr-19"],
 );
 assert.deepEqual(
   filterZhengdaoBoardMaterials(materials, "BOARD_BACKING").map((material) => material.id),
-  ["er-8-abs"],
+  ["er-8-abs", "mr-9", "pr-9-abs"],
 );
 
 console.log("ZhengdaoBoardMaterialPicker tests passed");

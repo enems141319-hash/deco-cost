@@ -12,6 +12,7 @@ import { VendorBoardMaterialDropdown } from "@/components/shared/VendorBoardMate
 import { DRAWER_FRONT_MOLD_PROCESSING_PRICES, PROFILE_HANDLE_PROCESSING_RULES } from "@/lib/config/units";
 import { cn, generateId } from "@/lib/utils";
 import type { DrawerInput, ProfileHandleStyle } from "@/types";
+import { useCabinetVendor } from "./CabinetVendorContext";
 
 interface Props {
   drawers: DrawerInput[];
@@ -128,6 +129,7 @@ function ProfileHandleSearchSelect({
 }
 
 export function DrawerForm({ drawers, onChange }: Props) {
+  const vendor = useCabinetVendor();
   const update = (index: number, patch: Partial<DrawerInput>) =>
     onChange(drawers.map((drawer, i) => (i === index ? { ...drawer, ...patch } : drawer)));
 
@@ -193,12 +195,12 @@ export function DrawerForm({ drawers, onChange }: Props) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className={cn("grid grid-cols-1 gap-2", vendor === "ZHENGDAO" ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
               <div>
                 <Label className="text-[10px] text-muted-foreground">18mm牆板材料</Label>
                 <VendorBoardMaterialDropdown value={drawer.wallMaterialRef} onChange={(ref) => update(i, { wallMaterialRef: ref })} category="BOARD_BODY" />
               </div>
-              <div>
+              {vendor !== "ZHENGDAO" && <div>
                 <Label className="text-[10px] text-muted-foreground">底板溝規格</Label>
                 <Select value={drawer.grooveSpec ?? "8.5"} onValueChange={(value) => update(i, { grooveSpec: value as DrawerInput["grooveSpec"] })}>
                   <SelectTrigger className="h-8 text-xs">
@@ -210,14 +212,14 @@ export function DrawerForm({ drawers, onChange }: Props) {
                     <SelectItem value="9">9</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div>}
               <div>
                 <Label className="text-[10px] text-muted-foreground">8mm底板材料</Label>
                 <VendorBoardMaterialDropdown value={drawer.bottomMaterialRef} onChange={(ref) => update(i, { bottomMaterialRef: ref })} category="BOARD_BACKING" />
               </div>
             </div>
 
-            <div className="grid gap-2 rounded border bg-background p-2">
+            {vendor !== "ZHENGDAO" && <div className="grid gap-2 rounded border bg-background p-2">
               <div className="flex items-center justify-between rounded border bg-muted/20 px-3 py-2">
                 <Label className="text-xs">抽身指定KD</Label>
                 <Switch
@@ -289,7 +291,7 @@ export function DrawerForm({ drawers, onChange }: Props) {
                   </label>
                 )}
               </div>
-            </div>
+            </div>}
 
             <div className="space-y-2 rounded border bg-background p-2">
               <div className="flex items-center justify-between gap-3">
@@ -299,7 +301,12 @@ export function DrawerForm({ drawers, onChange }: Props) {
                   onCheckedChange={(checked) => update(i, { includeRailInQuote: checked })}
                 />
               </div>
-              <MaterialDropdown value={drawer.railMaterialRef} onChange={(ref) => update(i, { railMaterialRef: ref })} categoryFilter="HARDWARE_RAIL" />
+              <MaterialDropdown
+                value={drawer.railMaterialRef}
+                onChange={(ref) => update(i, { railMaterialRef: ref })}
+                categoryFilter="HARDWARE_RAIL"
+                placeholder={vendor === "ZHENGDAO" ? "選擇正道滑軌" : "選擇滑軌"}
+              />
             </div>
           </div>
         );

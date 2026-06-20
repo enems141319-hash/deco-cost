@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { HardwareMaterialSelect } from "@/components/shared/HardwareMaterialSelect";
-import { ZhengdaoDoorMaterialPicker } from "@/components/shared/ZhengdaoDoorMaterialPicker";
+import { SYSTEM_ZHENGDAO_DOOR_MODES, ZhengdaoDoorMaterialPicker } from "@/components/shared/ZhengdaoDoorMaterialPicker";
+import { ZhengdaoDoorProcessesForm } from "./ZhengdaoDoorProcessesForm";
 import { materialApiUrl, useCabinetVendor } from "./CabinetVendorContext";
 import {
   createBlankDoorHardwareItem,
@@ -296,6 +297,7 @@ function emptyDoor(): DoorInput {
     useAluminumHandle: false,
     aluminumHandleMaterialRef: null,
     hardwareItems: [createBlankDoorHardwareItem("HINGED", generateId())],
+    zhengdaoProcesses: [],
   };
 }
 
@@ -367,6 +369,10 @@ function ProfileHandleSearchSelect({
 
 export function DoorForm({ doors, onChange }: Props) {
   const vendor = useCabinetVendor();
+  const visibleDoors = vendor === "ZHENGDAO"
+    ? doors.filter((door) => door.zhengdaoDoorSelection?.mode !== "PARTITION_DOOR")
+    : doors;
+
   const update = (index: number, patch: Partial<DoorInput>) => {
     const next = doors.map((door, i) => (i === index ? { ...door, ...patch } : door));
     onChange(next);
@@ -397,9 +403,11 @@ export function DoorForm({ doors, onChange }: Props) {
         </Button>
       </div>
 
-      {doors.length === 0 && <p className="text-xs text-muted-foreground">未設定門片。</p>}
+      {visibleDoors.length === 0 && <p className="text-xs text-muted-foreground">未設定門片。</p>}
 
       {doors.map((door, i) => {
+        if (vendor === "ZHENGDAO" && door.zhengdaoDoorSelection?.mode === "PARTITION_DOOR") return null;
+
         const addons = {
           ...DEFAULT_DOOR_ADDONS,
           ...door.addons,
@@ -465,7 +473,7 @@ export function DoorForm({ doors, onChange }: Props) {
             </div>
 
             <div className="grid grid-cols-1 gap-1.5">
-              {door.type === "HINGED" && (
+              {door.type === "HINGED" && vendor !== "ZHENGDAO" && (
                 <div className="flex items-center justify-between gap-3 rounded border p-2">
                   <Label className="text-[10px] text-muted-foreground">格柵門</Label>
                   <Switch
@@ -480,12 +488,15 @@ export function DoorForm({ doors, onChange }: Props) {
                 </div>
               )}
               <div>
-                <Label className="text-[10px] text-muted-foreground">{addons.louverDoor ? "格柵門材料" : "門片材料"}</Label>
-                {addons.louverDoor ? (
+                <Label className="text-[10px] text-muted-foreground">
+                  {vendor !== "ZHENGDAO" && addons.louverDoor ? "格柵門材料" : "門片材料"}
+                </Label>
+                {vendor !== "ZHENGDAO" && addons.louverDoor ? (
                   <LouverDoorMaterialSelect value={door.materialRef} onChange={(ref) => update(i, { materialRef: ref })} />
                 ) : vendor === "ZHENGDAO" ? (
                   <ZhengdaoDoorMaterialPicker
                     value={door.zhengdaoDoorSelection}
+                    allowedModes={SYSTEM_ZHENGDAO_DOOR_MODES}
                     onChange={(zhengdaoDoorSelection, materialRef) => update(i, { zhengdaoDoorSelection, materialRef })}
                   />
                 ) : (
@@ -495,16 +506,27 @@ export function DoorForm({ doors, onChange }: Props) {
 
               <div className="grid gap-2 rounded border p-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[10px] text-muted-foreground">門片對花（材料費 x1.2）</Label>
+                  <Label className="text-[10px] text-muted-foreground">
+                    {vendor === "ZHENGDAO" ? "門片對花（每才 +$80，基本 5 才；MR 每才 +$100）" : "門片對花（材料費 x1.2）"}
+                  </Label>
                   <Switch checked={addons.patternMatch === "grain"} onCheckedChange={(checked) => update(i, { addons: { ...addons, patternMatch: checked ? "grain" : "none" } })} />
                 </div>
+                {vendor !== "ZHENGDAO" && (
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] text-muted-foreground">強化玻璃加工</Label>
                   <Switch checked={addons.temperedGlass} onCheckedChange={(temperedGlass) => update(i, { addons: { ...addons, temperedGlass } })} />
                 </div>
+                )}
               </div>
 
-              {door.materialRef?.materialName.includes("鐵網") && (
+              {vendor === "ZHENGDAO" && (
+                <ZhengdaoDoorProcessesForm
+                  value={door.zhengdaoProcesses ?? []}
+                  onChange={(zhengdaoProcesses) => update(i, { zhengdaoProcesses })}
+                />
+              )}
+
+              {vendor !== "ZHENGDAO" && door.materialRef?.materialName.includes("鐵網") && (
                 <div className="grid gap-2 rounded border p-2">
                   <div>
                     <Label className="text-[10px] text-muted-foreground">鐵網材料</Label>
@@ -526,7 +548,9 @@ export function DoorForm({ doors, onChange }: Props) {
 
               <div className="grid gap-2 rounded border p-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[10px] text-muted-foreground">需要鋁製把手</Label>
+                  <Label className="text-[10px] text-muted-foreground">
+                    {vendor === "ZHENGDAO" ? "上嵌式鋁把手" : "需要鋁製把手"}
+                  </Label>
                   <Switch
                     checked={door.useAluminumHandle ?? Boolean(door.aluminumHandleMaterialRef)}
                     onCheckedChange={(checked) =>
@@ -539,16 +563,20 @@ export function DoorForm({ doors, onChange }: Props) {
                 </div>
                 {(door.useAluminumHandle ?? Boolean(door.aluminumHandleMaterialRef)) && (
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">鋁把手型號</Label>
+                    <Label className="text-[10px] text-muted-foreground">
+                      {vendor === "ZHENGDAO" ? "上嵌式鋁把手品項" : "鋁把手型號"}
+                    </Label>
                     <MaterialDropdown
                       value={door.aluminumHandleMaterialRef ?? null}
                       onChange={(ref) => update(i, { aluminumHandleMaterialRef: ref })}
                       categoryFilter="HARDWARE_HANDLE"
-                      placeholder="選擇鋁把手型號"
+                      fixedBrandFilter={vendor === "ZHENGDAO" ? "上嵌式鋁把手" : undefined}
+                      placeholder={vendor === "ZHENGDAO" ? "選擇上嵌式鋁把手" : "選擇鋁把手型號"}
                     />
                   </div>
                 )}
 
+                {vendor !== "ZHENGDAO" && (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_96px_auto]">
                   <div className="sm:col-span-3">
                     <Label className="text-[10px] text-muted-foreground">造型把手加工</Label>
@@ -613,6 +641,7 @@ export function DoorForm({ doors, onChange }: Props) {
                     </div>
                   )}
                 </div>
+                )}
               </div>
 
               <div className="space-y-2 rounded border bg-background p-2">
@@ -691,7 +720,9 @@ export function DoorForm({ doors, onChange }: Props) {
                       />
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <Label className="text-xs text-muted-foreground">依此品項數量計算鉸鏈孔加工</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        依此品項數量計算鉸鏈孔加工{vendor === "ZHENGDAO" ? "（每孔 $40）" : ""}
+                      </Label>
                       <Switch
                         checked={item.includeHingeHoleDrilling}
                         onCheckedChange={(includeHingeHoleDrilling) => updateHardwareItem(i, itemIndex, { includeHingeHoleDrilling })}

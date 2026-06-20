@@ -312,6 +312,7 @@ export interface DoorInput {
   aluminumHandleMaterialRef?: MaterialRef | null;
   hardwareItems?: DoorHardwareItemInput[];
   zhengdaoDoorSelection?: import("./zhengdao-door").ZhengdaoDoorSelection;
+  zhengdaoProcesses?: import("./zhengdao-door").ZhengdaoDoorProcessInput[];
 }
 
 export interface DoorHardwareItemInput {
@@ -530,6 +531,7 @@ export interface AddonsBreakdown {
   patternMatch: number;
   temperedGlass: number;
   hingeHoleDrilling: number;
+  zhengdaoDoorProcessing: number;
   backPanelGroove: number;
   lightGroove: number;
   slidingDoorTrackGroove: number;

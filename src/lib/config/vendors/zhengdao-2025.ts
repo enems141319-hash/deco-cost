@@ -8,6 +8,9 @@ import type {
 export const ZHENGDAO_2025_CAI_CM2 = 918.09;
 export const ZHENGDAO_2025_AREA_DECIMAL_PLACES = 4;
 export const ZHENGDAO_2025_COST_DECIMAL_PLACES = 0;
+export const ZHENGDAO_2025_HINGE_HOLE_UNIT_PRICE = 40;
+export const ZHENGDAO_2025_HIDDEN_SHELF_BRACKET_HOLE_UNIT_PRICE = 400;
+export const ZHENGDAO_2025_HIDDEN_SHELF_SCREW_HOLE_UNIT_PRICE = 100;
 
 export interface ZhengdaoSupportedBoardCombination {
   usage: ZhengdaoBoardUsage;

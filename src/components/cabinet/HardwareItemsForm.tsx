@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { generateId } from "@/lib/utils";
 import type { HardwareItemInput } from "@/types";
+import { useCabinetVendor } from "./CabinetVendorContext";
 
 interface Props {
   items: HardwareItemInput[];
@@ -23,6 +24,7 @@ function emptyHardwareItem(): HardwareItemInput {
 }
 
 export function HardwareItemsForm({ items, onChange }: Props) {
+  const vendor = useCabinetVendor();
   const update = (index: number, patch: Partial<HardwareItemInput>) =>
     onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
 
@@ -67,7 +69,7 @@ export function HardwareItemsForm({ items, onChange }: Props) {
               value={item.materialRef}
               onChange={(ref) => update(i, { materialRef: ref, name: ref?.materialName ?? item.name })}
               categoryFilter="HARDWARE_OTHER"
-              placeholder="選擇吊衣桿或五金配件"
+              placeholder={vendor === "ZHENGDAO" ? "選擇正道五金配件" : "選擇吊衣桿或五金配件"}
             />
           </div>
         </div>

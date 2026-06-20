@@ -245,17 +245,42 @@ export function UnitAddonsForm({ value, onChange, vendor = "WEIHO" }: Props) {
     );
   };
 
-  const renderFrontEdgeABS = (panel: BodyPanelKey) => (
-    <div className="flex items-center justify-between gap-3 rounded border bg-background px-3 py-2">
-      <div>
-        <Label className="text-xs">板厚處切斜邊封ABS</Label>
+  const renderFrontEdgeABS = (panel: BodyPanelKey) => {
+    if (vendor === "ZHENGDAO") {
+      return (
+        <div className="space-y-2 rounded border bg-background px-3 py-2">
+          <Label className="text-xs">ABS 封邊加工</Label>
+          <Select
+            value={bodyPanelProcesses[panel].frontEdgeABS}
+            onValueChange={(frontEdgeABS) =>
+              updateFrontEdgeABS(panel, frontEdgeABS as UnitAddons["frontEdgeABS"])
+            }
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">無</SelectItem>
+              <SelectItem value="one_long">前封 ABS（每才 +$10）</SelectItem>
+              <SelectItem value="two_long">前後封 ABS（每才 +$20）</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-between gap-3 rounded border bg-background px-3 py-2">
+        <div>
+          <Label className="text-xs">板厚處切斜邊封ABS</Label>
+        </div>
+        <Switch
+          checked={bodyPanelProcesses[panel].frontEdgeABS !== "none"}
+          onCheckedChange={(enabled) => updateFrontEdgeABS(panel, enabled ? "one_long" : "none")}
+        />
       </div>
-      <Switch
-        checked={bodyPanelProcesses[panel].frontEdgeABS !== "none"}
-        onCheckedChange={(enabled) => updateFrontEdgeABS(panel, enabled ? "one_long" : "none")}
-      />
-    </div>
-  );
+    );
+  };
 
   const renderSlidingDoorTrackGroove = (panel: "top" | "bottom", label: string) => {
     const option = bodyPanelProcesses[panel].slidingDoorTrackGroove;
@@ -359,6 +384,9 @@ export function UnitAddonsForm({ value, onChange, vendor = "WEIHO" }: Props) {
     <div className="space-y-3 rounded-md border bg-muted/20 p-3">
       <h4 className="text-xs font-semibold text-slate-700">{title}</h4>
       <div className="grid gap-2 sm:grid-cols-2">
+        {vendor === "ZHENGDAO" && renderFrontEdgeABS(key)}
+        {vendor !== "ZHENGDAO" && (
+          <>
         {key === "top" && (
           <>
             {renderFrontEdgeABS("top")}
@@ -397,13 +425,11 @@ export function UnitAddonsForm({ value, onChange, vendor = "WEIHO" }: Props) {
             {renderQuantityProcess("right", "tRailBedSet", "T螺床組加工")}
           </>
         )}
+          </>
+        )}
       </div>
     </div>
   );
-
-  if (vendor === "ZHENGDAO") {
-    return null;
-  }
 
   return (
     <section className="space-y-3">
@@ -411,7 +437,7 @@ export function UnitAddonsForm({ value, onChange, vendor = "WEIHO" }: Props) {
 
       {renderPanelSection("top", "頂板加工")}
       {renderPanelSection("bottom", "底板加工")}
-      <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+      {vendor !== "ZHENGDAO" && <div className="space-y-3 rounded-md border bg-muted/20 p-3">
         <h4 className="text-xs font-semibold text-slate-700">雙側板共用加工</h4>
         <div className="flex items-center justify-between gap-3 rounded border bg-background px-3 py-2">
           <Label className="text-xs">側板崁凹(檔板設計)</Label>
@@ -420,7 +446,7 @@ export function UnitAddonsForm({ value, onChange, vendor = "WEIHO" }: Props) {
             onCheckedChange={updateSidePanelInset}
           />
         </div>
-      </div>
+      </div>}
       {renderPanelSection("left", "左側板加工")}
       {renderPanelSection("right", "右側板加工")}
     </section>

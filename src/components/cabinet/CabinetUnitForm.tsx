@@ -17,6 +17,7 @@ import { DrawerForm } from "./DrawerForm";
 import { HardwareItemsForm } from "./HardwareItemsForm";
 import { InternalPartsForm } from "./InternalPartsForm";
 import { KickPlateForm } from "./KickPlateForm";
+import { ZhengdaoPartitionDoorsForm } from "./ZhengdaoPartitionDoorsForm";
 import { CabinetResultPanel } from "./CabinetResultPanel";
 import { UnitAddonsForm } from "./UnitAddonsForm";
 import { calculateCabinetUnit } from "@/lib/calculations/cabinet";
@@ -1009,7 +1010,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
         </section>
 
         {/* 板材選料 */}
-        <section className="space-y-3 rounded border bg-muted/20 p-3">
+        {vendor !== "ZHENGDAO" && <section className="space-y-3 rounded border bg-muted/20 p-3">
           <label className="flex items-center gap-2 text-sm font-semibold">
             <input
               type="checkbox"
@@ -1095,7 +1096,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
               )}
             </div>
           )}
-        </section>
+        </section>}
 
         <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-1">
@@ -1335,6 +1336,20 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
           onChange={(v) => update({ doors: v })}
         />
         </CollapsibleSection>
+
+        {vendor === "ZHENGDAO" && (
+          <>
+            <Separator />
+
+            {/* 隔間門 */}
+            <CollapsibleSection title="隔間門" icon={DoorOpen} command={leftCollapseCommand}>
+            <ZhengdaoPartitionDoorsForm
+              doors={unit.doors}
+              onChange={(v) => update({ doors: v })}
+            />
+            </CollapsibleSection>
+          </>
+        )}
 
         <Separator />
 

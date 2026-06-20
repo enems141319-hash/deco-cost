@@ -1571,4 +1571,402 @@ assert.deepEqual(
 );
 assert.equal(sideSealBendingResult.summary.addonsBreakdown.sideSealBending, 24500);
 
+const zhengdaoFrontEdgeResult = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  widthCm: 90,
+  depthCm: 60,
+  heightCm: 240,
+  panelMaterialRef: { ...bodyMaterial, minCai: null },
+  addons: {
+    ...baseUnit.addons,
+    bodyPanelProcesses: {
+      ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!,
+      top: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top,
+        frontEdgeABS: "one_long",
+      },
+      bottom: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom,
+        frontEdgeABS: "two_long",
+      },
+    },
+  },
+});
+const zhengdaoTopFrontEdge = zhengdaoFrontEdgeResult.panels
+  .find((panel) => panel.id === "unit-1-top")
+  ?.processes.find((process) => process.id === "unit-1-top-front-edge-abs");
+const zhengdaoBottomFrontEdge = zhengdaoFrontEdgeResult.panels
+  .find((panel) => panel.id === "unit-1-bottom")
+  ?.processes.find((process) => process.id === "unit-1-bottom-front-edge-abs");
+assert.equal(zhengdaoTopFrontEdge?.unitCost, 10);
+assert.equal(zhengdaoTopFrontEdge?.cost, 56);
+assert.equal(zhengdaoBottomFrontEdge?.unitCost, 20);
+assert.equal(zhengdaoBottomFrontEdge?.cost, 113);
+
+const zhengdaoDividerResult = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  middleDividers: [
+    {
+      id: "zhengdao-divider",
+      widthCm: 40,
+      heightCm: 80,
+      quantity: 1,
+      materialRef: { ...bodyMaterial, minCai: null },
+      addons: {
+        ...DEFAULT_MIDDLE_DIVIDER_ADDONS,
+        doubleDrillHoles: true,
+      },
+    },
+  ],
+});
+const zhengdaoDividerDrilling = zhengdaoDividerResult.internalParts
+  .find((panel) => panel.id === "zhengdao-divider")
+  ?.processes.find((process) => process.id === "zhengdao-divider-double-drill-holes");
+assert.equal(zhengdaoDividerDrilling?.unitCost, 20);
+assert.equal(zhengdaoDividerDrilling?.cost, 70);
+
+const zhengdaoDoorResult = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  doors: [
+    {
+      id: "zhengdao-door",
+      type: "HINGED",
+      name: "正道門片",
+      widthCm: 45,
+      heightCm: 90,
+      quantity: 1,
+      materialRef: { ...doorMaterial, minCai: null },
+      addons: {
+        ...DEFAULT_DOOR_ADDONS,
+        patternMatch: "grain",
+        temperedGlass: true,
+      },
+      hardwareItems: [
+        {
+          id: "zhengdao-hinge",
+          name: "正道鉸鍊",
+          quantityPerDoor: 3,
+          materialRef: hingeMaterial,
+          includeHingeHoleDrilling: true,
+        },
+      ],
+    },
+  ],
+});
+const zhengdaoHingeDrilling = zhengdaoDoorResult.doors[0]?.processes
+  .find((process) => process.id === "zhengdao-door-hinge-hole");
+assert.equal(zhengdaoHingeDrilling?.quantity, 3);
+assert.equal(zhengdaoHingeDrilling?.unitCost, 40);
+assert.equal(zhengdaoHingeDrilling?.cost, 120);
+assert.equal(zhengdaoDoorResult.summary.addonsBreakdown.patternMatch, 400);
+assert.equal(zhengdaoDoorResult.summary.addonsBreakdown.temperedGlass, 0);
+
+const zhengdaoDrawerWithoutWeihoProcessing = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  drawers: [
+    {
+      id: "zhengdao-drawer",
+      name: "正道抽屜",
+      widthCm: 60,
+      heightCm: 16,
+      depthCm: 45,
+      railLengthCm: 45,
+      quantity: 1,
+      grooveSpec: "8.5",
+      includeRailInQuote: true,
+      bodyKdProcessing: true,
+      railMaterialRef: {
+        materialId: "zhengdao-rail",
+        materialName: "正道滑軌",
+        unit: "組",
+        pricePerUnit: 1900,
+        minCai: null,
+      },
+      wallMaterialRef: bodyMaterial,
+      bottomMaterialRef: bodyMaterial,
+      frontMoldProcessing: true,
+      frontMoldRadius: "R80",
+      frontMoldCornerCount: 2,
+      frontHandle: {
+        style: "Y1A",
+        lengthCm: 40,
+        bakedPaint: true,
+      },
+    },
+  ],
+});
+const zhengdaoDrawerProcesses = zhengdaoDrawerWithoutWeihoProcessing.internalParts
+  .filter((panel) => panel.id.startsWith("zhengdao-drawer"))
+  .flatMap((panel) => panel.processes);
+assert.equal(zhengdaoDrawerProcesses.length, 0);
+assert.equal(zhengdaoDrawerWithoutWeihoProcessing.summary.addonsBreakdown.drawerBodyKdProcessing, 0);
+assert.equal(zhengdaoDrawerWithoutWeihoProcessing.hardware.find((item) => item.id === "zhengdao-drawer-rail")?.subtotal, 1900);
+
+const zhengdaoShelfHardwareResult = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  shelves: [
+    {
+      id: "zhengdao-shelf",
+      widthCm: 60,
+      depthCm: 35,
+      quantity: 1,
+      materialRef: bodyMaterial,
+      hardwareProcesses: {
+        hiddenShelfScrewHole: { enabled: true, quantity: 2 },
+        heavyHiddenShelfScrewHole: { enabled: true, quantity: 2 },
+      },
+    },
+  ],
+});
+const zhengdaoShelfProcesses = zhengdaoShelfHardwareResult.internalParts
+  .find((panel) => panel.id === "zhengdao-shelf")
+  ?.processes;
+assert.equal(zhengdaoShelfProcesses?.find((process) => process.id === "zhengdao-shelf-hidden-shelf-screw-hole")?.unitCost, 100);
+assert.equal(zhengdaoShelfProcesses?.find((process) => process.id === "zhengdao-shelf-heavy-hidden-shelf-screw-hole")?.unitCost, 400);
+
+const zhengdaoAutomaticBackPanelResult = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  hasBackPanel: true,
+  backPanelMode: "AUTO_8MM",
+  backPanelMaterialRef: bodyMaterial,
+});
+assert.equal(zhengdaoAutomaticBackPanelResult.summary.addonsBreakdown.backPanelGroove, 0);
+
+const zhengdaoLTurnWithoutWeihoFee = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  addons: {
+    ...baseUnit.addons,
+    lTurnCabinet: {
+      enabled: true,
+      position: "rightTop",
+      widthMm: 400,
+      heightMm: 400,
+      isOpening: true,
+    },
+  },
+});
+assert.equal(zhengdaoLTurnWithoutWeihoFee.summary.addonsBreakdown.lTurnCabinet, 0);
+assert.equal(zhengdaoLTurnWithoutWeihoFee.hardware.some((item) => item.id.endsWith("-l-turn-cabinet-fee")), false);
+
+const zhengdaoWithoutHiddenWeihoProcessing = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  addons: {
+    ...baseUnit.addons,
+    sidePanelInset: { enabled: true },
+    bodyPanelProcesses: {
+      ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!,
+      top: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top,
+        lightGroove: { enabled: true, offsetFromFrontMm: 50 },
+        slidingDoorTrackGroove: { enabled: true, trackShape: "ㄇ" },
+        bookcaseGuideWheelHole: { enabled: true, quantity: 2 },
+      },
+      left: {
+        ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left,
+        sideSealBending: {
+          enabled: true,
+          depthMm: 50,
+          isDrawerCabinet: true,
+          visibleEdgeBand: true,
+        },
+        hiddenReturnSlideRail: { enabled: true, quantity: 1 },
+      },
+    },
+  },
+  middleDividers: [
+    {
+      id: "zhengdao-hidden-divider",
+      widthCm: 40,
+      heightCm: 80,
+      quantity: 1,
+      materialRef: bodyMaterial,
+      addons: {
+        ...DEFAULT_MIDDLE_DIVIDER_ADDONS,
+        lightGroove: { side: "left", offsetFromFrontMm: 50 },
+        hiddenReturnSlideRail: { enabled: true, quantity: 1 },
+      },
+      specialProcesses: [
+        {
+          id: "zhengdao-hidden-divider-shape",
+          kind: "outerShape",
+          label: "L 型",
+          edgeBanding: "withEdge",
+          dimensionSumMm: 1200,
+          quantity: 1,
+        },
+      ],
+    },
+  ],
+  shelves: [
+    {
+      id: "zhengdao-hidden-shelf",
+      widthCm: 60,
+      depthCm: 35,
+      quantity: 1,
+      materialRef: bodyMaterial,
+      lightGroove: { side: "top", offsetFromFrontMm: 50 },
+      specialProcesses: [
+        {
+          id: "zhengdao-hidden-shelf-shape",
+          kind: "outerShape",
+          label: "L 型",
+          edgeBanding: "withEdge",
+          dimensionSumMm: 1200,
+          quantity: 1,
+        },
+      ],
+    },
+  ],
+});
+const zhengdaoHiddenWeihoProcesses = [
+  ...zhengdaoWithoutHiddenWeihoProcessing.panels,
+  ...zhengdaoWithoutHiddenWeihoProcessing.internalParts,
+].flatMap((panel) => panel.processes);
+assert.equal(zhengdaoHiddenWeihoProcesses.some((process) => process.id.includes("light-groove")), false);
+assert.equal(zhengdaoHiddenWeihoProcesses.some((process) => process.id.includes("sliding-door-track-groove")), false);
+assert.equal(zhengdaoHiddenWeihoProcesses.some((process) => process.id.includes("side-seal")), false);
+assert.equal(zhengdaoHiddenWeihoProcesses.some((process) => process.id.includes("hidden-return-slide-rail")), false);
+assert.equal(zhengdaoHiddenWeihoProcesses.some((process) => process.id.includes("special")), false);
+assert.equal(zhengdaoHiddenWeihoProcesses.some((process) => process.id.includes("side-panel-inset")), false);
+assert.equal(zhengdaoWithoutHiddenWeihoProcessing.internalParts.some((part) => part.id.endsWith("-drawer-divider")), false);
+assert.equal(zhengdaoWithoutHiddenWeihoProcessing.summary.addonsBreakdown.lightGroove, 0);
+assert.equal(zhengdaoWithoutHiddenWeihoProcessing.summary.addonsBreakdown.specialProcessing, 0);
+assert.equal(zhengdaoWithoutHiddenWeihoProcessing.summary.addonsBreakdown.sideSealBending, 0);
+assert.equal(zhengdaoWithoutHiddenWeihoProcessing.summary.addonsBreakdown.slidingDoorTrackGroove, 0);
+assert.equal(zhengdaoWithoutHiddenWeihoProcessing.summary.addonsBreakdown.sidePanelInset, 0);
+
+const zhengdaoCatalogDoorProcessing = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  doors: [
+    {
+      id: "zhengdao-catalog-door",
+      type: "HINGED",
+      name: "正道加工門片",
+      widthCm: 45,
+      heightCm: 90,
+      quantity: 1,
+      materialRef: { ...doorMaterial, minCai: null },
+      addons: DEFAULT_DOOR_ADDONS,
+      zhengdaoProcesses: [
+        { id: "process-shaped", code: "SHAPED_SLOPED_BACK", quantityPerDoor: 1 },
+        { id: "process-g1", code: "G1", quantityPerDoor: 1 },
+        { id: "process-groove", code: "CUSTOM_GROOVE", quantityPerDoor: 1, lengthMm: 250 },
+      ],
+    },
+  ],
+});
+const zhengdaoCatalogDoorProcessRows = zhengdaoCatalogDoorProcessing.doors[0]?.processes ?? [];
+assert.deepEqual(
+  zhengdaoCatalogDoorProcessRows.map((process) => ({
+    id: process.id,
+    quantity: process.quantity,
+    unitCost: process.unitCost,
+    cost: process.cost,
+  })),
+  [
+    { id: "process-shaped", quantity: 4.4113, unitCost: 90, cost: 397 },
+    { id: "process-g1", quantity: 1, unitCost: 600, cost: 600 },
+    { id: "process-groove", quantity: 25, unitCost: 20, cost: 500 },
+  ],
+);
+assert.equal(zhengdaoCatalogDoorProcessing.doors[0]?.addonsCost, 1497);
+assert.equal(zhengdaoCatalogDoorProcessing.summary.addonsBreakdown.zhengdaoDoorProcessing, 1497);
+assert.equal(zhengdaoCatalogDoorProcessing.summary.totalCost >= 1497, true);
+
+const zhengdaoAluminumPartitionProcessing = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  doors: [
+    {
+      id: "zhengdao-s2-partition-door",
+      type: "SLIDING",
+      name: "S2 隔間門",
+      widthCm: 45,
+      heightCm: 90,
+      quantity: 1,
+      materialRef: {
+        materialId: "zhengdao-door-S2-ALUMINUM",
+        materialName: "S2 鋁框落地推拉門（鋁色） 20mm",
+        unit: "才",
+        pricePerUnit: 550,
+        minCai: 10,
+      },
+      addons: DEFAULT_DOOR_ADDONS,
+      zhengdaoDoorSelection: { mode: "PARTITION_DOOR", optionCode: "S2-ALUMINUM" },
+      zhengdaoProcesses: [
+        { id: "process-a2-2", code: "ALUMINUM_FRAME_PARTITION_A2_2", quantityPerDoor: 1 },
+        { id: "process-s2-track", code: "S2_TRACK_DOUBLE", quantityPerDoor: 3 },
+        { id: "process-s2-buffer", code: "S2_BUFFER", quantityPerDoor: 1 },
+      ],
+    },
+  ],
+});
+const zhengdaoAluminumPartitionProcess = zhengdaoAluminumPartitionProcessing.doors[0]?.processes.find(
+  (process) => process.id === "process-a2-2",
+);
+assert.equal(zhengdaoAluminumPartitionProcess?.label, "A2-2 鋁框門區隔");
+assert.equal(zhengdaoAluminumPartitionProcess?.quantity, 4.4113);
+assert.equal(zhengdaoAluminumPartitionProcess?.unitCost, 120);
+assert.equal(zhengdaoAluminumPartitionProcess?.cost, 529);
+assert.equal(
+  zhengdaoAluminumPartitionProcessing.doors[0]?.processes.find((process) => process.id === "process-s2-track")?.cost,
+  600,
+);
+assert.equal(
+  zhengdaoAluminumPartitionProcessing.doors[0]?.processes.find((process) => process.id === "process-s2-buffer")?.cost,
+  1200,
+);
+assert.equal(zhengdaoAluminumPartitionProcessing.summary.addonsBreakdown.zhengdaoDoorProcessing, 2329);
+
+const zhengdaoH8HardwareProcessing = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  doors: [
+    {
+      id: "zhengdao-h8-partition-door",
+      type: "SLIDING",
+      name: "H8 隔間門",
+      widthCm: 45,
+      heightCm: 90,
+      quantity: 1,
+      materialRef: {
+        materialId: "zhengdao-door-H8-ALUMINUM",
+        materialName: "H8 鋁框懸吊門（鋁色） 20mm",
+        unit: "才",
+        pricePerUnit: 600,
+        minCai: 10,
+      },
+      addons: DEFAULT_DOOR_ADDONS,
+      zhengdaoDoorSelection: { mode: "PARTITION_DOOR", optionCode: "H8-ALUMINUM" },
+      zhengdaoProcesses: [
+        { id: "process-h8-separator", code: "H8_SEPARATOR", quantityPerDoor: 1 },
+        { id: "process-h8-track", code: "H8_TRACK_ANODIZED", quantityPerDoor: 2 },
+        { id: "process-h8-buffer", code: "H8_BUFFER", quantityPerDoor: 1 },
+      ],
+    },
+  ],
+});
+assert.equal(
+  zhengdaoH8HardwareProcessing.doors[0]?.processes.find((process) => process.id === "process-h8-separator")?.cost,
+  132,
+);
+assert.equal(
+  zhengdaoH8HardwareProcessing.doors[0]?.processes.find((process) => process.id === "process-h8-track")?.cost,
+  700,
+);
+assert.equal(
+  zhengdaoH8HardwareProcessing.doors[0]?.processes.find((process) => process.id === "process-h8-buffer")?.cost,
+  6700,
+);
+assert.equal(zhengdaoH8HardwareProcessing.summary.addonsBreakdown.zhengdaoDoorProcessing, 7532);
+
 console.log("cabinet redesign calculation tests passed");
