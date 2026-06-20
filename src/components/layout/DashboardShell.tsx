@@ -11,11 +11,13 @@ import {
   LogOut,
   Menu,
   Package,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { logoutUser } from "@/lib/actions/auth";
+import { SIDEBAR_UPDATE_SUMMARY } from "@/lib/config/update-summary";
 
 interface DashboardShellProps {
   user: {
@@ -125,6 +127,26 @@ export function DashboardShell({ user, projects = [], children }: DashboardShell
         </nav>
 
         <div className="shrink-0">
+          {!isCollapsed && (
+            <div className="border-t px-3 py-3">
+              <div className="rounded-md border bg-muted/30 px-3 py-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+                  <Sparkles className={cn("h-3.5 w-3.5", SIDEBAR_ICON_CLASS)} />
+                  <span>{SIDEBAR_UPDATE_SUMMARY.title}</span>
+                  <span className="ml-auto text-[10px] font-normal text-muted-foreground">
+                    {SIDEBAR_UPDATE_SUMMARY.date}
+                  </span>
+                </div>
+                <ul className="mt-1.5 space-y-1 text-[10px] leading-snug text-muted-foreground">
+                  {SIDEBAR_UPDATE_SUMMARY.items.map((item) => (
+                    <li key={item} className="line-clamp-2">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
           <Separator />
           <div className="space-y-1 px-3 py-3">
             {!isCollapsed && (
