@@ -35,6 +35,14 @@ const hingeMaterial: MaterialRef = {
   minCai: null,
 };
 
+const zhengdaoNineMmBackPanelMaterial: MaterialRef = {
+  materialId: "zhengdao-mr-9",
+  materialName: "MR 9mm",
+  unit: "才",
+  pricePerUnit: 260,
+  minCai: 2,
+};
+
 const baseUnit: CabinetUnitInput = {
   id: "unit-1",
   name: "測試桶身",
@@ -94,6 +102,18 @@ assert.equal(cabinetWithTopCoverSide.panels.find((panel) => panel.id === "unit-1
 assert.equal(cabinetWithTopCoverSide.panels.find((panel) => panel.id === "unit-1-bottom")?.widthCm, 86.4);
 assert.equal(cabinetWithTopCoverSide.panels.find((panel) => panel.id === "unit-1-top")?.materialRef?.materialId, thickBodyMaterial.materialId);
 assert.equal(cabinetWithTopCoverSide.panels.find((panel) => panel.id === "unit-1-left")?.materialRef?.materialId, bodyMaterial.materialId);
+
+const zhengdaoExplicitBodyMaterials = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  panelMaterialRef: bodyMaterial,
+  topPanelMaterialRef: null,
+  sidePanelMaterialRef: bodyMaterial,
+  bottomPanelMaterialRef: null,
+});
+assert.equal(zhengdaoExplicitBodyMaterials.panels.find((panel) => panel.id === "unit-1-top")?.materialRef, null);
+assert.equal(zhengdaoExplicitBodyMaterials.panels.find((panel) => panel.id === "unit-1-left")?.materialRef?.materialId, bodyMaterial.materialId);
+assert.equal(zhengdaoExplicitBodyMaterials.panels.find((panel) => panel.id === "unit-1-bottom")?.materialRef, null);
 
 const cabinetWithPerPanelFrontEdge = calculateCabinetUnit({
   ...baseUnit,
@@ -1737,6 +1757,18 @@ const zhengdaoAutomaticBackPanelResult = calculateCabinetUnit({
   backPanelMaterialRef: bodyMaterial,
 });
 assert.equal(zhengdaoAutomaticBackPanelResult.summary.addonsBreakdown.backPanelGroove, 0);
+
+const zhengdaoNineMmBackPanelResult = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  hasBackPanel: true,
+  backPanelMode: "AUTO_8MM",
+  backPanelMaterialRef: zhengdaoNineMmBackPanelMaterial,
+});
+const zhengdaoNineMmBackPanelGroove = zhengdaoNineMmBackPanelResult.panels
+  .find((panel) => panel.id === "unit-1-left")
+  ?.processes.find((process) => process.id === "unit-1-left-back-groove");
+assert.equal(zhengdaoNineMmBackPanelGroove?.label, "背板溝槽: 離後緣18mm, 寬11mm, 深9mm");
 
 const zhengdaoLTurnWithoutWeihoFee = calculateCabinetUnit({
   ...baseUnit,

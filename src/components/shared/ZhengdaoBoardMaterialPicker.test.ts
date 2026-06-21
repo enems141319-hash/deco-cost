@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import {
   filterZhengdaoBoardMaterials,
   groupZhengdaoBoardMaterials,
+  groupZhengdaoBoardMaterialVariants,
+  zhengdaoBoardSelectValue,
+  ZHENGDAO_BOARD_UNSELECTED_VALUE,
   zhengdaoBoardSpecLabel,
   type ZhengdaoBoardMaterialOption,
 } from "./ZhengdaoBoardMaterialPicker";
@@ -56,6 +59,38 @@ const materials: ZhengdaoBoardMaterialOption[] = [
     pricingMeta: { series: "MR", thicknessMm: 19, edgeMode: "NONE" },
   },
   {
+    id: "ar-8-no-edge",
+    name: "AR",
+    spec: "8mm 無封邊",
+    unit: "才",
+    price: 135,
+    minCai: 1,
+    category: "BOARD_BACKING",
+    brand: "正道",
+    colorCode: null,
+    surfaceTreatment: null,
+    boardType: "8mm 無封邊",
+    vendorCode: "ZHENGDAO-BACK-AR-8-NO_EDGE",
+    notes: null,
+    pricingMeta: { series: "AR", thicknessMm: 8, edgeMode: "NO_EDGE" },
+  },
+  {
+    id: "ar-8-abs",
+    name: "AR",
+    spec: "8mm 對 ABS",
+    unit: "才",
+    price: 190,
+    minCai: 1,
+    category: "BOARD_BACKING",
+    brand: "正道",
+    colorCode: null,
+    surfaceTreatment: null,
+    boardType: "8mm 對 ABS",
+    vendorCode: "ZHENGDAO-BACK-AR-8-ABS",
+    notes: null,
+    pricingMeta: { series: "AR", thicknessMm: 8, edgeMode: "ABS" },
+  },
+  {
     id: "mr-9",
     name: "MR",
     spec: "9mm",
@@ -90,17 +125,25 @@ const materials: ZhengdaoBoardMaterialOption[] = [
 ];
 
 const groups = groupZhengdaoBoardMaterials(materials);
-assert.deepEqual(groups.map((group) => group.series), ["ER", "MR", "PR"]);
+assert.deepEqual(groups.map((group) => group.series), ["AR", "ER", "MR", "PR"]);
 assert.equal(groups[0]?.materials.length, 2);
 assert.equal(zhengdaoBoardSpecLabel(materials[0]), "18mm");
-assert.equal(zhengdaoBoardSpecLabel(materials[1]), "8mm / 對 ABS");
+assert.equal(zhengdaoBoardSpecLabel(materials[1]), "8mm / 封 ABS");
 assert.deepEqual(
   filterZhengdaoBoardMaterials(materials, "BOARD_BODY").map((material) => material.id),
   ["er-18", "mr-19"],
 );
 assert.deepEqual(
   filterZhengdaoBoardMaterials(materials, "BOARD_BACKING").map((material) => material.id),
-  ["er-8-abs", "mr-9", "pr-9-abs"],
+  ["er-8-abs", "ar-8-no-edge", "ar-8-abs", "mr-9", "pr-9-abs"],
 );
+const variants = groupZhengdaoBoardMaterialVariants(filterZhengdaoBoardMaterials(materials, "BOARD_BACKING"));
+assert.deepEqual(variants.map((variant) => variant.key), ["AR-8", "ER-8", "MR-9", "PR-9"]);
+assert.equal(variants.find((variant) => variant.key === "AR-8")?.baseMaterial.id, "ar-8-no-edge");
+assert.equal(variants.find((variant) => variant.key === "AR-8")?.absMaterial?.id, "ar-8-abs");
+assert.equal(variants.find((variant) => variant.key === "PR-9")?.baseMaterial.id, "pr-9-abs");
+assert.equal(variants.find((variant) => variant.key === "PR-9")?.absMaterial?.id, "pr-9-abs");
+assert.equal(zhengdaoBoardSelectValue(null), ZHENGDAO_BOARD_UNSELECTED_VALUE);
+assert.equal(zhengdaoBoardSelectValue(variants[0] ?? null), "AR-8");
 
 console.log("ZhengdaoBoardMaterialPicker tests passed");

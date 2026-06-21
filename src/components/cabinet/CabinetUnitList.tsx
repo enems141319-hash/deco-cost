@@ -1,7 +1,7 @@
 // src/components/cabinet/CabinetUnitList.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, Plus, Save, Trash2, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,9 +56,32 @@ function emptyUnit(vendor: CabinetVendor = "WEIHO"): CabinetUnitInput {
   };
 }
 
-function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
+function sameMaterialRef(a: CabinetUnitInput["panelMaterialRef"], b: CabinetUnitInput["panelMaterialRef"]): boolean {
+  if (!a || !b) return false;
+  return a.materialId === b.materialId;
+}
+
+function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vendor ?? "WEIHO"): CabinetUnitInput {
   const legacyBodyMaterial = unit.panelMaterialRef ?? null;
-  const sidePanelMaterialRef = unit.sidePanelMaterialRef ?? legacyBodyMaterial;
+  const isZhengdao = vendor === "ZHENGDAO";
+  const usesLegacySingleBodyMaterial = isZhengdao
+    && unit.topPanelMaterialRef === undefined
+    && unit.sidePanelMaterialRef === undefined
+    && unit.bottomPanelMaterialRef === undefined;
+  const hasPollutedZhengdaoBodyMaterials = isZhengdao
+    && Boolean(legacyBodyMaterial)
+    && sameMaterialRef(unit.topPanelMaterialRef ?? null, legacyBodyMaterial)
+    && sameMaterialRef(unit.sidePanelMaterialRef ?? null, legacyBodyMaterial)
+    && (unit.bottomPanelMaterialRef === null || sameMaterialRef(unit.bottomPanelMaterialRef ?? null, legacyBodyMaterial));
+  const topPanelMaterialRef = isZhengdao
+    ? (usesLegacySingleBodyMaterial ? legacyBodyMaterial : hasPollutedZhengdaoBodyMaterials ? null : unit.topPanelMaterialRef ?? null)
+    : unit.topPanelMaterialRef ?? legacyBodyMaterial;
+  const sidePanelMaterialRef = isZhengdao
+    ? (usesLegacySingleBodyMaterial ? legacyBodyMaterial : hasPollutedZhengdaoBodyMaterials ? null : unit.sidePanelMaterialRef ?? null)
+    : unit.sidePanelMaterialRef ?? legacyBodyMaterial;
+  const bottomPanelMaterialRef = isZhengdao
+    ? (usesLegacySingleBodyMaterial ? legacyBodyMaterial : hasPollutedZhengdaoBodyMaterials ? null : unit.bottomPanelMaterialRef ?? null)
+    : unit.bottomPanelMaterialRef ?? legacyBodyMaterial;
   const bodyPanelProcesses = {
     top: {
       frontEdgeABS: unit.addons?.bodyPanelProcesses?.top?.frontEdgeABS
@@ -156,10 +179,10 @@ function normalizeUnit(unit: CabinetUnitInput): CabinetUnitInput {
     backPanelMode: unit.backPanelMode ?? "AUTO_8MM",
     manualBackPanel: unit.manualBackPanel ?? { widthCm: unit.widthCm, heightCm: unit.heightCm, quantity: 1 },
     bodyPanelJoinMode: unit.bodyPanelJoinMode ?? "SIDE_COVERS_TOP",
-    topPanelMaterialRef: unit.topPanelMaterialRef ?? legacyBodyMaterial,
+    topPanelMaterialRef,
     sidePanelMaterialRef,
-    bottomPanelMaterialRef: unit.bottomPanelMaterialRef ?? legacyBodyMaterial,
-    panelMaterialRef: legacyBodyMaterial,
+    bottomPanelMaterialRef,
+    panelMaterialRef: isZhengdao ? null : legacyBodyMaterial,
     addons: {
       ...DEFAULT_UNIT_ADDONS,
       ...unit.addons,
@@ -311,13 +334,18 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
   const [currentItemId, setCurrentItemId] = useState<string | undefined>(itemId);
   const [estimateLabel, setEstimateLabel] = useState(initialLabel ?? "");
   const [units, setUnits] = useState<CabinetUnitInput[]>(
-    initialUnits?.map((unit) => ({ ...normalizeUnit(unit), vendor })) ?? [emptyUnit(vendor)]
+    initialUnits?.map((unit) => ({ ...normalizeUnit(unit, vendor), vendor })) ?? [emptyUnit(vendor)]
   );
   const [expandedId, setExpandedId] = useState<string>(units[0]?.id ?? "");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  useEffect(() => {
+    if (vendor !== "ZHENGDAO") return;
+    setUnits((prev) => prev.map((unit) => ({ ...normalizeUnit(unit, vendor), vendor })));
+  }, [vendor]);
 
   const markChanged = () => setHasUnsavedChanges(true);
 

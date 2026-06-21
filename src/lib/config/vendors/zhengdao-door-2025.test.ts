@@ -1,10 +1,33 @@
 import assert from "node:assert/strict";
-import { ZHENGDAO_DOOR_CATALOG_CATEGORIES, resolveZhengdaoDoorSelection } from "./zhengdao-door-2025";
+import {
+  ZHENGDAO_DOOR_CATALOG_CATEGORIES,
+  ZHENGDAO_FLAT_DOORS,
+  groupZhengdaoFlatDoorOptions,
+  resolveZhengdaoDoorSelection,
+} from "./zhengdao-door-2025";
 import type { ZhengdaoDoorSelection } from "@/types";
 
 const flat = resolveZhengdaoDoorSelection({ mode: "FLAT", optionCode: "ER" });
 assert.equal(flat?.materialRef.pricePerUnit, 170);
 assert.equal(flat?.materialRef.minCai, 1);
+
+const flat25Abs = resolveZhengdaoDoorSelection({ mode: "FLAT", optionCode: "ER-25-ABS" });
+assert.equal(flat25Abs?.materialRef.pricePerUnit, 220);
+assert.equal(flat25Abs?.materialRef.minCai, 2);
+assert.equal(flat25Abs?.materialRef.materialName, "ER 平板門板 25mm 封ABS（門板 / 櫃面）");
+assert.equal(flat25Abs?.note, "25mm 封ABS，門板 / 櫃面用，基本才 2 才");
+
+const flat50Abs = resolveZhengdaoDoorSelection({ mode: "FLAT", optionCode: "MR-50-ABS" });
+assert.equal(flat50Abs?.materialRef.pricePerUnit, 800);
+assert.equal(flat50Abs?.materialRef.minCai, 3);
+
+const flatGroups = groupZhengdaoFlatDoorOptions(ZHENGDAO_FLAT_DOORS);
+const erFlatGroup = flatGroups.find((group) => group.series === "ER");
+assert.deepEqual(erFlatGroup?.options.map((option) => option.code), ["ER", "ER-25-PVC", "ER-25-ABS", "ER-50-ABS"]);
+assert.deepEqual(
+  flatGroups.find((group) => group.series === "PR")?.options.map((option) => option.code),
+  ["PR"],
+);
 
 assert.equal(ZHENGDAO_DOOR_CATALOG_CATEGORIES.length, 20);
 assert.equal(ZHENGDAO_DOOR_CATALOG_CATEGORIES.some((category) => category.label.includes("造型門板")), false);

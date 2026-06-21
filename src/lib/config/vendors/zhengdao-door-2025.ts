@@ -7,6 +7,7 @@ export interface ZhengdaoDoorCatalogOption {
   pricePerCai: number;
   minCai: number;
   note: string;
+  usageLabel?: string;
 }
 
 export interface ZhengdaoTieredDoorCatalogOption {
@@ -58,6 +59,11 @@ export interface ZhengdaoDoorCatalogCategory {
   tieredOptions?: ZhengdaoTieredDoorCatalogOption[];
 }
 
+export interface ZhengdaoFlatDoorOptionGroup {
+  series: string;
+  options: ZhengdaoDoorCatalogOption[];
+}
+
 export const ZHENGDAO_FLAT_DOORS: ZhengdaoDoorCatalogOption[] = [
   { code: "ER928", name: "ER928 平板門板", thicknessMm: 18, pricePerCai: 150, minCai: 1, note: "18mm，基本才 1 才" },
   { code: "JM", name: "JM 平板門板", thicknessMm: 18, pricePerCai: 150, minCai: 1, note: "18mm，基本才 1 才" },
@@ -67,7 +73,47 @@ export const ZHENGDAO_FLAT_DOORS: ZhengdaoDoorCatalogOption[] = [
   { code: "PR", name: "PR 平板門板", thicknessMm: 19, pricePerCai: 560, minCai: 2, note: "19mm，基本才 2 才" },
   { code: "HWR", name: "HWR 平板門板", thicknessMm: 18, pricePerCai: 320, minCai: 2, note: "18mm，基本才 2 才" },
   { code: "HR", name: "HR 平板門板", thicknessMm: 18, pricePerCai: 470, minCai: 2, note: "18mm，基本才 2 才" },
+  { code: "ER928-25-PVC", name: "ER928 平板門板 25mm 封PVC", thicknessMm: 25, pricePerCai: 170, minCai: 2, note: "25mm 封PVC，基本才 2 才" },
+  { code: "ER928-25-ABS", name: "ER928 平板門板 25mm 封ABS（門板 / 櫃面）", thicknessMm: 25, pricePerCai: 180, minCai: 2, note: "25mm 封ABS，門板 / 櫃面用，基本才 2 才", usageLabel: "門板 / 櫃面" },
+  { code: "ER928-50-ABS", name: "ER928 平板門板 50mm 封ABS", thicknessMm: 50, pricePerCai: 420, minCai: 3, note: "50mm 封ABS，基本才 3 才" },
+  { code: "JM-25-PVC", name: "JM 平板門板 25mm 封PVC", thicknessMm: 25, pricePerCai: 170, minCai: 2, note: "25mm 封PVC，基本才 2 才" },
+  { code: "JM-25-ABS", name: "JM 平板門板 25mm 封ABS（門板 / 櫃面）", thicknessMm: 25, pricePerCai: 180, minCai: 2, note: "25mm 封ABS，門板 / 櫃面用，基本才 2 才", usageLabel: "門板 / 櫃面" },
+  { code: "JM-50-ABS", name: "JM 平板門板 50mm 封ABS", thicknessMm: 50, pricePerCai: 420, minCai: 3, note: "50mm 封ABS，基本才 3 才" },
+  { code: "ER-25-PVC", name: "ER 平板門板 25mm 封PVC", thicknessMm: 25, pricePerCai: 210, minCai: 2, note: "25mm 封PVC，基本才 2 才" },
+  { code: "ER-25-ABS", name: "ER 平板門板 25mm 封ABS（門板 / 櫃面）", thicknessMm: 25, pricePerCai: 220, minCai: 2, note: "25mm 封ABS，門板 / 櫃面用，基本才 2 才", usageLabel: "門板 / 櫃面" },
+  { code: "ER-50-ABS", name: "ER 平板門板 50mm 封ABS", thicknessMm: 50, pricePerCai: 500, minCai: 3, note: "50mm 封ABS，基本才 3 才" },
+  { code: "AR-25-PVC", name: "AR 平板門板 25mm 封PVC", thicknessMm: 25, pricePerCai: 240, minCai: 2, note: "25mm 封PVC，基本才 2 才" },
+  { code: "AR-25-ABS", name: "AR 平板門板 25mm 封ABS（門板 / 櫃面）", thicknessMm: 25, pricePerCai: 250, minCai: 2, note: "25mm 封ABS，門板 / 櫃面用，基本才 2 才", usageLabel: "門板 / 櫃面" },
+  { code: "AR-50-ABS", name: "AR 平板門板 50mm 封ABS", thicknessMm: 50, pricePerCai: 600, minCai: 3, note: "50mm 封ABS，基本才 3 才" },
+  { code: "MR-25-PVC", name: "MR 平板門板 25mm 封PVC", thicknessMm: 25, pricePerCai: 590, minCai: 2, note: "25mm 封PVC，基本才 2 才" },
+  { code: "MR-25-ABS", name: "MR 平板門板 25mm 封ABS（門板 / 櫃面）", thicknessMm: 25, pricePerCai: 600, minCai: 2, note: "25mm 封ABS，門板 / 櫃面用，基本才 2 才", usageLabel: "門板 / 櫃面" },
+  { code: "MR-50-ABS", name: "MR 平板門板 50mm 封ABS", thicknessMm: 50, pricePerCai: 800, minCai: 3, note: "50mm 封ABS，基本才 3 才" },
 ];
+
+export function zhengdaoFlatDoorSeries(option: ZhengdaoDoorCatalogOption): string {
+  return option.code.split("-")[0] ?? option.code;
+}
+
+function flatDoorSortValue(option: ZhengdaoDoorCatalogOption): number {
+  if (option.thicknessMm === 25 && option.code.endsWith("-PVC")) return 25.1;
+  if (option.thicknessMm === 25 && option.code.endsWith("-ABS")) return 25.2;
+  return option.thicknessMm;
+}
+
+export function groupZhengdaoFlatDoorOptions(
+  options: ZhengdaoDoorCatalogOption[],
+): ZhengdaoFlatDoorOptionGroup[] {
+  const groups = new Map<string, ZhengdaoDoorCatalogOption[]>();
+  for (const option of options) {
+    const series = zhengdaoFlatDoorSeries(option);
+    groups.set(series, [...(groups.get(series) ?? []), option]);
+  }
+
+  return Array.from(groups.entries()).map(([series, rows]) => ({
+    series,
+    options: rows.sort((a, b) => flatDoorSortValue(a) - flatDoorSortValue(b)),
+  }));
+}
 
 export const ZHENGDAO_FINISHED_DOORS: ZhengdaoDoorCatalogOption[] = [
   { code: "FR-ALUMINUM", name: "布拉革鋁封邊門板", thicknessMm: 19, pricePerCai: 1750, minCai: 5, note: "基本才 5 才；雙面同色；鉸鏈孔另計" },
@@ -348,9 +394,10 @@ export const ZHENGDAO_PARTITION_DOORS: ZhengdaoDoorCatalogOption[] = [
 ];
 
 function materialRef(code: string, name: string, thicknessMm: number, pricePerCai: number, minCai: number): MaterialRef {
+  const materialName = name.includes(`${thicknessMm}mm`) ? name : `${name} ${thicknessMm}mm`;
   return {
     materialId: `zhengdao-door-${code}`,
-    materialName: `${name} ${thicknessMm}mm`,
+    materialName,
     unit: "才",
     pricePerUnit: pricePerCai,
     minCai,

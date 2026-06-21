@@ -11,12 +11,15 @@ import {
   ZHENGDAO_FLAT_DOORS,
   ZHENGDAO_PARTITION_DOORS,
   ZHENGDAO_SHAPED_BASE_DOORS,
+  groupZhengdaoFlatDoorOptions,
   resolveZhengdaoDoorTieredOption,
   resolveZhengdaoDoorSelection,
+  zhengdaoFlatDoorSeries,
 } from "@/lib/config/vendors/zhengdao-door-2025";
 import type {
   ZhengdaoDoorCatalogCategory,
   ZhengdaoDoorCatalogCategoryCode,
+  ZhengdaoDoorCatalogOption,
   ZhengdaoTieredDoorCatalogOption,
 } from "@/lib/config/vendors/zhengdao-door-2025";
 import type { MaterialRef, ZhengdaoDoorMaterialTier, ZhengdaoDoorPricingMode, ZhengdaoDoorSelection } from "@/types";
@@ -161,6 +164,12 @@ export function ZhengdaoDoorMaterialPicker({
               options={selectedCategory.tieredOptions ?? []}
               onChange={commit}
             />
+          ) : selectedCategory.mode === "FLAT" ? (
+            <FlatDoorOptionCheckboxes
+              value={selection}
+              options={selectedCategory.options}
+              onChange={commit}
+            />
           ) : selectedCategory.options.length > 0 ? (
             <DoorOptionSelect
               label="門板品項"
@@ -209,6 +218,86 @@ export function ZhengdaoDoorMaterialPicker({
             {result.materialRef.pricePerUnit} 元/才，基本才 {result.materialRef.minCai ?? 0} 才
           </p>
           <p className="mt-1 leading-relaxed text-blue-700">{result.note}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function flatDoorOptionLabel(option: ZhengdaoDoorCatalogOption): string {
+  const usage = option.usageLabel ? `（${option.usageLabel}）` : "";
+  if (option.code.endsWith("-PVC")) return `${option.thicknessMm}mm 封PVC${usage}`;
+  if (option.code.endsWith("-ABS")) return `${option.thicknessMm}mm 封ABS${usage}`;
+  return `${option.thicknessMm}mm`;
+}
+
+function FlatDoorOptionCheckboxes({
+  value,
+  options,
+  onChange,
+}: {
+  value: ZhengdaoDoorSelection;
+  options: ZhengdaoDoorCatalogOption[];
+  onChange: (selection: ZhengdaoDoorSelection) => void;
+}) {
+  const groups = groupZhengdaoFlatDoorOptions(options);
+  const selectedOption = options.find((option) => option.code === value.optionCode) ?? options[0];
+  const selectedSeries = selectedOption ? zhengdaoFlatDoorSeries(selectedOption) : groups[0]?.series;
+  const selectedGroup = groups.find((group) => group.series === selectedSeries) ?? groups[0];
+
+  const selectSeries = (series: string) => {
+    const group = groups.find((candidate) => candidate.series === series);
+    const firstOption = group?.options[0];
+    if (firstOption) onChange({ mode: "FLAT", optionCode: firstOption.code });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-[10px] text-muted-foreground">板材型號</Label>
+        <Select value={selectedGroup?.series ?? ""} onValueChange={selectSeries}>
+          <SelectTrigger className="mt-1 h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {groups.map((group) => (
+              <SelectItem key={group.series} value={group.series}>
+                {group.series}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {selectedGroup && (
+        <div>
+          <Label className="text-[10px] text-muted-foreground">尺寸與封邊</Label>
+          <div className="mt-1 grid gap-2 sm:grid-cols-2">
+            {selectedGroup.options.map((option) => {
+              const checked = option.code === selectedOption?.code;
+              return (
+                <label
+                  key={option.code}
+                  className={`flex cursor-pointer items-start gap-2 rounded border px-3 py-2 text-xs transition ${
+                    checked ? "border-blue-400 bg-blue-50 text-blue-900" : "bg-background hover:bg-muted/50"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 accent-blue-600"
+                    checked={checked}
+                    onChange={() => onChange({ mode: "FLAT", optionCode: option.code })}
+                  />
+                  <span className="min-w-0">
+                    <span className="block font-medium">{flatDoorOptionLabel(option)}</span>
+                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                      {option.pricePerCai} 元/才，基本才 {option.minCai} 才
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

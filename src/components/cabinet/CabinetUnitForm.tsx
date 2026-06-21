@@ -37,6 +37,22 @@ interface Props {
 const MIN_INPUT_WIDTH_PCT = 30;
 const MAX_INPUT_WIDTH_PCT = 70;
 
+function sameMaterialRef(
+  a: CabinetUnitInput["panelMaterialRef"],
+  b: CabinetUnitInput["panelMaterialRef"],
+): boolean {
+  if (!a || !b) return false;
+  return a.materialId === b.materialId;
+}
+
+function zhengdaoVisibleBodyMaterialRef(
+  ref: CabinetUnitInput["panelMaterialRef"],
+  legacyRef: CabinetUnitInput["panelMaterialRef"],
+): CabinetUnitInput["panelMaterialRef"] {
+  if (sameMaterialRef(ref, legacyRef)) return null;
+  return ref ?? null;
+}
+
 export interface CollapseCommand {
   action: "expand" | "collapse";
   version: number;
@@ -585,9 +601,15 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
   const bodyPanelJoinMode = unit.bodyPanelJoinMode ?? "SIDE_COVERS_TOP";
   const backPanelMode = unit.backPanelMode ?? "AUTO_8MM";
   const automaticBackPanel = unit.hasBackPanel && backPanelMode === "AUTO_8MM";
-  const topPanelMaterialRef = unit.topPanelMaterialRef ?? unit.panelMaterialRef;
-  const sidePanelMaterialRef = unit.sidePanelMaterialRef ?? unit.panelMaterialRef;
-  const bottomPanelMaterialRef = unit.bottomPanelMaterialRef ?? unit.panelMaterialRef;
+  const topPanelMaterialRef = vendor === "ZHENGDAO"
+    ? zhengdaoVisibleBodyMaterialRef(unit.topPanelMaterialRef ?? null, unit.panelMaterialRef)
+    : unit.topPanelMaterialRef ?? unit.panelMaterialRef;
+  const sidePanelMaterialRef = vendor === "ZHENGDAO"
+    ? zhengdaoVisibleBodyMaterialRef(unit.sidePanelMaterialRef ?? null, unit.panelMaterialRef)
+    : unit.sidePanelMaterialRef ?? unit.panelMaterialRef;
+  const bottomPanelMaterialRef = vendor === "ZHENGDAO"
+    ? zhengdaoVisibleBodyMaterialRef(unit.bottomPanelMaterialRef ?? null, unit.panelMaterialRef)
+    : unit.bottomPanelMaterialRef ?? unit.panelMaterialRef;
   const printTitle = [estimateLabel?.trim(), unit.name].filter(Boolean).join(" - ");
   const pdfDocumentTitle = [projectInfo?.name?.trim(), printTitle].filter(Boolean).join(" - ");
   const projectClientLabel = [projectInfo?.clientName, projectInfo?.clientTitle].filter(Boolean).join("");
@@ -1108,7 +1130,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
                 size="sm"
                 className="h-7 text-xs"
                 onClick={() => update({
-                  panelMaterialRef: sidePanelMaterialRef,
+                  panelMaterialRef: vendor === "ZHENGDAO" ? null : sidePanelMaterialRef,
                   topPanelMaterialRef: sidePanelMaterialRef,
                   sidePanelMaterialRef,
                   bottomPanelMaterialRef: sidePanelMaterialRef,
@@ -1143,7 +1165,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
                 {vendor === "ZHENGDAO" ? (
                   <ZhengdaoBoardMaterialPicker
                     value={sidePanelMaterialRef}
-                    onChange={(ref) => update({ sidePanelMaterialRef: ref, panelMaterialRef: ref })}
+                    onChange={(ref) => update({ sidePanelMaterialRef: ref, panelMaterialRef: null })}
                     category="BOARD_BODY"
                   />
                 ) : (
@@ -1201,7 +1223,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="AUTO_8MM">8mm 背板（自動計算尺寸＋開槽）</SelectItem>
+                    <SelectItem value="AUTO_8MM">8/9mm 背板（自動計算尺寸＋開槽）</SelectItem>
                     <SelectItem value="MANUAL_18MM">18mm 背板（手動尺寸、不開槽）</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1209,7 +1231,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
 
               <div>
                 <Label className="text-xs text-muted-foreground">
-                  {backPanelMode === "AUTO_8MM" ? "8mm 背板材料" : "18mm 背板材料"}
+                  {backPanelMode === "AUTO_8MM" ? "8/9mm 背板材料" : "18mm 背板材料"}
                 </Label>
                 <div className="mt-1">
                   {vendor === "ZHENGDAO" ? (
@@ -1277,7 +1299,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
 
               <p className="text-xs text-muted-foreground">
                 {backPanelMode === "AUTO_8MM"
-                  ? "尺寸由系統計算，並自動計入背板溝槽加工。"
+                  ? "尺寸由系統計算，並依背板厚度自動計入背板溝槽加工。"
                   : "使用手動輸入尺寸，不產生背板溝槽加工。"}
               </p>
             </div>

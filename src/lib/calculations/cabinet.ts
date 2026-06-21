@@ -297,8 +297,14 @@ function lTurnCabinetProcess(
   };
 }
 
-function buildBackPanelGrooveNote(): string {
-  return `背板溝槽: 離後緣18mm, 寬${UNIT_CONFIG.BACK_PANEL_GROOVE_WIDTH_MM}mm, 深${UNIT_CONFIG.BACK_PANEL_GROOVE_DEPTH_MM}mm`;
+function backPanelGrooveWidthMm(backPanelMaterialRef: MaterialRef | null): number {
+  return materialThicknessMm(backPanelMaterialRef) === 9
+    ? UNIT_CONFIG.BACK_PANEL_GROOVE_WIDTH_MM + 1
+    : UNIT_CONFIG.BACK_PANEL_GROOVE_WIDTH_MM;
+}
+
+function buildBackPanelGrooveNote(backPanelMaterialRef: MaterialRef | null): string {
+  return `背板溝槽: 離後緣18mm, 寬${backPanelGrooveWidthMm(backPanelMaterialRef)}mm, 深${UNIT_CONFIG.BACK_PANEL_GROOVE_DEPTH_MM}mm`;
 }
 
 function insetPanelDimension(outerCm: number, thicknessCm: number): number {
@@ -370,7 +376,7 @@ function lTurnCabinetPanels(input: CabinetUnitInput, unitQty: number): PanelResu
   const backWidthCm = lTurnBackPanelWidth(backWidthOuterCm, UNIT_CONFIG.L_TURN_BACK_PANEL_WIDTH_DEDUCTION_CM);
   const backDepthCm = lTurnBackPanelWidth(backDepthOuterCm, UNIT_CONFIG.L_TURN_BACK_PANEL_DEPTH_DEDUCTION_CM);
   const backHeightCm = insetPanelDimension(backPanelOuterHeight(input), sideThicknessCm);
-  const backPanelGrooveNote = hasAutomaticBackPanel(input) ? buildBackPanelGrooveNote() : undefined;
+  const backPanelGrooveNote = hasAutomaticBackPanel(input) ? buildBackPanelGrooveNote(input.backPanelMaterialRef) : undefined;
   const backPanelGrooveCostPerLine = hasAutomaticBackPanel(input) && input.vendor !== "ZHENGDAO"
     ? UNIT_CONFIG.BACK_PANEL_GROOVE_COST_PER_LINE
     : 0;
@@ -553,6 +559,26 @@ function bodyPanelMaterialRefs(input: CabinetUnitInput): {
   side: MaterialRef | null;
   bottom: MaterialRef | null;
 } {
+  if (input.vendor === "ZHENGDAO") {
+    const usesLegacySingleBodyMaterial =
+      input.topPanelMaterialRef === undefined &&
+      input.sidePanelMaterialRef === undefined &&
+      input.bottomPanelMaterialRef === undefined;
+    if (usesLegacySingleBodyMaterial) {
+      return {
+        top: input.panelMaterialRef,
+        side: input.panelMaterialRef,
+        bottom: input.panelMaterialRef,
+      };
+    }
+
+    return {
+      top: input.topPanelMaterialRef ?? null,
+      side: input.sidePanelMaterialRef ?? null,
+      bottom: input.bottomPanelMaterialRef ?? null,
+    };
+  }
+
   return {
     top: input.topPanelMaterialRef ?? input.panelMaterialRef,
     side: input.sidePanelMaterialRef ?? input.panelMaterialRef,
@@ -942,7 +968,7 @@ function generateFixedPanels(input: CabinetUnitInput, unitQty: number): PanelRes
   const backPanelWidthCm = insetPanelDimension(widthCm, sideThicknessCm);
   const backPanelHeightCm = insetPanelDimension(backPanelOuterHeight(input), sideThicknessCm);
   const automaticBackPanel = hasAutomaticBackPanel(input);
-  const backPanelGrooveNote = automaticBackPanel ? buildBackPanelGrooveNote() : undefined;
+  const backPanelGrooveNote = automaticBackPanel ? buildBackPanelGrooveNote(backPanelMaterialRef) : undefined;
   const backPanelGrooveCostPerLine = automaticBackPanel && vendor !== "ZHENGDAO"
     ? UNIT_CONFIG.BACK_PANEL_GROOVE_COST_PER_LINE
     : 0;
