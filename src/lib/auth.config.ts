@@ -12,7 +12,9 @@ export const authConfig: NextAuthConfig = {
       const isLoggedIn = !!auth?.user;
       const isAuthPage =
         nextUrl.pathname.startsWith("/login") ||
-        nextUrl.pathname.startsWith("/register");
+        nextUrl.pathname.startsWith("/register") ||
+        nextUrl.pathname.startsWith("/forgot-password") ||
+        nextUrl.pathname.startsWith("/reset-password");
 
       if (isAuthPage) {
         // 已登入者造訪登入頁 → 導回 dashboard

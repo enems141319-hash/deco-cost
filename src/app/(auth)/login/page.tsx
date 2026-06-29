@@ -8,12 +8,12 @@ export const metadata: Metadata = { title: "登入" };
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ registered?: string; error?: string }>;
+  searchParams: Promise<{ registered?: string; reset?: string; error?: string }>;
 }) {
   const params = await searchParams;
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <LoginForm registered={!!params.registered} error={params.error} />
+      <LoginForm registered={!!params.registered} reset={!!params.reset} error={params.error} />
     </div>
   );
 }

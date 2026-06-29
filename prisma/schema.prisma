@@ -56,6 +56,19 @@ model User {
   @@map("users")
 }
 
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
 model Material {
   id               String           @id @default(cuid())
   category         MaterialCategory
