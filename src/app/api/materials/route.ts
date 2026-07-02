@@ -2,8 +2,8 @@
 
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 import { MaterialCategory, MaterialVendor } from "@prisma/client";
+import { getEffectiveMaterials } from "@/lib/material-overrides";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -16,23 +16,15 @@ export async function GET(request: Request) {
     ? requestedVendor
     : MaterialVendor.WEIHO;
 
-  const materials = await prisma.material.findMany({
-    where: {
-      isActive: true,
-      vendor,
-      ...(category && Object.values(MaterialCategory).includes(category) ? { category } : {}),
-    },
-    orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
+  const effectiveCategory = category && Object.values(MaterialCategory).includes(category) ? category : undefined;
+  const materials = await getEffectiveMaterials({
+    userId: session.user.id,
+    vendor,
+    category: effectiveCategory,
   });
 
   const result = materials.map((m) => ({
     ...m,
-    price: Number(m.price),
-    wasteRate: Number(m.wasteRate),
-    minCai: m.minCai !== null ? Number(m.minCai) : null,
-    vendorCode: m.vendorCode,
-    notes: m.notes,
-    pricingMeta: m.pricingMeta,
   }));
   return NextResponse.json(result);
 }

@@ -16,6 +16,10 @@ export function getAppBaseUrl(): string {
   return process.env.APP_URL || process.env.AUTH_URL || "http://localhost:3001";
 }
 
+export function isPasswordResetEmailConfigured(): boolean {
+  return Boolean(process.env.RESEND_API_KEY);
+}
+
 export async function sendPasswordResetEmail({
   to,
   resetUrl,

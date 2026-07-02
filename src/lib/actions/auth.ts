@@ -2,6 +2,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { AuthError } from "next-auth";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -12,12 +13,23 @@ import {
   isPasswordResetTokenExpired,
   passwordResetExpiry,
 } from "@/lib/password-reset";
-import { getAppBaseUrl, sendPasswordResetEmail } from "@/lib/email/password-reset";
+import {
+  getAppBaseUrl,
+  isPasswordResetEmailConfigured,
+  sendPasswordResetEmail,
+} from "@/lib/email/password-reset";
 
 export type AuthActionState = {
   success?: boolean;
   message?: string;
   errors?: Record<string, string[]>;
+} | null;
+
+export type LoginActionState = {
+  email?: string;
+  errors?: {
+    form?: string[];
+  };
 } | null;
 
 const registerSchema = z.object({
@@ -68,12 +80,28 @@ export async function registerUser(
   redirect("/login?registered=1");
 }
 
-export async function loginUser(formData: FormData) {
-  await signIn("credentials", {
-    email: formData.get("email"),
-    password: formData.get("password"),
-    redirectTo: "/dashboard",
-  });
+export async function loginUser(formData: FormData): Promise<LoginActionState> {
+  const email = formData.get("email");
+  const emailValue = typeof email === "string" ? email : "";
+
+  try {
+    await signIn("credentials", {
+      email,
+      password: formData.get("password"),
+      redirectTo: "/dashboard",
+    });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return {
+        email: emailValue,
+        errors: { form: ["登入失敗，請確認 Email 與密碼。"] },
+      };
+    }
+
+    throw error;
+  }
+
+  return null;
 }
 
 export async function logoutUser() {
@@ -91,7 +119,9 @@ export async function requestPasswordReset(formData: FormData): Promise<AuthActi
 
   const email = parsed.data.email.toLowerCase();
   const user = await prisma.user.findUnique({ where: { email } });
-  const successMessage = "如果 Email 存在，我們已寄出重設密碼連結。";
+  const successMessage = isPasswordResetEmailConfigured()
+    ? "如果 Email 存在，我們已寄出重設密碼連結。"
+    : "本地尚未設定寄信服務。如果 Email 存在，重設連結已輸出到 server log。";
 
   if (!user) {
     return { success: true, message: successMessage };

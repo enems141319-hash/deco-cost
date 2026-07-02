@@ -1,8 +1,9 @@
 // src/app/(auth)/login/LoginForm.tsx
 "use client";
 
+import { useActionState } from "react";
 import Link from "next/link";
-import { loginUser } from "@/lib/actions/auth";
+import { LoginActionState, loginUser } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,14 @@ interface Props {
   error?: string;
 }
 
+async function action(_prev: LoginActionState, formData: FormData): Promise<LoginActionState> {
+  return loginUser(formData);
+}
+
 export function LoginForm({ registered, reset, error }: Props) {
+  const [state, formAction, pending] = useActionState<LoginActionState, FormData>(action, null);
+  const loginError = state?.errors?.form?.[0] ?? (error ? "登入失敗，請確認 Email 與密碼。" : null);
+
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="space-y-1 text-center">
@@ -39,15 +47,24 @@ export function LoginForm({ registered, reset, error }: Props) {
             密碼已更新，請使用新密碼登入。
           </div>
         )}
-        {error && (
+        {loginError && (
           <div className="mb-4 rounded bg-destructive/10 p-2 text-sm text-destructive">
-            登入失敗，請確認 Email 與密碼。
+            {loginError}
           </div>
         )}
-        <form action={loginUser} className="space-y-4">
+        <form action={formAction} className="space-y-4">
           <div className="space-y-1">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" placeholder="you@example.com" required />
+            <Input
+              key={state?.email ?? "empty-email"}
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              defaultValue={state?.email ?? ""}
+              required
+            />
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-3">
@@ -56,10 +73,10 @@ export function LoginForm({ registered, reset, error }: Props) {
                 忘記密碼？
               </Link>
             </div>
-            <Input id="password" name="password" type="password" required />
+            <Input id="password" name="password" type="password" autoComplete="current-password" required />
           </div>
-          <Button type="submit" className="w-full">
-            登入
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending ? "登入中..." : "登入"}
           </Button>
         </form>
       </CardContent>

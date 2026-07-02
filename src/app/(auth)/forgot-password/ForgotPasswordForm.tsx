@@ -35,7 +35,7 @@ export function ForgotPasswordForm() {
     <Card className="w-full max-w-sm">
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold">忘記密碼</CardTitle>
-        <CardDescription>輸入註冊 Email，我們會寄出重設連結。</CardDescription>
+        <CardDescription>輸入註冊 Email，我們會寄出重設密碼連結。</CardDescription>
       </CardHeader>
       <CardContent>
         {state?.message && (

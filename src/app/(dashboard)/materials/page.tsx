@@ -2,11 +2,11 @@
 
 import { Metadata } from "next";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 import { MaterialsClient, type MaterialData } from "./MaterialsClient";
 import Link from "next/link";
 import { MaterialVendor } from "@prisma/client";
 import { Button } from "@/components/ui/button";
+import { getEffectiveMaterials } from "@/lib/material-overrides";
 
 export const metadata: Metadata = { title: "材料管理" };
 
@@ -15,17 +15,23 @@ export default async function MaterialsPage({
 }: {
   searchParams: Promise<{ vendor?: string }>;
 }) {
-  await auth();
+  const session = await auth();
   const { vendor: requestedVendor } = await searchParams;
   const vendor = requestedVendor === "ZHENGDAO" ? MaterialVendor.ZHENGDAO : MaterialVendor.WEIHO;
 
-  const materials = await prisma.material.findMany({
-    where: { vendor },
-    orderBy: [{ category: "asc" }, { brand: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
+  if (!session?.user?.id) return null;
+
+  const materials = await getEffectiveMaterials({
+    userId: session.user.id,
+    vendor,
+    includeInactive: true,
   });
 
   const serialized: MaterialData[] = materials.map((material) => ({
     id: material.id,
+    source: material.source,
+    overrideId: material.overrideId,
+    baseMaterialId: material.baseMaterialId,
     vendor: material.vendor,
     category: material.category,
     brand: material.brand,

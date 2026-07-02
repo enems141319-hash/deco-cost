@@ -8,6 +8,12 @@ import { prisma } from "@/lib/db";
 import { requireCurrentUserId } from "@/lib/current-user";
 import { z } from "zod";
 import { MaterialCategory, MaterialVendor } from "@prisma/client";
+import {
+  getEffectiveMaterials,
+  isUserMaterialId,
+  materialSnapshotData,
+  parseUserMaterialId,
+} from "@/lib/material-overrides";
 
 async function requireUserId(): Promise<string> {
   const session = await auth();
@@ -40,18 +46,19 @@ function optionalNumber(formData: FormData, key: string) {
 }
 
 export async function getMaterials(category?: MaterialCategory) {
-  await requireUserId();
-  return prisma.material.findMany({
-    where: { isActive: true, ...(category ? { category } : {}) },
-    orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
+  const userId = await requireUserId();
+  return getEffectiveMaterials({
+    userId,
+    vendor: MaterialVendor.WEIHO,
+    category,
   });
 }
 
 export async function getMaterialsByCategory() {
-  await requireUserId();
-  const materials = await prisma.material.findMany({
-    where: { isActive: true },
-    orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+  const userId = await requireUserId();
+  const materials = await getEffectiveMaterials({
+    userId,
+    vendor: MaterialVendor.WEIHO,
   });
 
   const grouped = materials.reduce(
@@ -67,7 +74,7 @@ export async function getMaterialsByCategory() {
 }
 
 export async function createMaterial(formData: FormData) {
-  await requireUserId();
+  const userId = await requireUserId();
 
   const parsed = materialSchema.safeParse({
     category: formData.get("category"),
@@ -88,13 +95,19 @@ export async function createMaterial(formData: FormData) {
     return { success: false, errors: parsed.error.flatten().fieldErrors };
   }
 
-  await prisma.material.create({ data: parsed.data });
+  await prisma.userMaterialOverride.create({
+    data: {
+      ...parsed.data,
+      userId,
+      materialId: null,
+    },
+  });
   revalidatePath("/materials");
   return { success: true };
 }
 
 export async function updateMaterial(materialId: string, formData: FormData) {
-  await requireUserId();
+  const userId = await requireUserId();
 
   const parsed = materialSchema.partial().safeParse({
     category: formData.get("category") || undefined,
@@ -115,21 +128,127 @@ export async function updateMaterial(materialId: string, formData: FormData) {
     return { success: false, errors: parsed.error.flatten().fieldErrors };
   }
 
-  await prisma.material.update({ where: { id: materialId }, data: parsed.data });
+  if (isUserMaterialId(materialId)) {
+    await prisma.userMaterialOverride.update({
+      where: {
+        id: parseUserMaterialId(materialId),
+        userId,
+      },
+      data: parsed.data,
+    });
+    revalidatePath("/materials");
+    return { success: true };
+  }
+
+  const existingOverride = await prisma.userMaterialOverride.findUnique({
+    where: { userId_materialId: { userId, materialId } },
+  });
+
+  if (existingOverride) {
+    await prisma.userMaterialOverride.update({
+      where: { id: existingOverride.id },
+      data: parsed.data,
+    });
+    revalidatePath("/materials");
+    return { success: true };
+  }
+
+  const baseMaterial = await prisma.material.findUnique({ where: { id: materialId } });
+  if (!baseMaterial) {
+    return { success: false, errors: { materialId: ["找不到材料"] } };
+  }
+
+  await prisma.userMaterialOverride.create({
+    data: {
+      ...materialSnapshotData(baseMaterial, userId),
+      ...parsed.data,
+    },
+  });
   revalidatePath("/materials");
   return { success: true };
 }
 
 export async function toggleMaterialActive(materialId: string, isActive: boolean) {
-  await requireUserId();
-  await prisma.material.update({ where: { id: materialId }, data: { isActive } });
+  const userId = await requireUserId();
+
+  if (isUserMaterialId(materialId)) {
+    await prisma.userMaterialOverride.update({
+      where: {
+        id: parseUserMaterialId(materialId),
+        userId,
+      },
+      data: { isActive },
+    });
+    revalidatePath("/materials");
+    return { success: true };
+  }
+
+  const existingOverride = await prisma.userMaterialOverride.findUnique({
+    where: { userId_materialId: { userId, materialId } },
+  });
+
+  if (existingOverride) {
+    await prisma.userMaterialOverride.update({
+      where: { id: existingOverride.id },
+      data: { isActive },
+    });
+    revalidatePath("/materials");
+    return { success: true };
+  }
+
+  const baseMaterial = await prisma.material.findUnique({ where: { id: materialId } });
+  if (!baseMaterial) {
+    return { success: false };
+  }
+
+  await prisma.userMaterialOverride.create({
+    data: {
+      ...materialSnapshotData(baseMaterial, userId),
+      isActive,
+    },
+  });
   revalidatePath("/materials");
   return { success: true };
 }
 
 export async function deleteMaterial(materialId: string) {
-  await requireUserId();
-  await prisma.material.delete({ where: { id: materialId } });
+  const userId = await requireUserId();
+
+  if (isUserMaterialId(materialId)) {
+    await prisma.userMaterialOverride.delete({
+      where: {
+        id: parseUserMaterialId(materialId),
+        userId,
+      },
+    });
+    revalidatePath("/materials");
+    return { success: true };
+  }
+
+  const existingOverride = await prisma.userMaterialOverride.findUnique({
+    where: { userId_materialId: { userId, materialId } },
+  });
+
+  if (existingOverride) {
+    await prisma.userMaterialOverride.update({
+      where: { id: existingOverride.id },
+      data: { isActive: false },
+    });
+    revalidatePath("/materials");
+    return { success: true };
+  }
+
+  const baseMaterial = await prisma.material.findUnique({ where: { id: materialId } });
+  if (!baseMaterial) {
+    return { success: false };
+  }
+
+  await prisma.userMaterialOverride.create({
+    data: {
+      ...materialSnapshotData(baseMaterial, userId),
+      isActive: false,
+    },
+  });
   revalidatePath("/materials");
   return { success: true };
 }
