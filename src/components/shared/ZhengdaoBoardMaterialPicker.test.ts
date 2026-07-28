@@ -107,6 +107,22 @@ const materials: ZhengdaoBoardMaterialOption[] = [
     pricingMeta: { series: "MR", thicknessMm: 9, edgeMode: "NONE" },
   },
   {
+    id: "pr-9",
+    name: "PR",
+    spec: "9mm",
+    unit: "才",
+    price: 480,
+    minCai: 2,
+    category: "BOARD_BACKING",
+    brand: "正道",
+    colorCode: null,
+    surfaceTreatment: null,
+    boardType: "9mm",
+    vendorCode: "ZHENGDAO-BACK-PR-9",
+    notes: null,
+    pricingMeta: { series: "PR", thicknessMm: 9, edgeMode: "NONE" },
+  },
+  {
     id: "pr-9-abs",
     name: "PR",
     spec: "9mm 對 ABS",
@@ -128,20 +144,20 @@ const groups = groupZhengdaoBoardMaterials(materials);
 assert.deepEqual(groups.map((group) => group.series), ["AR", "ER", "MR", "PR"]);
 assert.equal(groups[0]?.materials.length, 2);
 assert.equal(zhengdaoBoardSpecLabel(materials[0]), "18mm");
-assert.equal(zhengdaoBoardSpecLabel(materials[1]), "8mm / 封 ABS");
+assert.equal(zhengdaoBoardSpecLabel(materials[1]), "8mm");
 assert.deepEqual(
   filterZhengdaoBoardMaterials(materials, "BOARD_BODY").map((material) => material.id),
   ["er-18", "mr-19"],
 );
 assert.deepEqual(
   filterZhengdaoBoardMaterials(materials, "BOARD_BACKING").map((material) => material.id),
-  ["er-8-abs", "ar-8-no-edge", "ar-8-abs", "mr-9", "pr-9-abs"],
+  ["er-8-abs", "ar-8-no-edge", "ar-8-abs", "mr-9", "pr-9", "pr-9-abs"],
 );
 const variants = groupZhengdaoBoardMaterialVariants(filterZhengdaoBoardMaterials(materials, "BOARD_BACKING"));
 assert.deepEqual(variants.map((variant) => variant.key), ["AR-8", "ER-8", "MR-9", "PR-9"]);
 assert.equal(variants.find((variant) => variant.key === "AR-8")?.baseMaterial.id, "ar-8-no-edge");
 assert.equal(variants.find((variant) => variant.key === "AR-8")?.absMaterial?.id, "ar-8-abs");
-assert.equal(variants.find((variant) => variant.key === "PR-9")?.baseMaterial.id, "pr-9-abs");
+assert.equal(variants.find((variant) => variant.key === "PR-9")?.baseMaterial.id, "pr-9");
 assert.equal(variants.find((variant) => variant.key === "PR-9")?.absMaterial?.id, "pr-9-abs");
 assert.equal(zhengdaoBoardSelectValue(null), ZHENGDAO_BOARD_UNSELECTED_VALUE);
 assert.equal(zhengdaoBoardSelectValue(variants[0] ?? null), "AR-8");

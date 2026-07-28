@@ -14,11 +14,15 @@ import {
   type UnitBodyPanelProcesses,
   type CabinetVendor,
 } from "@/types";
+import { ZhengdaoDoorProcessesForm } from "./ZhengdaoDoorProcessesForm";
 
 interface Props {
   value: UnitAddons;
   onChange: (value: UnitAddons) => void;
   vendor?: CabinetVendor;
+  unitWidthCm?: number;
+  unitDepthCm?: number;
+  unitHeightCm?: number;
 }
 
 type BodyPanelKey = keyof UnitBodyPanelProcesses;
@@ -39,6 +43,7 @@ function normalizedBodyPanelProcesses(value: UnitAddons): UnitBodyPanelProcesses
         ?? defaults.top.slidingDoorTrackGroove,
       bookcaseGuideWheelHole: value.bodyPanelProcesses?.top.bookcaseGuideWheelHole
         ?? defaults.top.bookcaseGuideWheelHole,
+      zhengdaoProcesses: value.bodyPanelProcesses?.top.zhengdaoProcesses ?? [],
     },
     bottom: {
       frontEdgeABS: value.bodyPanelProcesses?.bottom.frontEdgeABS
@@ -55,6 +60,7 @@ function normalizedBodyPanelProcesses(value: UnitAddons): UnitBodyPanelProcesses
         ?? defaults.bottom.heavyStWheelHole,
       bookcaseGuideWheelHole: value.bodyPanelProcesses?.bottom.bookcaseGuideWheelHole
         ?? defaults.bottom.bookcaseGuideWheelHole,
+      zhengdaoProcesses: value.bodyPanelProcesses?.bottom.zhengdaoProcesses ?? [],
     },
     left: {
       frontEdgeABS: value.bodyPanelProcesses?.left.frontEdgeABS
@@ -72,6 +78,7 @@ function normalizedBodyPanelProcesses(value: UnitAddons): UnitBodyPanelProcesses
         ?? defaults.left.specialUGlassPivot,
       tRailBedSet: value.bodyPanelProcesses?.left.tRailBedSet
         ?? defaults.left.tRailBedSet,
+      zhengdaoProcesses: value.bodyPanelProcesses?.left.zhengdaoProcesses ?? [],
     },
     right: {
       frontEdgeABS: value.bodyPanelProcesses?.right.frontEdgeABS
@@ -89,11 +96,19 @@ function normalizedBodyPanelProcesses(value: UnitAddons): UnitBodyPanelProcesses
         ?? defaults.right.specialUGlassPivot,
       tRailBedSet: value.bodyPanelProcesses?.right.tRailBedSet
         ?? defaults.right.tRailBedSet,
+      zhengdaoProcesses: value.bodyPanelProcesses?.right.zhengdaoProcesses ?? [],
     },
   };
 }
 
-export function UnitAddonsForm({ value, onChange, vendor = "WEIHO" }: Props) {
+export function UnitAddonsForm({
+  value,
+  onChange,
+  vendor = "WEIHO",
+  unitWidthCm = 0,
+  unitDepthCm = 0,
+  unitHeightCm = 0,
+}: Props) {
   const bodyPanelProcesses = normalizedBodyPanelProcesses(value);
   const update = (patch: Partial<UnitAddons>) => onChange({ ...value, ...patch });
   const updateBodyPanelProcesses = (patch: Partial<UnitBodyPanelProcesses>) => {
@@ -384,7 +399,31 @@ export function UnitAddonsForm({ value, onChange, vendor = "WEIHO" }: Props) {
     <div className="space-y-3 rounded-md border bg-muted/20 p-3">
       <h4 className="text-xs font-semibold text-slate-700">{title}</h4>
       <div className="grid gap-2 sm:grid-cols-2">
-        {vendor === "ZHENGDAO" && renderFrontEdgeABS(key)}
+        {vendor === "ZHENGDAO" && (
+          <div className="sm:col-span-2">
+            <ZhengdaoDoorProcessesForm
+              value={bodyPanelProcesses[key].zhengdaoProcesses ?? []}
+              title={key === "top" ? "正道頂板／檯面加工" : "正道板材加工"}
+              boardWidthCm={key === "left" || key === "right" ? unitDepthCm : unitWidthCm}
+              boardHeightCm={key === "top" || key === "bottom" ? unitDepthCm : unitHeightCm}
+              description={
+                key === "top"
+                  ? "頂蓋側時可將頂板視為檯面，加入 ABS/PVC 封邊、指定洗溝／洗燈溝、導圓、開孔等 P6 板材加工。"
+                  : "依正道 P6 板材加工計價，可加入 ABS/PVC 封邊、指定洗溝／洗燈溝、導圓、開孔等項目。"
+              }
+              onChange={(zhengdaoProcesses) => {
+                const current = bodyPanelProcesses[key];
+                updateBodyPanelProcesses({
+                  [key]: {
+                    ...current,
+                    frontEdgeABS: "none",
+                    zhengdaoProcesses,
+                  },
+                });
+              }}
+            />
+          </div>
+        )}
         {vendor !== "ZHENGDAO" && (
           <>
         {key === "top" && (
@@ -435,7 +474,7 @@ export function UnitAddonsForm({ value, onChange, vendor = "WEIHO" }: Props) {
     <section className="space-y-3">
       <h3 className="border-b pb-1 text-sm font-semibold">加工選項</h3>
 
-      {renderPanelSection("top", "頂板加工")}
+      {renderPanelSection("top", "頂板／檯面加工")}
       {renderPanelSection("bottom", "底板加工")}
       {vendor !== "ZHENGDAO" && <div className="space-y-3 rounded-md border bg-muted/20 p-3">
         <h4 className="text-xs font-semibold text-slate-700">雙側板共用加工</h4>

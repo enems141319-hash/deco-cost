@@ -20,6 +20,13 @@ const processingQuantitySwitchSchema = z.object({
   quantity: z.number().nonnegative().default(1),
 });
 
+const zhengdaoProcessInputSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  quantityPerDoor: z.number().min(0),
+  lengthMm: z.number().min(0).optional(),
+});
+
 const slidingDoorTrackGrooveOptionSchema = z.object({
   enabled: z.boolean().default(false),
   trackShape: z.enum(["ㄇ", "V", "T"]).default("ㄇ"),
@@ -122,6 +129,7 @@ export const unitAddonsSchema = z.object({
       lightGroove: lightGrooveSwitchSchema.default({ enabled: false, offsetFromFrontMm: 50 }),
       slidingDoorTrackGroove: slidingDoorTrackGrooveOptionSchema.default({ enabled: false, trackShape: "ㄇ" }),
       bookcaseGuideWheelHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+      zhengdaoProcesses: z.array(zhengdaoProcessInputSchema).default([]),
     }).default({
       frontEdgeABS: "none",
       lightGroove: { enabled: false, offsetFromFrontMm: 50 },
@@ -135,6 +143,7 @@ export const unitAddonsSchema = z.object({
       lightStWheelHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
       heavyStWheelHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
       bookcaseGuideWheelHole: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+      zhengdaoProcesses: z.array(zhengdaoProcessInputSchema).default([]),
     }).default({
       frontEdgeABS: "none",
       slidingDoorTrackGroove: { enabled: false, trackShape: "ㄇ" },
@@ -150,6 +159,7 @@ export const unitAddonsSchema = z.object({
       hiddenReturnSlideRail: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
       specialUGlassPivot: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
       tRailBedSet: processingQuantitySwitchSchema.default({ enabled: false, quantity: 1 }),
+      zhengdaoProcesses: z.array(zhengdaoProcessInputSchema).default([]),
     }).default({
       frontEdgeABS: "none",
       lightGroove: { enabled: false, offsetFromFrontMm: 50 },
@@ -291,6 +301,13 @@ export const hardwareItemSchema = z.object({
   materialRef: materialRefSchema,
 });
 
+export const otherCostItemSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1, "其他費用品項不可空白"),
+  quantity: z.number().positive("數量必須大於 0"),
+  unitPrice: z.number().min(0, "價格不可小於 0"),
+});
+
 export const middleDividerSchema = z.object({
   id: z.string().min(1),
   widthCm: z.number().positive("寬度必須大於 0"),
@@ -305,6 +322,12 @@ export const middleDividerSchema = z.object({
     hiddenReturnSlideRail: { enabled: false, quantity: 1 },
   }),
   specialProcesses: z.array(specialProcessSchema).default([]),
+  zhengdaoProcesses: z.array(z.object({
+    id: z.string(),
+    code: z.string(),
+    quantityPerDoor: z.number().min(0),
+    lengthMm: z.number().min(0).optional(),
+  })).optional(),
 });
 
 export const shelfSchema = z.object({
@@ -329,6 +352,12 @@ export const shelfSchemaWithLightGroove = shelfSchema.extend({
     heavyHiddenShelfScrewHole: { enabled: false, quantity: 1 },
   }),
   specialProcesses: z.array(specialProcessSchema).default([]),
+  zhengdaoProcesses: z.array(z.object({
+    id: z.string(),
+    code: z.string(),
+    quantityPerDoor: z.number().min(0),
+    lengthMm: z.number().min(0).optional(),
+  })).optional(),
 });
 
 export const sideTopBottomSealPanelSchema = z.object({
@@ -338,6 +367,7 @@ export const sideTopBottomSealPanelSchema = z.object({
   heightCm: z.number().positive("高度必須大於 0"),
   quantity: z.number().int().positive("數量必須大於 0"),
   materialRef: materialRefSchema,
+  zhengdaoProcesses: z.array(zhengdaoProcessInputSchema).default([]),
 });
 
 export const kickPlateSchema = z.object({
@@ -364,10 +394,18 @@ export const drawerSchema = z.object({
   quantity: z.number().int().positive("數量必須大於 0"),
   grooveSpec: z.enum(["12", "8.5", "9"]).default("8.5"),
   includeRailInQuote: z.boolean().default(true),
+  railQuantity: z.number().positive().optional(),
   bodyKdProcessing: z.boolean().default(false),
   railMaterialRef: materialRefSchema,
   wallMaterialRef: materialRefSchema,
   bottomMaterialRef: materialRefSchema,
+  tray: z.object({
+    enabled: z.boolean().default(false),
+    widthCm: z.number().positive().default(60),
+    depthCm: z.number().positive().default(45),
+    quantity: z.number().int().positive().default(1),
+    materialRef: materialRefSchema,
+  }).optional(),
   frontMoldProcessing: z.boolean().default(false),
   frontMoldRadius: z.enum(["none", "R20", "R30", "R50", "R80", "R100", "R150", "R200", "R250", "R300"]).default("none"),
   frontMoldCornerCount: z.number().int().min(0).default(2),
@@ -401,6 +439,24 @@ export const drawerSchema = z.object({
   }).default({ style: "none", lengthCm: 40, bakedPaint: false }),
 });
 
+export const drawerTraySchema = z.object({
+  id: z.string().min(1),
+  name: z.string().default("抽盤"),
+  widthCm: z.number().positive("抽盤寬度必須大於 0"),
+  depthCm: z.number().positive("抽盤深度必須大於 0"),
+  quantity: z.number().int().positive("抽盤數量必須大於 0"),
+  materialRef: materialRefSchema,
+  includeRailInQuote: z.boolean().default(false),
+  railQuantity: z.number().positive("抽盤滑軌數量必須大於 0").optional(),
+  railMaterialRef: materialRefSchema.optional(),
+  frontPanel: z.object({
+    enabled: z.boolean().default(false),
+    widthCm: z.number().positive("抽頭寬度必須大於 0"),
+    heightCm: z.number().positive("抽頭高度必須大於 0"),
+    materialRef: materialRefSchema,
+  }).optional(),
+});
+
 export const cabinetUnitInputSchema = z.object({
   id: z.string().min(1),
   vendor: z.enum(["WEIHO", "ZHENGDAO"]).optional(),
@@ -427,8 +483,10 @@ export const cabinetUnitInputSchema = z.object({
   shelves: z.array(shelfSchemaWithLightGroove),
   sideTopBottomSealPanels: z.array(sideTopBottomSealPanelSchema).default([]),
   drawers: z.array(drawerSchema).default([]),
+  drawerTrays: z.array(drawerTraySchema).default([]),
   doors: z.array(doorInputSchema),
   hardwareItems: z.array(hardwareItemSchema).default([]),
+  otherCostItems: z.array(otherCostItemSchema).default([]),
   kickPlate: kickPlateSchema,
   manualKickPlates: z.array(manualKickPlateSchema).default([]),
 }).superRefine((unit, ctx) => {

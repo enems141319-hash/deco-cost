@@ -49,8 +49,10 @@ function emptyUnit(vendor: CabinetVendor = "WEIHO"): CabinetUnitInput {
     shelves: [],
     sideTopBottomSealPanels: [],
     drawers: [],
+    drawerTrays: [],
     doors: [],
     hardwareItems: [],
+    otherCostItems: [],
     kickPlate: null,
     manualKickPlates: [],
   };
@@ -84,7 +86,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
     : unit.bottomPanelMaterialRef ?? legacyBodyMaterial;
   const bodyPanelProcesses = {
     top: {
-      frontEdgeABS: unit.addons?.bodyPanelProcesses?.top?.frontEdgeABS
+      frontEdgeABS: isZhengdao ? "none" : unit.addons?.bodyPanelProcesses?.top?.frontEdgeABS
         ?? unit.addons?.frontEdgeABS
         ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top.frontEdgeABS,
       lightGroove: unit.addons?.bodyPanelProcesses?.top?.lightGroove
@@ -100,7 +102,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
       },
     },
     bottom: {
-      frontEdgeABS: unit.addons?.bodyPanelProcesses?.bottom?.frontEdgeABS
+      frontEdgeABS: isZhengdao ? "none" : unit.addons?.bodyPanelProcesses?.bottom?.frontEdgeABS
         ?? unit.addons?.frontEdgeABS
         ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom.frontEdgeABS,
       slidingDoorTrackGroove: {
@@ -125,7 +127,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
       },
     },
     left: {
-      frontEdgeABS: unit.addons?.bodyPanelProcesses?.left?.frontEdgeABS
+      frontEdgeABS: isZhengdao ? "none" : unit.addons?.bodyPanelProcesses?.left?.frontEdgeABS
         ?? unit.addons?.frontEdgeABS
         ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left.frontEdgeABS,
       lightGroove: unit.addons?.bodyPanelProcesses?.left?.lightGroove
@@ -149,7 +151,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
       },
     },
     right: {
-      frontEdgeABS: unit.addons?.bodyPanelProcesses?.right?.frontEdgeABS
+      frontEdgeABS: isZhengdao ? "none" : unit.addons?.bodyPanelProcesses?.right?.frontEdgeABS
         ?? unit.addons?.frontEdgeABS
         ?? DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right.frontEdgeABS,
       lightGroove: unit.addons?.bodyPanelProcesses?.right?.lightGroove
@@ -267,6 +269,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
     sideTopBottomSealPanels: (unit.sideTopBottomSealPanels ?? []).map((panel) => ({
       ...panel,
       name: panel.name ?? "側/頂/底封板",
+      zhengdaoProcesses: panel.zhengdaoProcesses ?? [],
     })),
     drawers: (unit.drawers ?? []).map((drawer) => ({
       ...drawer,
@@ -287,6 +290,40 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
         ...drawer.frontHandle,
       },
     })),
+    drawerTrays: [
+      ...(unit.drawerTrays ?? []).map((tray) => ({
+        ...tray,
+        includeRailInQuote: tray.includeRailInQuote ?? false,
+        railQuantity: tray.railQuantity ?? tray.quantity,
+        railMaterialRef: tray.railMaterialRef ?? null,
+        frontPanel: {
+          enabled: false,
+          widthCm: tray.widthCm,
+          heightCm: 16,
+          materialRef: null,
+          ...tray.frontPanel,
+        },
+      })),
+      ...(unit.drawers ?? [])
+        .filter((drawer) => drawer.tray && "enabled" in drawer.tray && drawer.tray.enabled)
+        .map((drawer) => ({
+          id: `${drawer.id}-tray`,
+          name: `${drawer.name || "抽屜"}-抽盤`,
+          widthCm: drawer.tray?.widthCm ?? drawer.widthCm,
+          depthCm: drawer.tray?.depthCm ?? drawer.railLengthCm ?? drawer.depthCm,
+          quantity: drawer.tray?.quantity ?? 1,
+          materialRef: drawer.tray?.materialRef ?? drawer.bottomMaterialRef ?? null,
+          includeRailInQuote: false,
+          railQuantity: drawer.tray?.quantity ?? 1,
+          railMaterialRef: null,
+          frontPanel: {
+            enabled: false,
+            widthCm: drawer.tray?.widthCm ?? drawer.widthCm,
+            heightCm: 16,
+            materialRef: null,
+          },
+        })),
+    ],
     doors: (unit.doors ?? []).map((door) => ({
       ...door,
       includeHingeInQuote: door.includeHingeInQuote ?? true,
@@ -325,6 +362,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
       ],
     })),
     hardwareItems: unit.hardwareItems ?? [],
+    otherCostItems: unit.otherCostItems ?? [],
     kickPlate: unit.kickPlate ?? null,
     manualKickPlates: unit.manualKickPlates ?? [],
   };

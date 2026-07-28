@@ -43,7 +43,9 @@ const nonDoorProcessRule = (
 ): ZhengdaoDoorProcessRule => ({ code, name, group, series: [], billingMode, unitPrice, ...options });
 
 export const ZHENGDAO_2025_DOOR_PROCESS_RULES: ZhengdaoDoorProcessRule[] = [
-  rule("EDGE_A", "封 A（封單邊）", "洗槽", "P6_BOARD_PROCESS", "PER_CAI", 10, { minCai: 1 }),
+  rule("EDGE_A", "ABS 封邊（單邊）", "洗槽", "P6_BOARD_PROCESS", "PER_CAI", 10, { minCai: 1 }),
+  rule("EDGE_A_DOUBLE", "ABS 封邊（雙邊）", "洗槽", "P6_BOARD_PROCESS", "PER_CAI", 20, { minCai: 1 }),
+  rule("EDGE_P", "PVC 封邊（P 邊）", "洗槽", "P6_BOARD_PROCESS", "PER_CAI", 0, { minCai: 1 }),
   rule("DOOR_PATTERN_MATCH", "對紋（板厚 3/8/18mm）", "洗槽", "P6_BOARD_PROCESS", "PER_CAI", 80, { minCai: 5 }),
   rule("SHAPED_SLOPED_BACK", "斜背型門板", "造型門板", "P7_SHAPED_DOOR", "PER_CAI", 90, { minCai: 2 }),
   rule("SHAPED_S_BACK", "斜背 S 型門板", "造型門板", "P7_SHAPED_DOOR", "PER_CAI", 140, { minCai: 2 }),
@@ -83,7 +85,7 @@ export const ZHENGDAO_2025_DOOR_PROCESS_RULES: ZhengdaoDoorProcessRule[] = [
   rule("G15_50", "G15 1/2 導圓 50mm／601–1200mm", "G 系列造型", ["P6_BOARD_PROCESS", "P10_HANDMADE_SHAPED"], "PER_ITEM", 3200, { minCai: 1, note: "含封邊；601mm <= 加工直徑 <= 1200mm" }),
   rule("C_GROOVE", "切 C 型槽", "洗槽", "P6_BOARD_PROCESS", "PER_ITEM", 200, { note: "18/25mm，不封邊" }),
   rule("ALUMINUM_STRIP_GROOVE", "隔板加鋁條洗槽", "洗槽", "P6_BOARD_PROCESS", "PER_CAI", 100, { minCai: 1 }),
-  rule("CUSTOM_GROOVE", "指定洗溝", "洗槽", "P6_BOARD_PROCESS", "PER_10MM", 20),
+  rule("CUSTOM_GROOVE", "指定洗溝／洗燈溝", "洗槽", "P6_BOARD_PROCESS", "PER_10MM", 20),
   rule("TRACK_GROOVE", "洗軌道溝", "洗槽", "P6_BOARD_PROCESS", "PER_10MM", 10),
   rule("DOOR_STRAIGHTENER_GROOVE", "門板拉直器開槽", "洗槽", "P6_BOARD_PROCESS", "PER_10MM", 10),
   rule("WIRE_OUTLET_HOLE", "電線孔蓋孔", "挖孔", "P6_BOARD_PROCESS", "PER_ITEM", 100),

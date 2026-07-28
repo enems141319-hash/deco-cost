@@ -6,6 +6,8 @@ export type ZhengdaoDoorMaterialTier = "JM_ER" | "AR" | "MR" | "PR";
 
 export type ZhengdaoDoorProcessCode =
   | "EDGE_A"
+  | "EDGE_A_DOUBLE"
+  | "EDGE_P"
   | "DOOR_PATTERN_MATCH"
   | "SHAPED_SLOPED_BACK"
   | "SHAPED_S_BACK"

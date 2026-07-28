@@ -52,6 +52,7 @@ function emptyDrawer(): DrawerInput {
     depthCm: 45,
     railLengthCm: 45,
     includeRailInQuote: true,
+    railQuantity: 1,
     bodyKdProcessing: false,
     grooveSpec: "8.5",
     quantity: 1,
@@ -301,6 +302,19 @@ export function DrawerForm({ drawers, onChange }: Props) {
                   onCheckedChange={(checked) => update(i, { includeRailInQuote: checked })}
                 />
               </div>
+              {(drawer.includeRailInQuote ?? true) && (
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">滑軌數量</Label>
+                  <Input
+                    type="number"
+                    min={0.1}
+                    step={0.1}
+                    className="h-8 text-xs"
+                    value={drawer.railQuantity ?? drawer.quantity}
+                    onChange={(event) => update(i, { railQuantity: Number(event.target.value) })}
+                  />
+                </div>
+              )}
               <MaterialDropdown
                 value={drawer.railMaterialRef}
                 onChange={(ref) => update(i, { railMaterialRef: ref })}

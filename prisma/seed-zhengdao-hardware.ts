@@ -110,9 +110,83 @@ const rows: HardwareRow[] = [
   { category: MaterialCategory.HARDWARE_OTHER, brand: "掀桿", code: "RW_75606", name: "德國進口搖臂（隨意停）", unit: "支", price: 850, notes: "木門用；組裝工資另計 200/支" },
   { category: MaterialCategory.HARDWARE_OTHER, brand: "掀桿", code: "RW_75606S", name: "德國進口搖臂（隨意停）", spec: "細鋁框用", unit: "支", price: 850, notes: "組裝工資另計 200/支" },
 
+  ...createZhengdaoClosetRodRows(),
   ...createZhengdaoOtherHardwareRows(),
   ...createZhengdaoHandleRows(),
 ];
+
+function createZhengdaoClosetRodRows(): HardwareRow[] {
+  const rows: HardwareRow[] = [];
+  const push = (row: Omit<HardwareRow, "category" | "brand" | "sortOrder">) => {
+    rows.push({
+      category: MaterialCategory.HARDWARE_OTHER,
+      brand: "吊衣桿",
+      sortOrder: 1800 + rows.length,
+      ...row,
+    });
+  };
+
+  ([
+    ["RW_605040A", 400, 355, 120],
+    ["RW_605045A", 450, 405, 120],
+    ["RW_605050A", 500, 455, 120],
+    ["RW_605060A", 600, 555, 130],
+    ["RW_605080A", 800, 755, 150],
+    ["RW_605090A", 900, 855, 160],
+    ["RW_605100A", 1000, 955, 170],
+    ["RW_605120A", 1200, 1155, 210],
+  ] as const).forEach(([code, cabinetWidthMm, cutLengthMm, price]) => push({
+    code,
+    name: `${code} 鍍鉻橢圓吊衣桿`,
+    spec: `15x30x0.8mm／適用櫃寬 ${cabinetWidthMm}mm／裁切 ${cutLengthMm}mm`,
+    unit: "支",
+    price,
+    notes: "P39；目玉另購",
+  }));
+
+  ([
+    ["RW_1153007_800", 800, 755, 180],
+    ["RW_1153007_900", 900, 855, 200],
+    ["RW_1153007_1000", 1000, 955, 230],
+    ["RW_1153007_1200", 1200, 1155, 270],
+    ["RW_1153007_1800", 1800, 1755, 580],
+  ] as const).forEach(([code, cabinetWidthMm, cutLengthMm, price]) => push({
+    code,
+    name: `${code} 新型橢圓吊衣桿`,
+    spec: `鈦灰色／適用櫃寬 ${cabinetWidthMm}mm／裁切 ${cutLengthMm}mm`,
+    unit: "支",
+    price,
+    notes: "P39",
+  }));
+
+  push({
+    code: "RW_605372",
+    name: "RW_605372 轉角橢圓吊衣桿",
+    spec: "720x720mm／鍍鉻",
+    unit: "支",
+    price: 610,
+    notes: "P39；目玉、U 型固定座另購",
+  });
+
+  ([
+    ["RW_2251580", "目玉", "鈦灰色", "只", 100],
+    ["RW_YZA512J", "中吊", "鈦灰色", "只", 110],
+    ["RW_605001", "目玉", "鍍鉻", "只", 14],
+    ["RW_605002", "彎頭", "鍍鉻", "只", 70],
+    ["RW_605003", "中通", "鍍鉻", "只", 60],
+    ["RW_605005", "U 型固定座", "鍍鉻", "只", 135],
+    ["RW_AS1000L", "橢圓吊衣桿轉角接管", "鋅合金", "組", 800],
+  ] as const).forEach(([code, name, material, unit, price]) => push({
+    code,
+    name: `${code} ${name}`,
+    spec: material,
+    unit,
+    price,
+    notes: "P39",
+  }));
+
+  return rows;
+}
 
 function createZhengdaoOtherHardwareRows(): HardwareRow[] {
   const rows: HardwareRow[] = [];

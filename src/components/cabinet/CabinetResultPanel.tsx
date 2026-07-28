@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
-import type { CabinetUnitResult, DoorResult, HardwareResult, PanelResult } from "@/types";
+import type { CabinetUnitResult, DoorResult, HardwareResult, OtherCostResult, PanelResult } from "@/types";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import { AreaDisplay } from "@/components/shared/AreaDisplay";
 import { Card, CardContent } from "@/components/ui/card";
@@ -415,6 +415,58 @@ function HardwareTable({
   );
 }
 
+function OtherCostTable({
+  sectionNumber,
+  rows,
+  collapseCommand,
+  forceExpanded = false,
+}: {
+  sectionNumber: number;
+  rows: OtherCostResult[];
+  collapseCommand?: ResultCollapseCommand;
+  forceExpanded?: boolean;
+}) {
+  if (rows.length === 0) return null;
+
+  return (
+    <ResultSection sectionNumber={sectionNumber} title="其他費用" command={collapseCommand} forceExpanded={forceExpanded}>
+      <div className={tableShellClass}>
+        <table className="w-full min-w-[480px] table-fixed text-sm">
+          <colgroup>
+            <col className="w-[52%]" />
+            <col className="w-[72px]" />
+            <col className="w-[116px]" />
+            <col className="w-[104px]" />
+          </colgroup>
+          <thead className="bg-muted/40">
+            <tr className="border-b">
+              <th className={`${headerCellClass} text-left`}>品項</th>
+              <th className={`${headerCellClass} text-right`}>數量</th>
+              <th className={`${headerCellClass} text-right`}>單價</th>
+              <th className={`${headerCellClass} text-right`}>小計</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={row.id} className="border-b border-muted/50 hover:bg-muted/20">
+                <td className={`${bodyCellClass} min-w-0`}>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="cabinet-board-index shrink-0 font-medium text-blue-700">{sectionNumber}-{rowIndex + 1}</span>
+                    <span className="cabinet-board-title min-w-0 break-words font-medium">{row.name}</span>
+                  </div>
+                </td>
+                <td className={numericCellClass}>{row.quantity}</td>
+                <td className={numericCellClass}>{formatCurrency(row.unitCost)}</td>
+                <td className={`${numericCellClass} font-semibold`}>{formatCurrency(row.subtotal)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </ResultSection>
+  );
+}
+
 function buildMaterialAreaRows(result: CabinetUnitResult): MaterialAreaRow[] {
   const rows = [
     ...result.panels,
@@ -502,6 +554,7 @@ export function CabinetResultPanel({ result, highlightedBoardId = null, forceAll
   const doorsSection = result.doors.length > 0 ? ++sectionNumber : 0;
   const doorHardwareSection = doorHardware.length > 0 ? ++sectionNumber : 0;
   const otherHardwareSection = otherHardware.length > 0 ? ++sectionNumber : 0;
+  const otherCostSection = result.otherCosts.length > 0 ? ++sectionNumber : 0;
   const accessoriesSection = result.accessories.length > 0 ? ++sectionNumber : 0;
 
   return (
@@ -547,6 +600,8 @@ export function CabinetResultPanel({ result, highlightedBoardId = null, forceAll
         )}
 
         <HardwareTable sectionNumber={otherHardwareSection} title="五金 / 另料" rows={otherHardware} collapseCommand={resultCollapseCommand} forceExpanded={forceAllExpanded} />
+
+        <OtherCostTable sectionNumber={otherCostSection} rows={result.otherCosts} collapseCommand={resultCollapseCommand} forceExpanded={forceAllExpanded} />
 
         {result.accessories.length > 0 && (
           <ResultSection sectionNumber={accessoriesSection} title="配件" command={resultCollapseCommand} forceExpanded={forceAllExpanded}>
@@ -597,6 +652,11 @@ export function CabinetResultPanel({ result, highlightedBoardId = null, forceAll
         {summary.hardwareCost > 0 && (
           <div className="flex justify-between text-muted-foreground">
             <span>五金</span><span>{formatCurrency(summary.hardwareCost)}</span>
+          </div>
+        )}
+        {summary.otherCost > 0 && (
+          <div className="flex justify-between text-muted-foreground">
+            <span>其他費用</span><span>{formatCurrency(summary.otherCost)}</span>
           </div>
         )}
         {summary.addonsCost > 0 && (

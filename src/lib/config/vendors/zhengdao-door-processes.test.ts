@@ -7,6 +7,18 @@ assert.equal(edgeA.billingMode, "PER_CAI");
 assert.equal(edgeA.minCai, 1);
 assert.equal(edgeA.series.includes("P6_BOARD_PROCESS"), true);
 
+const edgeADouble = ZHENGDAO_2025_DOOR_PROCESS_RULE_BY_CODE.EDGE_A_DOUBLE;
+assert.equal(edgeADouble.unitPrice, 20);
+assert.equal(edgeADouble.billingMode, "PER_CAI");
+assert.equal(edgeADouble.minCai, 1);
+assert.equal(edgeADouble.series.includes("P6_BOARD_PROCESS"), true);
+
+const edgeP = ZHENGDAO_2025_DOOR_PROCESS_RULE_BY_CODE.EDGE_P;
+assert.equal(edgeP.unitPrice, 0);
+assert.equal(edgeP.billingMode, "PER_CAI");
+assert.equal(edgeP.minCai, 1);
+assert.equal(edgeP.series.includes("P6_BOARD_PROCESS"), true);
+
 const patternMatch = ZHENGDAO_2025_DOOR_PROCESS_RULE_BY_CODE.DOOR_PATTERN_MATCH;
 assert.equal(patternMatch.unitPrice, 80);
 assert.equal(patternMatch.billingMode, "PER_CAI");

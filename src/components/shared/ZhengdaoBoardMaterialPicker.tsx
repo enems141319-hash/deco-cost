@@ -6,7 +6,7 @@ import { materialApiUrl } from "@/components/cabinet/CabinetVendorContext";
 import { materialApiErrorMessage } from "@/components/shared/material-api-error";
 import type { MaterialRef } from "@/types";
 
-type ZhengdaoEdgeMode = "NONE" | "NO_EDGE" | "ABS";
+type ZhengdaoEdgeMode = "NONE" | "NO_EDGE" | "PVC" | "ABS";
 
 export const ZHENGDAO_BOARD_UNSELECTED_VALUE = "__ZHENGDAO_BOARD_UNSELECTED__";
 
@@ -47,11 +47,12 @@ export interface ZhengdaoBoardMaterialVariant {
 export function filterZhengdaoBoardMaterials(
   materials: ZhengdaoBoardMaterialOption[],
   category: "BOARD_BODY" | "BOARD_BACKING",
+  allowedThicknesses?: number[],
 ): ZhengdaoBoardMaterialOption[] {
-  const allowedThicknesses = category === "BOARD_BODY" ? [18, 19] : [8, 9];
+  const thicknesses = allowedThicknesses ?? (category === "BOARD_BODY" ? [18, 19] : [8, 9]);
   return materials.filter((material) => {
     const thicknessMm = material.pricingMeta?.thicknessMm;
-    return thicknessMm !== undefined && allowedThicknesses.includes(thicknessMm);
+    return thicknessMm !== undefined && thicknesses.includes(thicknessMm);
   });
 }
 
@@ -60,15 +61,9 @@ export function zhengdaoBoardSeries(material: ZhengdaoBoardMaterialOption): stri
 }
 
 export function zhengdaoBoardSpecLabel(material: ZhengdaoBoardMaterialOption): string {
-  const thickness = material.pricingMeta?.thicknessMm
+  return material.pricingMeta?.thicknessMm
     ? `${material.pricingMeta.thicknessMm}mm`
     : material.boardType ?? material.spec ?? "未標示厚度";
-  const edgeLabel = material.pricingMeta?.edgeMode === "ABS"
-    ? "封 ABS"
-    : material.pricingMeta?.edgeMode === "NO_EDGE"
-      ? "無封邊"
-      : null;
-  return [thickness, edgeLabel].filter(Boolean).join(" / ");
 }
 
 export function groupZhengdaoBoardMaterials(
@@ -158,11 +153,13 @@ export function ZhengdaoBoardMaterialPicker({
   onChange,
   category,
   placeholder = "選擇正道板材",
+  allowedThicknesses,
 }: {
   value: MaterialRef | null;
   onChange: (ref: MaterialRef | null) => void;
   category: "BOARD_BODY" | "BOARD_BACKING";
   placeholder?: string;
+  allowedThicknesses?: number[];
 }) {
   const [materials, setMaterials] = useState<ZhengdaoBoardMaterialOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,8 +195,8 @@ export function ZhengdaoBoardMaterialPicker({
   }, [category]);
 
   const selectableMaterials = useMemo(
-    () => filterZhengdaoBoardMaterials(materials, category),
-    [category, materials],
+    () => filterZhengdaoBoardMaterials(materials, category, allowedThicknesses),
+    [allowedThicknesses, category, materials],
   );
   const variants = useMemo(() => groupZhengdaoBoardMaterialVariants(selectableMaterials), [selectableMaterials]);
   const selected = selectableMaterials.find((material) => material.id === value?.materialId) ?? null;
@@ -207,7 +204,6 @@ export function ZhengdaoBoardMaterialPicker({
     variant.baseMaterial.id === selected.id ||
     variant.absMaterial?.id === selected.id
   )) ?? null;
-  const selectedUsesAbs = selectedVariant?.absMaterial?.id === selected?.id;
   return (
     <div className="space-y-1">
       <Select
@@ -216,7 +212,7 @@ export function ZhengdaoBoardMaterialPicker({
         onValueChange={(variantKey) => {
           if (variantKey === ZHENGDAO_BOARD_UNSELECTED_VALUE) return;
           const variant = variants.find((option) => option.key === variantKey) ?? null;
-          const material = selectedUsesAbs && variant?.absMaterial ? variant.absMaterial : variant?.baseMaterial ?? null;
+          const material = variant?.baseMaterial ?? null;
           onChange(material ? toMaterialRef(material) : null);
         }}
       >
@@ -238,29 +234,10 @@ export function ZhengdaoBoardMaterialPicker({
           ))}
         </SelectContent>
       </Select>
-      {selectedVariant?.absMaterial && selectedVariant.absMaterial.id !== selectedVariant.baseMaterial.id && (
-        <label className="flex items-center justify-between gap-3 rounded border bg-muted/20 px-3 py-2 text-xs">
-          <span className="text-muted-foreground">
-            封 ABS
-            <span className="ml-1 text-[11px]">
-              {`$${selectedVariant.absMaterial.price}/${selectedVariant.absMaterial.unit}`}
-            </span>
-          </span>
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-blue-600"
-            checked={selectedUsesAbs}
-            onChange={(event) => {
-              const nextMaterial = event.target.checked && selectedVariant.absMaterial
-                ? selectedVariant.absMaterial
-                : selectedVariant.baseMaterial;
-              onChange(toMaterialRef(nextMaterial));
-            }}
-          />
-        </label>
-      )}
       <p className="text-[11px] text-muted-foreground">
-        {category === "BOARD_BODY" ? "桶身可選 18/19mm" : "背板可選 8/9mm"}
+        {category === "BOARD_BODY"
+          ? `桶身可選 ${(allowedThicknesses ?? [18, 19]).join("/")}mm`
+          : "背板可選 8/9mm"}
       </p>
     </div>
   );

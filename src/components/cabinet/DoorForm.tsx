@@ -522,6 +522,8 @@ export function DoorForm({ doors, onChange }: Props) {
               {vendor === "ZHENGDAO" && (
                 <ZhengdaoDoorProcessesForm
                   value={door.zhengdaoProcesses ?? []}
+                  boardWidthCm={door.widthCm}
+                  boardHeightCm={door.heightCm}
                   onChange={(zhengdaoProcesses) => update(i, { zhengdaoProcesses })}
                 />
               )}

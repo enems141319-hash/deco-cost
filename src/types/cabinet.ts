@@ -115,6 +115,7 @@ export interface UnitBodyPanelProcesses {
     lightGroove: LightGrooveSwitch;
     slidingDoorTrackGroove: SlidingDoorTrackGrooveOption;
     bookcaseGuideWheelHole: ProcessingQuantitySwitch;
+    zhengdaoProcesses?: import("./zhengdao-door").ZhengdaoDoorProcessInput[];
   };
   bottom: {
     frontEdgeABS: UnitAddons["frontEdgeABS"];
@@ -123,6 +124,7 @@ export interface UnitBodyPanelProcesses {
     lightStWheelHole: ProcessingQuantitySwitch;
     heavyStWheelHole: ProcessingQuantitySwitch;
     bookcaseGuideWheelHole: ProcessingQuantitySwitch;
+    zhengdaoProcesses?: import("./zhengdao-door").ZhengdaoDoorProcessInput[];
   };
   left: {
     frontEdgeABS: UnitAddons["frontEdgeABS"];
@@ -131,6 +133,7 @@ export interface UnitBodyPanelProcesses {
     hiddenReturnSlideRail: ProcessingQuantitySwitch;
     specialUGlassPivot: ProcessingQuantitySwitch;
     tRailBedSet: ProcessingQuantitySwitch;
+    zhengdaoProcesses?: import("./zhengdao-door").ZhengdaoDoorProcessInput[];
   };
   right: {
     frontEdgeABS: UnitAddons["frontEdgeABS"];
@@ -139,6 +142,7 @@ export interface UnitBodyPanelProcesses {
     hiddenReturnSlideRail: ProcessingQuantitySwitch;
     specialUGlassPivot: ProcessingQuantitySwitch;
     tRailBedSet: ProcessingQuantitySwitch;
+    zhengdaoProcesses?: import("./zhengdao-door").ZhengdaoDoorProcessInput[];
   };
 }
 
@@ -331,6 +335,13 @@ export interface HardwareItemInput {
   materialRef: MaterialRef | null;
 }
 
+export interface OtherCostItemInput {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export interface MiddleDividerInput {
   id: string;
   widthCm: number;
@@ -341,6 +352,7 @@ export interface MiddleDividerInput {
   materialRef: MaterialRef | null;
   addons: MiddleDividerAddons;
   specialProcesses?: SpecialProcessInput[];
+  zhengdaoProcesses?: import("./zhengdao-door").ZhengdaoDoorProcessInput[];
 }
 
 export interface ShelfInput {
@@ -353,6 +365,7 @@ export interface ShelfInput {
   lightGroove?: ShelfLightGroove;
   hardwareProcesses?: ShelfHardwareProcesses;
   specialProcesses?: SpecialProcessInput[];
+  zhengdaoProcesses?: import("./zhengdao-door").ZhengdaoDoorProcessInput[];
 }
 
 export interface SideTopBottomSealPanelInput {
@@ -362,6 +375,7 @@ export interface SideTopBottomSealPanelInput {
   heightCm: number;
   quantity: number;
   materialRef: MaterialRef | null;
+  zhengdaoProcesses?: import("./zhengdao-door").ZhengdaoDoorProcessInput[];
 }
 
 export interface KickPlateInput {
@@ -394,12 +408,20 @@ export interface DrawerInput {
   depthCm: number;
   railLengthCm: number;
   includeRailInQuote?: boolean;
+  railQuantity?: number;
   bodyKdProcessing?: boolean;
   grooveSpec: "12" | "8.5" | "9";
   quantity: number;
   railMaterialRef: MaterialRef | null;
   wallMaterialRef: MaterialRef | null;
   bottomMaterialRef: MaterialRef | null;
+  tray?: {
+    enabled: boolean;
+    widthCm: number;
+    depthCm: number;
+    quantity: number;
+    materialRef: MaterialRef | null;
+  };
   frontMoldProcessing?: boolean;
   frontMoldRadius?: "none" | "R20" | "R30" | "R50" | "R80" | "R100" | "R150" | "R200" | "R250" | "R300";
   frontMoldCornerCount?: number;
@@ -407,6 +429,24 @@ export interface DrawerInput {
     style: ProfileHandleStyle;
     lengthCm: number;
     bakedPaint?: boolean;
+  };
+}
+
+export interface DrawerTrayInput {
+  id: string;
+  name: string;
+  widthCm: number;
+  depthCm: number;
+  quantity: number;
+  materialRef: MaterialRef | null;
+  includeRailInQuote?: boolean;
+  railQuantity?: number;
+  railMaterialRef?: MaterialRef | null;
+  frontPanel?: {
+    enabled: boolean;
+    widthCm: number;
+    heightCm: number;
+    materialRef: MaterialRef | null;
   };
 }
 
@@ -432,8 +472,10 @@ export interface CabinetUnitInput {
   shelves: ShelfInput[];
   sideTopBottomSealPanels?: SideTopBottomSealPanelInput[];
   drawers: DrawerInput[];
+  drawerTrays?: DrawerTrayInput[];
   doors: DoorInput[];
   hardwareItems: HardwareItemInput[];
+  otherCostItems?: OtherCostItemInput[];
   kickPlate: KickPlateInput | null;
   manualKickPlates?: ManualKickPlateInput[];
 }
@@ -495,6 +537,15 @@ export interface HardwareResult {
   subtotal: number;
 }
 
+export interface OtherCostResult {
+  id: string;
+  name: string;
+  description: string;
+  quantity: number;
+  unitCost: number;
+  subtotal: number;
+}
+
 export interface AccessoryResult {
   id: string;
   name: string;
@@ -515,6 +566,7 @@ export interface CabinetUnitSummary {
   internalPartsCost: number;
   doorsCost: number;
   hardwareCost: number;
+  otherCost: number;
   accessoriesCost: number;
   addonsCost: number;
   boardBodyCost: number;
@@ -551,6 +603,7 @@ export interface CabinetUnitResult {
   internalParts: PanelResult[];
   doors: DoorResult[];
   hardware: HardwareResult[];
+  otherCosts: OtherCostResult[];
   accessories: AccessoryResult[];
   summary: CabinetUnitSummary;
 }

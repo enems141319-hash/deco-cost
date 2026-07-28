@@ -25,6 +25,21 @@ const bodyRows = [
   ["HR", 18, "NONE", 410, 2],
   ["HR", 3, "NONE", 170, 2],
   ["MR", 19, "NONE", 300, 2],
+  ["ER928", 25, "PVC", 170, 2],
+  ["ER928", 25, "ABS", 180, 2],
+  ["ER928", 50, "ABS", 420, 3],
+  ["JM", 25, "PVC", 170, 2],
+  ["JM", 25, "ABS", 180, 2],
+  ["JM", 50, "ABS", 420, 3],
+  ["ER", 25, "PVC", 210, 2],
+  ["ER", 25, "ABS", 220, 2],
+  ["ER", 50, "ABS", 500, 3],
+  ["AR", 25, "PVC", 240, 2],
+  ["AR", 25, "ABS", 250, 2],
+  ["AR", 50, "ABS", 600, 3],
+  ["MR", 25, "PVC", 590, 2],
+  ["MR", 25, "ABS", 600, 2],
+  ["MR", 50, "ABS", 800, 3],
 ] as const;
 
 const backingRows = [
@@ -45,7 +60,8 @@ const backingRows = [
 type Row = readonly [series: string, thicknessMm: number, edgeMode: string, price: number, minCai: number];
 
 function edgeLabel(edgeMode: string): string {
-  if (edgeMode === "ABS") return "對 ABS";
+  if (edgeMode === "ABS") return "封 ABS";
+  if (edgeMode === "PVC") return "封 PVC";
   if (edgeMode === "NO_EDGE") return "無封邊";
   return "";
 }

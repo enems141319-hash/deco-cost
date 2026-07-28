@@ -13,6 +13,7 @@ import { useCabinetVendor } from "./CabinetVendorContext";
 import { generateId } from "@/lib/utils";
 import { DEFAULT_MIDDLE_DIVIDER_ADDONS, type MaterialRef, type MiddleDividerInput, type ProcessingQuantitySwitch, type ShelfInput, type SideTopBottomSealPanelInput } from "@/types";
 import { SpecialProcessesForm } from "./SpecialProcessesForm";
+import { ZhengdaoDoorProcessesForm } from "./ZhengdaoDoorProcessesForm";
 import type { CollapseCommand } from "./CabinetUnitForm";
 
 interface Props {
@@ -266,6 +267,16 @@ export function InternalPartsForm({
                 </div>
               </div>
             )}
+            {vendor === "ZHENGDAO" && (
+              <ZhengdaoDoorProcessesForm
+                value={d.zhengdaoProcesses ?? []}
+                title="正道中立板／櫃內加工"
+                description="依正道 P6 板材加工計價，可加入洗溝、洗燈溝、開孔、導圓等加工。"
+                boardWidthCm={d.fullWidth ? computedFullDepthCm : d.widthCm}
+                boardHeightCm={d.fullHeight ? computedFullHeightCm : d.heightCm}
+                onChange={(zhengdaoProcesses) => updateDivider(i, { zhengdaoProcesses })}
+              />
+            )}
             {vendor !== "ZHENGDAO" && (
               <>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -449,6 +460,16 @@ export function InternalPartsForm({
                 )}
               </div>
             )}
+            {vendor === "ZHENGDAO" && (
+              <ZhengdaoDoorProcessesForm
+                value={s.zhengdaoProcesses ?? []}
+                title="正道層板／櫃內加工"
+                description="依正道 P6 板材加工計價，可加入洗溝、洗燈溝、開孔、導圓等加工。"
+                boardWidthCm={s.widthCm}
+                boardHeightCm={s.fullDepth ? computedFullDepthCm : s.depthCm}
+                onChange={(zhengdaoProcesses) => updateShelf(i, { zhengdaoProcesses })}
+              />
+            )}
             {vendor !== "ZHENGDAO" && (
               <>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -583,6 +604,16 @@ export function InternalPartsForm({
               onChange={(ref) => updateSideTopBottomSealPanel(i, { materialRef: ref })}
               category="BOARD_BODY"
             />
+            {vendor === "ZHENGDAO" && (
+              <ZhengdaoDoorProcessesForm
+                value={panel.zhengdaoProcesses ?? []}
+                title="正道側／頂／底封板加工"
+                description="依正道 P6 板材加工計價，可加入封邊、洗溝、洗燈溝、開孔、導圓等加工。"
+                boardWidthCm={panel.widthCm}
+                boardHeightCm={panel.heightCm}
+                onChange={(zhengdaoProcesses) => updateSideTopBottomSealPanel(i, { zhengdaoProcesses })}
+              />
+            )}
           </div>
         ))}
       </CollapsibleGroup>

@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import { Archive, Box, ChevronDown, DoorOpen, Printer, Wrench, type LucideIcon } from "lucide-react";
+import { Archive, Box, ChevronDown, DoorOpen, Printer, ReceiptText, Wrench, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,9 +14,11 @@ import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { ZhengdaoBoardMaterialPicker } from "@/components/shared/ZhengdaoBoardMaterialPicker";
 import { DoorForm } from "./DoorForm";
 import { DrawerForm } from "./DrawerForm";
+import { DrawerTrayForm } from "./DrawerTrayForm";
 import { HardwareItemsForm } from "./HardwareItemsForm";
 import { InternalPartsForm } from "./InternalPartsForm";
 import { KickPlateForm } from "./KickPlateForm";
+import { OtherCostsForm } from "./OtherCostsForm";
 import { ZhengdaoPartitionDoorsForm } from "./ZhengdaoPartitionDoorsForm";
 import { CabinetResultPanel } from "./CabinetResultPanel";
 import { UnitAddonsForm } from "./UnitAddonsForm";
@@ -1149,6 +1151,7 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
                     value={topPanelMaterialRef}
                     onChange={(ref) => update({ topPanelMaterialRef: ref })}
                     category="BOARD_BODY"
+                    allowedThicknesses={bodyPanelJoinMode === "TOP_COVERS_SIDES" ? [18, 19, 25, 50] : [18, 19]}
                   />
                 ) : (
                   <MaterialDropdown
@@ -1309,6 +1312,9 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
         <UnitAddonsForm
           value={unit.addons}
           vendor={vendor}
+          unitWidthCm={unit.widthCm}
+          unitDepthCm={unit.depthCm}
+          unitHeightCm={unit.heightCm}
           onChange={(addons) => update({ addons })}
         />
 
@@ -1351,6 +1357,15 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
 
         <Separator />
 
+        <CollapsibleSection title="抽盤" icon={Archive} command={leftCollapseCommand}>
+        <DrawerTrayForm
+          trays={unit.drawerTrays ?? []}
+          onChange={(v) => update({ drawerTrays: v })}
+        />
+        </CollapsibleSection>
+
+        <Separator />
+
         {/* 門片 */}
         <CollapsibleSection title="門片" icon={DoorOpen} command={leftCollapseCommand}>
         <DoorForm
@@ -1380,6 +1395,13 @@ export function CabinetUnitForm({ unit, estimateLabel, projectInfo, onChange, on
           items={unit.hardwareItems ?? []}
           onChange={(v) => update({ hardwareItems: v })}
         />
+        </CollapsibleSection>
+
+        <CollapsibleSection title="其他費用" icon={ReceiptText} command={leftCollapseCommand}>
+          <OtherCostsForm
+            items={unit.otherCostItems ?? []}
+            onChange={(v) => update({ otherCostItems: v })}
+          />
         </CollapsibleSection>
 
       </div>
