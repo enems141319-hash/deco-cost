@@ -30,6 +30,7 @@ export const ceilingInputSchema = z
 export const ceilingProjectInputSchema = z.object({
   projectId: z.string().min(1),
   label: z.string().optional(),
+  clientProjectVersion: z.number().int().positive().optional(),
   input: ceilingInputSchema,
 });
 

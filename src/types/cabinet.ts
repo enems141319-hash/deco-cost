@@ -425,6 +425,7 @@ export interface DrawerInput {
   frontMoldProcessing?: boolean;
   frontMoldRadius?: "none" | "R20" | "R30" | "R50" | "R80" | "R100" | "R150" | "R200" | "R250" | "R300";
   frontMoldCornerCount?: number;
+  zhengdaoProcesses?: import("./zhengdao-door").ZhengdaoDoorProcessInput[];
   frontHandle?: {
     style: ProfileHandleStyle;
     lengthCm: number;

@@ -1370,7 +1370,15 @@ function generateInternalParts(input: CabinetUnitInput, unitQty: number): PanelR
     const frontBackGrooveQuantity = quantity * 2;
     const sideGrooveCost = isZhengdao ? 0 : sideGrooveQuantity * UNIT_CONFIG.DRAWER_GROOVE_COST_PER_PANEL;
     const frontBackGrooveCost = isZhengdao ? 0 : frontBackGrooveQuantity * UNIT_CONFIG.DRAWER_GROOVE_COST_PER_PANEL;
-    const frontProcesses = isZhengdao ? [] : drawerFrontProcesses(drawer, quantity);
+    const frontZhengdaoProcesses = isZhengdao
+      ? zhengdaoProcessingRows({
+          idPrefix: `${drawer.id}-front-panel`,
+          singleCm2: drawer.widthCm * drawer.heightCm,
+          totalQty: quantity,
+          processes: drawer.zhengdaoProcesses,
+        })
+      : [];
+    const frontProcesses = isZhengdao ? frontZhengdaoProcesses : drawerFrontProcesses(drawer, quantity);
     const frontProcessCost = frontProcesses.reduce((sum, process) => sum + process.cost, 0);
     const bodyKdProcess = !isZhengdao && drawer.bodyKdProcessing ? drawerBodyKdProcess(drawer.id, quantity) : undefined;
     const bodyKdCost = bodyKdProcess?.cost ?? 0;

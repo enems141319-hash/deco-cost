@@ -149,6 +149,8 @@ model EstimateProject {
   designerName  String?
   designerPhone String?
   notes         String?
+  version       Int      @default(1)
+  updatedBy     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -168,6 +170,8 @@ model EstimateItem {
   inputData  Json
   resultData Json
   totalCost  Decimal    @db.Decimal(12, 2)
+  version    Int        @default(1)
+  updatedBy  String?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   vendor     MaterialVendor @default(WEIHO)

@@ -35,6 +35,7 @@ export default async function ZhengdaoCabinetEstimatePage({
       clientLineId: true,
       designerName: true,
       designerPhone: true,
+      version: true,
     },
   });
   if (!project) notFound();
@@ -42,6 +43,7 @@ export default async function ZhengdaoCabinetEstimatePage({
   let initialUnits: CabinetUnitInput[] | undefined;
   let initialLabel: string | null = null;
   let estimateItemId: string | undefined;
+  let initialVersion: number | undefined;
   if (itemId) {
     const item = await prisma.estimateItem.findFirst({
       where: {
@@ -55,6 +57,7 @@ export default async function ZhengdaoCabinetEstimatePage({
     initialUnits = item.inputData as unknown as CabinetUnitInput[];
     initialLabel = item.label;
     estimateItemId = item.id;
+    initialVersion = item.version;
   }
 
   return (
@@ -78,6 +81,8 @@ export default async function ZhengdaoCabinetEstimatePage({
         itemId={estimateItemId}
         initialLabel={initialLabel}
         initialUnits={initialUnits}
+        initialVersion={initialVersion}
+        initialProjectVersion={project.version}
         projectInfo={project}
         vendor="ZHENGDAO"
       />

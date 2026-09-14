@@ -47,6 +47,7 @@ export async function POST(request: Request) {
         inputData: parsed.data.units as object[],
         resultData: result as unknown as object,
         totalCost: result.projectTotal,
+        updatedBy: session.user.id,
       },
     });
     return NextResponse.json(item, { status: 201 });
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
         inputData: parsed.data.input as unknown as object,
         resultData: result as unknown as object,
         totalCost: result.totalCost,
+        updatedBy: session.user.id,
       },
     });
     return NextResponse.json(item, { status: 201 });

@@ -409,6 +409,7 @@ export const drawerSchema = z.object({
   frontMoldProcessing: z.boolean().default(false),
   frontMoldRadius: z.enum(["none", "R20", "R30", "R50", "R80", "R100", "R150", "R200", "R250", "R300"]).default("none"),
   frontMoldCornerCount: z.number().int().min(0).default(2),
+  zhengdaoProcesses: z.array(zhengdaoProcessInputSchema).default([]),
   frontHandle: z.object({
     style: z.enum([
       "none",
@@ -503,6 +504,8 @@ export const cabinetProjectInputSchema = z.object({
   projectId: z.string().min(1),
   label: z.string().optional(),
   vendor: z.enum(["WEIHO", "ZHENGDAO"]).default("WEIHO"),
+  clientProjectVersion: z.number().int().positive().optional(),
+  clientVersion: z.number().int().positive().optional(),
   units: z.array(cabinetUnitInputSchema).min(1, "至少需要一個桶身"),
 });
 

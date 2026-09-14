@@ -8,12 +8,14 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { MaterialDropdown } from "@/components/shared/MaterialDropdown";
 import { CeilingResultPanel } from "./CeilingResultPanel";
+import { getServerActionErrorMessage } from "@/lib/action-error-message";
 import { calculateCeilingMaterial } from "@/lib/calculations/ceiling";
 import { saveCeilingEstimate } from "@/lib/actions/estimates";
 import type { CeilingInput, CeilingResult } from "@/types";
 
 interface Props {
   projectId: string;
+  initialProjectVersion: number;
 }
 
 const DEFAULT_INPUT: CeilingInput = {
@@ -27,8 +29,9 @@ const DEFAULT_INPUT: CeilingInput = {
   perimeterAngleMaterialRef: null,
 };
 
-export function CeilingForm({ projectId }: Props) {
+export function CeilingForm({ projectId, initialProjectVersion }: Props) {
   const [input, setInput] = useState<CeilingInput>(DEFAULT_INPUT);
+  const [currentProjectVersion, setCurrentProjectVersion] = useState(initialProjectVersion);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
@@ -43,10 +46,20 @@ export function CeilingForm({ projectId }: Props) {
 
   const handleSave = async () => {
     setSaving(true);
-    const res = await saveCeilingEstimate({ projectId, input });
-    setSaving(false);
-    setSaveMsg(res.success ? "已儲存！" : "儲存失敗");
-    if (res.success) setTimeout(() => setSaveMsg(null), 3000);
+    setSaveMsg(null);
+    try {
+      const res = await saveCeilingEstimate({ projectId, input, clientProjectVersion: currentProjectVersion });
+      if (res.success && "projectVersion" in res && typeof res.projectVersion === "number") {
+        setCurrentProjectVersion(res.projectVersion);
+      }
+      setSaveMsg(res.success ? "已儲存！" : getServerActionErrorMessage(res, "儲存失敗"));
+      if (res.success) setTimeout(() => setSaveMsg(null), 3000);
+    } catch (err) {
+      console.error("[handleSave] save ceiling estimate failed", err);
+      setSaveMsg("儲存失敗，請稍後再試");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

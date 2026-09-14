@@ -22,7 +22,7 @@ export default async function CeilingEstimatePage({
 
   const project = await prisma.estimateProject.findFirst({
     where: { id: projectId, userId },
-    select: { id: true, name: true },
+    select: { id: true, name: true, version: true },
   });
   if (!project) notFound();
 
@@ -42,7 +42,7 @@ export default async function CeilingEstimatePage({
         </p>
       </div>
 
-      <CeilingForm projectId={projectId} />
+      <CeilingForm projectId={projectId} initialProjectVersion={project.version} />
     </div>
   );
 }

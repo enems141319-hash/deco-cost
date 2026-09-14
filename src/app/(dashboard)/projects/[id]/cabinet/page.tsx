@@ -38,6 +38,7 @@ export default async function CabinetEstimatePage({
       clientLineId: true,
       designerName: true,
       designerPhone: true,
+      version: true,
     },
   });
   if (!project) notFound();
@@ -46,6 +47,7 @@ export default async function CabinetEstimatePage({
   let initialUnits: CabinetUnitInput[] | undefined;
   let initialLabel: string | null = null;
   let estimateItemId: string | undefined;
+  let initialVersion: number | undefined;
   if (itemId) {
     const item = await prisma.estimateItem.findFirst({
       where: { id: itemId, projectId, moduleType: "CABINET", vendor: MaterialVendor.WEIHO },
@@ -55,6 +57,7 @@ export default async function CabinetEstimatePage({
       initialUnits = item.inputData as unknown as CabinetUnitInput[];
       initialLabel = item.label;
       estimateItemId = item.id;
+      initialVersion = item.version;
     }
   }
 
@@ -79,8 +82,10 @@ export default async function CabinetEstimatePage({
         itemId={estimateItemId}
         initialLabel={initialLabel}
         initialUnits={initialUnits}
-      projectInfo={project}
-      vendor="WEIHO"
+        initialVersion={initialVersion}
+        initialProjectVersion={project.version}
+        projectInfo={project}
+        vendor="WEIHO"
       />
     </div>
   );

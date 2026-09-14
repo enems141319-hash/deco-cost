@@ -13,6 +13,7 @@ import { DRAWER_FRONT_MOLD_PROCESSING_PRICES, PROFILE_HANDLE_PROCESSING_RULES } 
 import { cn, generateId } from "@/lib/utils";
 import type { DrawerInput, ProfileHandleStyle } from "@/types";
 import { useCabinetVendor } from "./CabinetVendorContext";
+import { ZhengdaoDoorProcessesForm } from "./ZhengdaoDoorProcessesForm";
 
 interface Props {
   drawers: DrawerInput[];
@@ -60,6 +61,7 @@ function emptyDrawer(): DrawerInput {
     wallMaterialRef: null,
     bottomMaterialRef: null,
     frontMoldRadius: "none",
+    zhengdaoProcesses: [],
     frontHandle: { style: "none", lengthCm: 40, bakedPaint: false },
   };
 }
@@ -219,6 +221,19 @@ export function DrawerForm({ drawers, onChange }: Props) {
                 <VendorBoardMaterialDropdown value={drawer.bottomMaterialRef} onChange={(ref) => update(i, { bottomMaterialRef: ref })} category="BOARD_BACKING" />
               </div>
             </div>
+
+            {vendor === "ZHENGDAO" && (
+              <div className="rounded border bg-background p-2">
+                <ZhengdaoDoorProcessesForm
+                  value={drawer.zhengdaoProcesses ?? []}
+                  title="抽屜面板/抽頭加工"
+                  description="依正道板材加工價目表，只套用在抽屜面板/抽頭。"
+                  boardWidthCm={drawer.widthCm}
+                  boardHeightCm={drawer.heightCm}
+                  onChange={(zhengdaoProcesses) => update(i, { zhengdaoProcesses })}
+                />
+              </div>
+            )}
 
             {vendor !== "ZHENGDAO" && <div className="grid gap-2 rounded border bg-background p-2">
               <div className="flex items-center justify-between rounded border bg-muted/20 px-3 py-2">

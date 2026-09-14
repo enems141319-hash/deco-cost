@@ -10,9 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { CabinetUnitForm, type CabinetPrintProjectInfo } from "./CabinetUnitForm";
 import { MaterialSummaryPanel } from "./MaterialSummaryPanel";
+import { getServerActionErrorMessage } from "@/lib/action-error-message";
 import { formatCurrency, generateId } from "@/lib/utils";
 import { calculateCabinetUnit } from "@/lib/calculations/cabinet";
 import { saveCabinetEstimate, updateCabinetEstimate } from "@/lib/actions/estimates";
+import {
+  ESTIMATE_VERSION_CONFLICT_CODE,
+  ESTIMATE_VERSION_CONFLICT_MESSAGE,
+} from "@/lib/estimate-conflicts";
 import { DEFAULT_DOOR_ADDONS, DEFAULT_MIDDLE_DIVIDER_ADDONS, DEFAULT_UNIT_ADDONS, type CabinetUnitInput } from "@/types";
 import type { CabinetVendor } from "@/types/vendor";
 import { createBlankDoorHardwareItem } from "./door-hardware-selection";
@@ -23,6 +28,8 @@ interface Props {
   itemId?: string;
   initialLabel?: string | null;
   initialUnits?: CabinetUnitInput[];
+  initialVersion?: number;
+  initialProjectVersion: number;
   projectInfo?: CabinetPrintProjectInfo;
   vendor?: CabinetVendor;
 }
@@ -283,6 +290,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
       frontMoldProcessing: drawer.frontMoldProcessing ?? false,
       frontMoldRadius: drawer.frontMoldRadius ?? (drawer.frontMoldProcessing ? "R80" : "none"),
       frontMoldCornerCount: drawer.frontMoldCornerCount ?? 2,
+      zhengdaoProcesses: drawer.zhengdaoProcesses ?? [],
       frontHandle: {
         style: "none",
         lengthCm: 40,
@@ -368,8 +376,10 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
   };
 }
 
-export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits, projectInfo, vendor = "WEIHO" }: Props) {
+export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits, initialVersion, initialProjectVersion, projectInfo, vendor = "WEIHO" }: Props) {
   const [currentItemId, setCurrentItemId] = useState<string | undefined>(itemId);
+  const [currentVersion, setCurrentVersion] = useState<number | undefined>(initialVersion);
+  const [currentProjectVersion, setCurrentProjectVersion] = useState(initialProjectVersion);
   const [estimateLabel, setEstimateLabel] = useState(initialLabel ?? "");
   const [units, setUnits] = useState<CabinetUnitInput[]>(
     initialUnits?.map((unit) => ({ ...normalizeUnit(unit, vendor), vendor })) ?? [emptyUnit(vendor)]
@@ -413,7 +423,14 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
     setSaving(true);
     setSaveMsg(null);
     try {
-      const payload = { projectId, label: estimateLabel, units, vendor };
+      const payload = {
+        projectId,
+        label: estimateLabel,
+        units,
+        vendor,
+        clientProjectVersion: currentProjectVersion,
+        ...(currentItemId ? { clientVersion: currentVersion } : {}),
+      };
       const result = currentItemId
         ? await updateCabinetEstimate(currentItemId, payload)
         : await saveCabinetEstimate(payload);
@@ -422,13 +439,24 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
         if (!currentItemId && "itemId" in result && typeof result.itemId === "string") {
           setCurrentItemId(result.itemId);
         }
+        if ("version" in result && typeof result.version === "number") {
+          setCurrentVersion(result.version);
+        }
+        if ("projectVersion" in result && typeof result.projectVersion === "number") {
+          setCurrentProjectVersion(result.projectVersion);
+        }
         setHasUnsavedChanges(false);
         setSaveMsg(currentItemId ? "已更新估價" : "已儲存估價");
         setTimeout(() => setSaveMsg(null), 3000);
         return;
       }
 
-      setSaveMsg("儲存失敗，請稍後再試");
+      if ("code" in result && result.code === ESTIMATE_VERSION_CONFLICT_CODE) {
+        setSaveMsg(result.message ?? ESTIMATE_VERSION_CONFLICT_MESSAGE);
+        return;
+      }
+
+      setSaveMsg(getServerActionErrorMessage(result, "儲存失敗，請稍後再試"));
     } catch (err) {
       console.error("[handleSave] save cabinet estimate failed", err);
       setSaveMsg("儲存失敗，請稍後再試");
@@ -572,7 +600,7 @@ export function CabinetUnitList({ projectId, itemId, initialLabel, initialUnits,
           </p>
         </div>
         {saveMsg && (
-          <span className={`text-sm ${saveMsg.includes("失敗") ? "text-destructive" : "text-green-600"}`}>
+          <span className={`text-sm ${saveMsg.includes("失敗") || saveMsg === ESTIMATE_VERSION_CONFLICT_MESSAGE ? "text-destructive" : "text-green-600"}`}>
             {saveMsg}
           </span>
         )}

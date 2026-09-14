@@ -115,6 +115,55 @@ assert.equal(zhengdaoExplicitBodyMaterials.panels.find((panel) => panel.id === "
 assert.equal(zhengdaoExplicitBodyMaterials.panels.find((panel) => panel.id === "unit-1-left")?.materialRef?.materialId, bodyMaterial.materialId);
 assert.equal(zhengdaoExplicitBodyMaterials.panels.find((panel) => panel.id === "unit-1-bottom")?.materialRef, null);
 
+const zhengdaoDrawerFrontProcessingResult = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  panelMaterialRef: bodyMaterial,
+  drawers: [
+    {
+      id: "drawer-1",
+      name: "測試抽屜",
+      widthCm: 60,
+      heightCm: 16,
+      depthCm: 45,
+      railLengthCm: 45,
+      quantity: 2,
+      railMaterialRef: null,
+      wallMaterialRef: {
+        ...bodyMaterial,
+        minCai: null,
+      },
+      bottomMaterialRef: {
+        ...zhengdaoNineMmBackPanelMaterial,
+        minCai: null,
+      },
+      grooveSpec: "8.5",
+      zhengdaoProcesses: [
+        {
+          id: "edge-a",
+          code: "EDGE_A",
+          quantityPerDoor: 1,
+        },
+      ],
+    },
+  ],
+});
+const zhengdaoDrawerFrontPanel = zhengdaoDrawerFrontProcessingResult.internalParts.find(
+  (panel) => panel.id === "drawer-1-front-panel",
+);
+const zhengdaoDrawerSidePanel = zhengdaoDrawerFrontProcessingResult.internalParts.find(
+  (panel) => panel.id === "drawer-1-side-panels",
+);
+const zhengdaoDrawerFrontProcess = zhengdaoDrawerFrontPanel?.processes.find(
+  (process) => process.id === "drawer-1-front-panel-edge-a",
+);
+assert.equal(zhengdaoDrawerFrontProcess?.quantity, 2.0913);
+assert.equal(zhengdaoDrawerFrontProcess?.unitCost, 10);
+assert.equal(zhengdaoDrawerFrontProcess?.cost, 21);
+assert.equal(zhengdaoDrawerFrontPanel?.addonsCost, 21);
+assert.equal(zhengdaoDrawerFrontPanel?.subtotal, 230);
+assert.equal(zhengdaoDrawerSidePanel?.processes.length, 0);
+
 const cabinetWithPerPanelFrontEdge = calculateCabinetUnit({
   ...baseUnit,
   widthCm: 90,
@@ -1905,9 +1954,9 @@ assert.deepEqual(
     cost: process.cost,
   })),
   [
-    { id: "process-shaped", quantity: 4.4113, unitCost: 90, cost: 397 },
-    { id: "process-g1", quantity: 1, unitCost: 600, cost: 600 },
-    { id: "process-groove", quantity: 25, unitCost: 20, cost: 500 },
+    { id: "zhengdao-catalog-door-process-shaped", quantity: 4.4113, unitCost: 90, cost: 397 },
+    { id: "zhengdao-catalog-door-process-g1", quantity: 1, unitCost: 600, cost: 600 },
+    { id: "zhengdao-catalog-door-process-groove", quantity: 25, unitCost: 20, cost: 500 },
   ],
 );
 assert.equal(zhengdaoCatalogDoorProcessing.doors[0]?.addonsCost, 1497);
@@ -1943,18 +1992,18 @@ const zhengdaoAluminumPartitionProcessing = calculateCabinetUnit({
   ],
 });
 const zhengdaoAluminumPartitionProcess = zhengdaoAluminumPartitionProcessing.doors[0]?.processes.find(
-  (process) => process.id === "process-a2-2",
+  (process) => process.id === "zhengdao-s2-partition-door-process-a2-2",
 );
 assert.equal(zhengdaoAluminumPartitionProcess?.label, "A2-2 鋁框門區隔");
 assert.equal(zhengdaoAluminumPartitionProcess?.quantity, 4.4113);
 assert.equal(zhengdaoAluminumPartitionProcess?.unitCost, 120);
 assert.equal(zhengdaoAluminumPartitionProcess?.cost, 529);
 assert.equal(
-  zhengdaoAluminumPartitionProcessing.doors[0]?.processes.find((process) => process.id === "process-s2-track")?.cost,
+  zhengdaoAluminumPartitionProcessing.doors[0]?.processes.find((process) => process.id === "zhengdao-s2-partition-door-process-s2-track")?.cost,
   600,
 );
 assert.equal(
-  zhengdaoAluminumPartitionProcessing.doors[0]?.processes.find((process) => process.id === "process-s2-buffer")?.cost,
+  zhengdaoAluminumPartitionProcessing.doors[0]?.processes.find((process) => process.id === "zhengdao-s2-partition-door-process-s2-buffer")?.cost,
   1200,
 );
 assert.equal(zhengdaoAluminumPartitionProcessing.summary.addonsBreakdown.zhengdaoDoorProcessing, 2329);
@@ -1988,15 +2037,15 @@ const zhengdaoH8HardwareProcessing = calculateCabinetUnit({
   ],
 });
 assert.equal(
-  zhengdaoH8HardwareProcessing.doors[0]?.processes.find((process) => process.id === "process-h8-separator")?.cost,
+  zhengdaoH8HardwareProcessing.doors[0]?.processes.find((process) => process.id === "zhengdao-h8-partition-door-process-h8-separator")?.cost,
   132,
 );
 assert.equal(
-  zhengdaoH8HardwareProcessing.doors[0]?.processes.find((process) => process.id === "process-h8-track")?.cost,
+  zhengdaoH8HardwareProcessing.doors[0]?.processes.find((process) => process.id === "zhengdao-h8-partition-door-process-h8-track")?.cost,
   700,
 );
 assert.equal(
-  zhengdaoH8HardwareProcessing.doors[0]?.processes.find((process) => process.id === "process-h8-buffer")?.cost,
+  zhengdaoH8HardwareProcessing.doors[0]?.processes.find((process) => process.id === "zhengdao-h8-partition-door-process-h8-buffer")?.cost,
   6700,
 );
 assert.equal(zhengdaoH8HardwareProcessing.summary.addonsBreakdown.zhengdaoDoorProcessing, 7532);
