@@ -107,6 +107,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
         ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top.bookcaseGuideWheelHole,
         ...unit.addons?.bodyPanelProcesses?.top?.bookcaseGuideWheelHole,
       },
+      zhengdaoProcesses: unit.addons?.bodyPanelProcesses?.top?.zhengdaoProcesses ?? [],
     },
     bottom: {
       frontEdgeABS: isZhengdao ? "none" : unit.addons?.bodyPanelProcesses?.bottom?.frontEdgeABS
@@ -132,6 +133,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
         ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom.bookcaseGuideWheelHole,
         ...unit.addons?.bodyPanelProcesses?.bottom?.bookcaseGuideWheelHole,
       },
+      zhengdaoProcesses: unit.addons?.bodyPanelProcesses?.bottom?.zhengdaoProcesses ?? [],
     },
     left: {
       frontEdgeABS: isZhengdao ? "none" : unit.addons?.bodyPanelProcesses?.left?.frontEdgeABS
@@ -156,6 +158,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
         ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left.tRailBedSet,
         ...unit.addons?.bodyPanelProcesses?.left?.tRailBedSet,
       },
+      zhengdaoProcesses: unit.addons?.bodyPanelProcesses?.left?.zhengdaoProcesses ?? [],
     },
     right: {
       frontEdgeABS: isZhengdao ? "none" : unit.addons?.bodyPanelProcesses?.right?.frontEdgeABS
@@ -180,6 +183,7 @@ function normalizeUnit(unit: CabinetUnitInput, vendor: CabinetVendor = unit.vend
         ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right.tRailBedSet,
         ...unit.addons?.bodyPanelProcesses?.right?.tRailBedSet,
       },
+      zhengdaoProcesses: unit.addons?.bodyPanelProcesses?.right?.zhengdaoProcesses ?? [],
     },
   };
 

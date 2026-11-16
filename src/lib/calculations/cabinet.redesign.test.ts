@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { calculateCabinetUnit } from "./cabinet";
 import { DEFAULT_DOOR_ADDONS, DEFAULT_MIDDLE_DIVIDER_ADDONS, DEFAULT_UNIT_ADDONS } from "@/types";
 import type { CabinetUnitInput, MaterialRef } from "@/types";
+import type { ZhengdaoDoorProcessInput } from "@/types/zhengdao-door";
 
 const bodyMaterial: MaterialRef = {
   materialId: "body-1",
@@ -114,6 +115,43 @@ const zhengdaoExplicitBodyMaterials = calculateCabinetUnit({
 assert.equal(zhengdaoExplicitBodyMaterials.panels.find((panel) => panel.id === "unit-1-top")?.materialRef, null);
 assert.equal(zhengdaoExplicitBodyMaterials.panels.find((panel) => panel.id === "unit-1-left")?.materialRef?.materialId, bodyMaterial.materialId);
 assert.equal(zhengdaoExplicitBodyMaterials.panels.find((panel) => panel.id === "unit-1-bottom")?.materialRef, null);
+
+const zhengdaoBodyPanelBase = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  panelMaterialRef: bodyMaterial,
+});
+const zhengdaoBodyPanelEdge = (panel: string): ZhengdaoDoorProcessInput[] => [{ id: `${panel}-edge-a`, code: "EDGE_A", quantityPerDoor: 1 }];
+const zhengdaoBodyPanelProcessing = calculateCabinetUnit({
+  ...baseUnit,
+  vendor: "ZHENGDAO",
+  panelMaterialRef: bodyMaterial,
+  addons: {
+    ...DEFAULT_UNIT_ADDONS,
+    bodyPanelProcesses: {
+      top: { ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.top, zhengdaoProcesses: zhengdaoBodyPanelEdge("top") },
+      bottom: { ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.bottom, zhengdaoProcesses: zhengdaoBodyPanelEdge("bottom") },
+      left: { ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.left, zhengdaoProcesses: zhengdaoBodyPanelEdge("left") },
+      right: { ...DEFAULT_UNIT_ADDONS.bodyPanelProcesses!.right, zhengdaoProcesses: zhengdaoBodyPanelEdge("right") },
+    },
+  },
+});
+let zhengdaoBodyPanelProcessTotal = 0;
+for (const side of ["top", "bottom", "left", "right"]) {
+  const panel = zhengdaoBodyPanelProcessing.panels.find((item) => item.id === `unit-1-${side}`);
+  const basePanel = zhengdaoBodyPanelBase.panels.find((item) => item.id === `unit-1-${side}`);
+  const process = panel?.processes.find((item) => item.id === `unit-1-${side}-${side}-edge-a`);
+  assert.ok(process, `${side} panel should include Zhengdao body panel process row`);
+  assert.equal(process.unitCost, 10);
+  assert.ok(process.cost > 0);
+  assert.equal(panel!.addonsCost - basePanel!.addonsCost, process.cost);
+  assert.equal(panel!.subtotal - basePanel!.subtotal, process.cost);
+  zhengdaoBodyPanelProcessTotal += process.cost;
+}
+assert.equal(
+  zhengdaoBodyPanelProcessing.summary.totalCost - zhengdaoBodyPanelBase.summary.totalCost,
+  zhengdaoBodyPanelProcessTotal,
+);
 
 const zhengdaoDrawerFrontProcessingResult = calculateCabinetUnit({
   ...baseUnit,
